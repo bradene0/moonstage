@@ -1,6 +1,6 @@
 {
   "name": "@moonstage/player",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Browser player for Moonstage projects: Canvas 2D renderer, keyboard input, <moonstage-player> element.",
   "license": "MIT",
   "repository": {
@@ -40,7 +40,7 @@
     "!dist/**/*.test.*"
   ],
   "dependencies": {
-    "@moonstage/core": "^0.2.0"
+    "@moonstage/core": "^0.3.0"
   },
   "publishConfig": {
     "access": "public"

@@ -3,7 +3,7 @@
 Moonstage is in early development. Contracts may change between releases; each entry lists the contract
 versions so you can tell what moved.
 
-## Unreleased
+## 0.3.0
 
 Contract versions: project format 1, behavior ABI 3 (accepts 1-3), plugin API 3 (accepts 1-3), package format 1.
 
