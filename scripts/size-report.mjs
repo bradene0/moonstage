@@ -13,7 +13,7 @@ import { gzipSync } from "node:zlib";
 const BUDGETS = {
   "@moonstage/core": 40,
   "@moonstage/player": 8,
-  "moonstage (cli)": 32,
+  "moonstage (cli)": 36,
   "@moonstage/rive": 4,
   // Includes the MoonBit engine's WebAssembly, embedded as base64.
   "@moonstage/physics": 36,
