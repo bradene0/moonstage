@@ -26,10 +26,25 @@ export interface ProjectManifest {
     axes?: Record<string, { negative?: string[]; positive?: string[] }>;
     buttons?: Record<string, string[]>;
   };
-  assets?: Record<string, { path: string; type?: string }>;
+  assets?: Record<string, AssetDecl>;
   behaviors?: Record<string, BehaviorModuleDecl>;
   prefabs?: Record<string, PrefabSource>;
   plugins?: Record<string, { module: string; config?: Record<string, unknown> }>;
+}
+
+export interface AssetDecl {
+  path: string;
+  type?: string;
+  /** Sprite sheet layout. */
+  frame?: { width: number; height: number; columns?: number; count?: number };
+  pixelated?: boolean;
+}
+
+const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|webp|svg)$/i;
+
+/** True for assets the built-in renderers draw as images. */
+export function isImageAsset(asset: AssetDecl): boolean {
+  return asset.type === "image" || (asset.type === undefined && IMAGE_EXTENSIONS.test(asset.path));
 }
 
 /** An entity template that can be spawned at runtime. */
@@ -84,6 +99,20 @@ export interface BehaviorComponent {
   state?: Record<string, number>;
 }
 
+export interface SpriteComponent {
+  asset: string;
+  size?: Vec2;
+  anchor?: Vec2;
+  frame?: number;
+  frameState?: string;
+  animation?: { fps: number; frames?: number[]; loop?: boolean };
+  flipX?: boolean;
+  flipY?: boolean;
+  opacity?: number;
+  layer?: number;
+  space?: "world" | "screen";
+}
+
 export interface CameraComponent {
   zoom?: number;
 }
@@ -92,6 +121,7 @@ export interface Components {
   transform?: TransformComponent;
   shape?: ShapeComponent;
   text?: TextComponent;
+  sprite?: SpriteComponent;
   /** One behavior, or several that run in order. */
   behavior?: BehaviorComponent | BehaviorComponent[];
   camera?: CameraComponent;
@@ -248,6 +278,7 @@ export function validateProjectSemantics(
     const where = { file: "moonstage.json", entity: name };
     // Prefab refs resolve against whichever scene spawns them, so only names are checked here.
     out.push(...checkBehaviors(prefab, manifest, `prefabs.${name}.components.behavior`, where, undefined));
+    out.push(...checkSprite(prefab, manifest, `prefabs.${name}.components.sprite`, where));
     for (const namespace of Object.keys(prefab.extensions ?? {})) {
       if (!(namespace in plugins)) {
         out.push(
@@ -305,6 +336,8 @@ export function validateProjectSemantics(
           );
         }
       }
+
+      out.push(...checkSprite(entity, manifest, at(".components.sprite"), where));
 
       const text = entity.components?.text;
       if (text !== undefined) {
@@ -403,5 +436,49 @@ function checkBehaviors(
       }
     }
   });
+  return out;
+}
+
+/** Check a sprite's asset reference and frame state against the manifest. */
+function checkSprite(
+  entity: PrefabSource,
+  manifest: ProjectManifest,
+  path: string,
+  where: { file: string | undefined; entity: string },
+): Diagnostic[] {
+  const sprite = entity.components?.sprite;
+  if (sprite === undefined) return [];
+  const out: Diagnostic[] = [];
+  const swhere = { ...where, component: "sprite" };
+  const asset = manifest.assets?.[sprite.asset];
+  if (asset === undefined) {
+    out.push(diagnostic("MS2015", `asset "${sprite.asset}" is not declared in moonstage.json`, { ...swhere, path: `${path}.asset` }));
+  } else if (!isImageAsset(asset)) {
+    out.push(diagnostic("MS2015", `asset "${sprite.asset}" is not an image`, { ...swhere, path: `${path}.asset` }));
+  } else {
+    const count = asset.frame ? (asset.frame.count ?? asset.frame.columns ?? 1) : 1;
+    const used = [sprite.frame ?? 0, ...(sprite.animation?.frames ?? [])];
+    if (used.some((f) => f >= count)) {
+      out.push(
+        diagnostic("MS2015", `sprite uses a frame >= ${count}, the frame count of asset "${sprite.asset}"`, {
+          ...swhere,
+          path,
+          hint: "Declare `frame.count`/`frame.columns` on the asset, or use a lower frame index.",
+        }),
+      );
+    }
+  }
+  if (sprite.frameState !== undefined) {
+    const declared = behaviorsOf(entity.components).flatMap((b) => manifest.behaviors?.[b.module]?.state ?? []);
+    if (!declared.includes(sprite.frameState)) {
+      out.push(
+        diagnostic("MS2012", `frameState "${sprite.frameState}" is not a state of this entity's behaviors`, {
+          ...swhere,
+          severity: "warning",
+          path: `${path}.frameState`,
+        }),
+      );
+    }
+  }
   return out;
 }

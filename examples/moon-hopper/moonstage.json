@@ -37,6 +37,18 @@
       ]
     }
   },
+  "assets": {
+    "crystal": {
+      "path": "assets/crystal.png",
+      "frame": {
+        "width": 16,
+        "height": 16,
+        "columns": 4,
+        "count": 4
+      },
+      "pixelated": true
+    }
+  },
   "behaviors": {
     "lander": {
       "description": "Player ship: turn, thrust, gravity, bounce off the world bounds.",

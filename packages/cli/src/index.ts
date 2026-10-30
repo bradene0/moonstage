@@ -21,5 +21,5 @@ export {
 export { EXIT, formatDiagnostic, type CommandResult, type ExitCode } from "./output.js";
 export { fileIO } from "./project-io.js";
 export { buildMoonbitBehaviors, findMoon, findMoonbitSdk } from "./moonbit.js";
-export { renderSvg } from "./svg.js";
+export { renderSvg, svgImage, imageSize, type SvgImage } from "./svg.js";
 export { writeBundle, serve } from "./bundle.js";

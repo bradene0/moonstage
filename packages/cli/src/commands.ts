@@ -22,6 +22,7 @@ import {
   behaviorWasmPath,
   behaviorsOf,
   diagnostic,
+  isImageAsset,
   hasErrors,
   MoonstageError,
   runTest,
@@ -35,7 +36,7 @@ import { buildMoonbitBehaviors, findMoon } from "./moonbit.js";
 import { EXIT, result, type CommandResult } from "./output.js";
 import { load, loadTests, projectRoot } from "./project-io.js";
 import { slotCollisions, staleSlotFiles, writeSlotFiles } from "./slots.js";
-import { renderSvg } from "./svg.js";
+import { renderSvg, svgImage, type SvgImage } from "./svg.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -203,7 +204,12 @@ export async function validate(opts: { dir?: string }): Promise<CommandResult> {
   const loaded = await load(root, { behaviors: "optional" });
   const tests = await loadTests(root);
   const slots = loaded.manifest ? [...slotCollisions(loaded.manifest), ...(await staleSlotFiles(root, loaded.manifest))] : [];
-  const diagnostics = [...loaded.diagnostics, ...slots, ...tests.flatMap((t) => t.diagnostics)];
+  const assets = Object.entries(loaded.manifest?.assets ?? {})
+    .filter(([, asset]) => !existsSync(join(root, asset.path)))
+    .map(([id, asset]) =>
+      diagnostic("MS1003", `asset "${id}": ${asset.path} not found`, { file: "moonstage.json", path: `assets.${id}.path` }),
+    );
+  const diagnostics = [...loaded.diagnostics, ...slots, ...assets, ...tests.flatMap((t) => t.diagnostics)];
   const entities = Object.values(loaded.scenes).reduce((n, s) => n + s.entities.length, 0);
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.length - errors;
@@ -488,7 +494,16 @@ export async function render(opts: {
   const ticks = int(opts.tick, "tick", 0);
   const rt = await simulate(p.project, { ...opts, ticks });
   const frame = rt.frame(1);
-  const svg = renderSvg(frame);
+  const images = new Map<string, SvgImage>();
+  for (const [id, asset] of Object.entries(p.project.manifest.assets ?? {})) {
+    if (!isImageAsset(asset)) continue;
+    try {
+      images.set(id, svgImage(new Uint8Array(await readFile(join(p.root, asset.path))), asset.path, asset.pixelated));
+    } catch {
+      // Drawn as a magenta placeholder; `moonstage validate` reports the missing file.
+    }
+  }
+  const svg = renderSvg(frame, images);
   rt.dispose();
   const data: Record<string, unknown> = {
     root: p.root,

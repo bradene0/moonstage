@@ -103,7 +103,8 @@ server and `moonstage edit` should use the same operations instead of rewriting 
 
 ## Known limits (deliberate, for now)
 
-- Shapes and text only. There are no images or sprites yet; the asset registry is declared but unused.
+- Built-in renderables are shapes, text and image sprites (with sprite sheets). There is no tinting,
+  nine-slice or texture atlas packing yet.
 - No physics, audio or scene switching.
 - Plugins in the browser bundle must be project-local files. Bare package specifiers need an import map.
 - `.msp` packages (`moonstage pack`) are not implemented. `dist/` is a plain static folder.

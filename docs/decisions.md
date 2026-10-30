@@ -22,5 +22,5 @@ silently by implementation work.
 ## Technical questions to revisit with evidence
 
 - Host-provided math (sin, cos, sqrt) in the ABI. MoonBit's pure-WebAssembly `sin` adds about 15 KB per module.
-- Renderer plugins chosen by the project, and image and sprite assets.
+- Renderer plugins chosen by the project (sprites are built in; WebGL/WebGPU renderers are not).
 - Pinning the MoonBit toolchain version in CI.

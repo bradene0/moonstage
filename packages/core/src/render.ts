@@ -8,7 +8,8 @@
  */
 
 import { compose, lerp, multiply, type Matrix } from "./math.js";
-import { TEXT_BINDING, type Vec2 } from "./project.js";
+import { TEXT_BINDING, type AssetDecl, type SpriteComponent, type Vec2 } from "./project.js";
+import type { Entity } from "./world.js";
 import type { Runtime } from "./runtime.js";
 
 interface DrawBase {
@@ -52,7 +53,22 @@ export interface TextItem extends DrawBase {
   align: "left" | "center" | "right";
 }
 
-export type DrawItem = RectItem | CircleItem | PolygonItem | TextItem;
+export interface SpriteItem extends DrawBase {
+  kind: "sprite";
+  /** Asset id; renderers map it to a loaded image. */
+  asset: string;
+  /** Drawn size in local pixels; undefined means the image's natural size. */
+  size: Vec2 | undefined;
+  /** 0..1 point of the image placed at the local origin. */
+  anchor: Vec2;
+  /** Source rectangle [x, y, width, height] in the image; undefined means the whole image. */
+  source: [number, number, number, number] | undefined;
+  /** Frame index that was selected. */
+  frame: number;
+  pixelated: boolean;
+}
+
+export type DrawItem = RectItem | CircleItem | PolygonItem | TextItem | SpriteItem;
 
 export interface RenderFrame {
   width: number;
@@ -68,6 +84,22 @@ export interface RenderFrame {
 export interface Renderer {
   render(frame: RenderFrame): void;
   dispose?(): void;
+}
+
+/** Which sprite-sheet frame to show: frameState, then animation, then the static frame. */
+export function spriteFrame(sprite: SpriteComponent, asset: AssetDecl | undefined, entity: Entity, tick: number, dt: number): number {
+  const count = asset?.frame ? (asset.frame.count ?? asset.frame.columns ?? 1) : 1;
+  if (sprite.frameState !== undefined) {
+    const value = Math.floor(entity.state.get(sprite.frameState) ?? 0);
+    return ((value % count) + count) % count;
+  }
+  if (sprite.animation !== undefined) {
+    const frames = sprite.animation.frames ?? Array.from({ length: count }, (_, i) => i);
+    const step = Math.floor((tick - entity.born) * dt * sprite.animation.fps);
+    const index = sprite.animation.loop === false ? Math.min(step, frames.length - 1) : step % frames.length;
+    return frames[Math.max(0, index)] ?? 0;
+  }
+  return sprite.frame ?? 0;
 }
 
 function formatNumber(value: number): string {
@@ -99,8 +131,8 @@ export function buildFrame(rt: Runtime, alpha: number): RenderFrame {
 
   const items: DrawItem[] = [];
   for (const e of world.entities) {
-    const { shape, text } = e.components;
-    if ((shape === undefined && text === undefined) || !world.activeInHierarchy(e.handle)) continue;
+    const { shape, text, sprite } = e.components;
+    if ((shape === undefined && text === undefined && sprite === undefined) || !world.activeInHierarchy(e.handle)) continue;
     const local = world.worldMatrix(e.handle, alpha);
     if (shape !== undefined) {
       const base = {
@@ -114,6 +146,26 @@ export function buildFrame(rt: Runtime, alpha: number): RenderFrame {
       if (shape.kind === "rect") items.push({ ...base, kind: "rect", size: shape.size ?? [10, 10] });
       else if (shape.kind === "circle") items.push({ ...base, kind: "circle", radius: shape.radius ?? 5 });
       else items.push({ ...base, kind: "polygon", points: shape.points ?? [] });
+    }
+    if (sprite !== undefined) {
+      const asset = rt.manifest.assets?.[sprite.asset];
+      const frame = spriteFrame(sprite, asset, e, rt.tick, rt.dt);
+      const f = asset?.frame;
+      const columns = f?.columns ?? 1;
+      const flip: Matrix = [sprite.flipX ? -1 : 1, 0, 0, sprite.flipY ? -1 : 1, 0, 0];
+      items.push({
+        entity: e.id,
+        kind: "sprite",
+        matrix: multiply(sprite.space === "screen" ? local : multiply(view, local), flip),
+        layer: sprite.layer ?? 0,
+        opacity: sprite.opacity ?? 1,
+        asset: sprite.asset,
+        size: sprite.size ?? (f ? [f.width, f.height] : undefined),
+        anchor: sprite.anchor ?? [0.5, 0.5],
+        source: f ? [(frame % columns) * f.width, Math.floor(frame / columns) * f.height, f.width, f.height] : undefined,
+        frame,
+        pixelated: asset?.pixelated ?? false,
+      });
     }
     if (text !== undefined) {
       const value = text.value.replace(TEXT_BINDING, (_, id: string, key: string) =>

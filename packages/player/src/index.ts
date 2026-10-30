@@ -9,23 +9,26 @@
  */
 
 import {
+  diagnostic,
+  isImageAsset,
   KeyBindings,
   loadProject,
   MoonstageError,
   Runtime,
   type Diagnostic,
   type ProjectIO,
+  type ProjectManifest,
   type Renderer,
 } from "@moonstage/core";
-import { CanvasRenderer } from "./canvas-renderer.js";
+import { CanvasRenderer, type ImageMap } from "./canvas-renderer.js";
 
-export { CanvasRenderer } from "./canvas-renderer.js";
+export { CanvasRenderer, type ImageMap } from "./canvas-renderer.js";
 
 export interface PlayOptions {
   scene?: string;
   seed?: number;
   /** Replace the default Canvas 2D renderer (e.g. with a WebGL renderer plugin). */
-  renderer?: (canvas: HTMLCanvasElement) => Renderer;
+  renderer?: (canvas: HTMLCanvasElement, images: ImageMap) => Renderer;
   /** Focus the player so keyboard input works immediately. */
   autofocus?: boolean;
 }
@@ -39,11 +42,16 @@ export interface Player {
   destroy(): void;
 }
 
+/** Project root URL for `src`: a project directory URL or a moonstage.json URL. */
+export function projectUrl(src: string | URL, base: string = document.baseURI): URL {
+  const root = new URL(src, base);
+  if (root.pathname.endsWith(".json")) return new URL(".", root);
+  return root.pathname.endsWith("/") ? root : new URL(`${root.pathname}/`, root);
+}
+
 /** Fetch-backed project IO. `src` is a project directory URL or a moonstage.json URL. */
 export function fetchIO(src: string | URL, base: string = document.baseURI): ProjectIO {
-  let root = new URL(src, base);
-  if (root.pathname.endsWith(".json")) root = new URL(".", root);
-  else if (!root.pathname.endsWith("/")) root = new URL(`${root.pathname}/`, root);
+  const root = projectUrl(src, base);
   const get = async (path: string) => {
     const res = await fetch(new URL(path, root));
     return res.ok ? res : undefined;
@@ -54,6 +62,27 @@ export function fetchIO(src: string | URL, base: string = document.baseURI): Pro
     importModule: (specifier) =>
       import(/* @vite-ignore */ specifier.startsWith(".") || specifier.startsWith("/") ? new URL(specifier, root).href : specifier),
   };
+}
+
+/** Load every image asset the built-in renderer can draw. Missing images become MS1003 diagnostics. */
+export async function loadImages(manifest: ProjectManifest, root: URL): Promise<{ images: ImageMap; diagnostics: Diagnostic[] }> {
+  const images = new Map<string, HTMLImageElement>();
+  const diagnostics: Diagnostic[] = [];
+  await Promise.all(
+    Object.entries(manifest.assets ?? {})
+      .filter(([, asset]) => isImageAsset(asset))
+      .map(async ([id, asset]) => {
+        const image = new Image();
+        image.src = new URL(asset.path, root).href;
+        try {
+          await image.decode();
+          images.set(id, image);
+        } catch {
+          diagnostics.push(diagnostic("MS1003", `image for asset "${id}" could not be loaded (${asset.path})`, { file: asset.path }));
+        }
+      }),
+  );
+  return { images, diagnostics };
 }
 
 export class PlayerLoadError extends MoonstageError {
@@ -79,6 +108,11 @@ export async function play(target: string | HTMLElement, src: string | URL, opti
     showDiagnostics(host, loaded.diagnostics);
     throw new PlayerLoadError(loaded.diagnostics);
   }
+  const { images, diagnostics: imageProblems } = await loadImages(loaded.project.manifest, projectUrl(src));
+  if (imageProblems.length > 0) {
+    showDiagnostics(host, imageProblems);
+    throw new PlayerLoadError(imageProblems);
+  }
   let runtime: Runtime;
   try {
     runtime = await Runtime.create(loaded.project, {
@@ -97,7 +131,7 @@ export async function play(target: string | HTMLElement, src: string | URL, opti
   canvas.tabIndex = 0;
   canvas.setAttribute("aria-label", loaded.project.manifest.name);
   host.replaceChildren(canvas);
-  const renderer: Renderer = options.renderer?.(canvas) ?? new CanvasRenderer(canvas);
+  const renderer: Renderer = options.renderer?.(canvas, images) ?? new CanvasRenderer(canvas, images);
 
   const keys = new KeyBindings(loaded.project.manifest, runtime.input);
   const onKeyDown = (e: KeyboardEvent) => {

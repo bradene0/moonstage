@@ -100,6 +100,35 @@ const components = {
         { type: "array", minItems: 1, items: { $ref: "#/$defs/behaviorEntry" } },
       ],
     },
+    sprite: {
+      type: "object",
+      required: ["asset"],
+      additionalProperties: false,
+      description: "Image renderable from an asset. Draws one frame of a sprite sheet, optionally animated.",
+      properties: {
+        asset: { ...id, description: "Asset id declared in moonstage.json." },
+        size: { ...vec2, description: "Drawn size in pixels (default: frame size, or the image's natural size)." },
+        anchor: { ...vec2, description: "Point of the image placed at the entity origin, 0..1 (default [0.5, 0.5])." },
+        frame: { type: "integer", minimum: 0, description: "Frame to draw (default 0)." },
+        frameState: { ...id, description: "Use this entity state value as the frame; lets behaviors drive it." },
+        animation: {
+          type: "object",
+          required: ["fps"],
+          additionalProperties: false,
+          description: "Play frames on simulation time, counted from when the entity was created.",
+          properties: {
+            fps: { type: "number", exclusiveMinimum: 0 },
+            frames: { type: "array", items: { type: "integer", minimum: 0 }, minItems: 1, description: "Default: every frame." },
+            loop: { type: "boolean", description: "Default true; false holds the last frame." },
+          },
+        },
+        flipX: { type: "boolean" },
+        flipY: { type: "boolean" },
+        opacity: { type: "number", minimum: 0, maximum: 1 },
+        layer: { type: "integer" },
+        space,
+      },
+    },
     camera: {
       type: "object",
       additionalProperties: false,
@@ -173,7 +202,26 @@ export const projectSchema: JsonSchema = {
         type: "object",
         required: ["path"],
         additionalProperties: false,
-        properties: { path: relativePath, type: { type: "string" } },
+        properties: {
+          path: relativePath,
+          type: {
+            type: "string",
+            description: "'image' (default for .png/.jpg/.jpeg/.gif/.webp/.svg). Plugins may define other types.",
+          },
+          frame: {
+            type: "object",
+            required: ["width", "height"],
+            additionalProperties: false,
+            description: "Sprite sheet layout: equal-size frames in rows, numbered left to right, top to bottom.",
+            properties: {
+              width: { type: "integer", minimum: 1 },
+              height: { type: "integer", minimum: 1 },
+              columns: { type: "integer", minimum: 1, description: "Frames per row (default 1)." },
+              count: { type: "integer", minimum: 1, description: "Number of frames (default columns)." },
+            },
+          },
+          pixelated: { type: "boolean", description: "Scale without smoothing (pixel art)." },
+        },
       },
     },
     behaviors: {

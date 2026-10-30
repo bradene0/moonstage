@@ -264,6 +264,7 @@ export class Runtime {
     const prefab = this.manifest.prefabs?.[prefabName];
     if (prefab === undefined) throw new Error(`unknown prefab "${prefabName}"`);
     const entity = this.world.spawn(prefabName, prefab);
+    entity.born = this.tick;
     this.bind(entity);
     this.spawned.push(entity);
     return entity;

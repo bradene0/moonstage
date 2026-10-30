@@ -398,3 +398,60 @@ describe("spawning and removal", () => {
     assert.deepEqual(seen, ["spawned:spark-1", "added:spark-1", "removed:spark-1"]);
   });
 });
+
+describe("sprites", () => {
+  const m = manifest({
+    assets: {
+      sheet: { path: "sheet.png", frame: { width: 16, height: 8, columns: 3, count: 5 }, pixelated: true },
+      plain: { path: "plain.png" },
+    },
+    behaviors: { driver: { wasm: "d.wasm", state: ["pose"] } },
+    prefabs: { puff: { components: { sprite: { asset: "sheet", animation: { fps: 60, loop: false } } } } },
+  });
+  const scene: SceneSource = {
+    format: 1,
+    entities: [
+      { id: "still", components: { sprite: { asset: "sheet", frame: 4, flipX: true, anchor: [0, 1] } } },
+      { id: "anim", components: { sprite: { asset: "sheet", animation: { fps: 30, frames: [1, 2] } } } },
+      { id: "driven", components: { sprite: { asset: "sheet", frameState: "pose" }, behavior: { module: "driver", state: { pose: 7 } } } },
+      { id: "whole", components: { sprite: { asset: "plain", size: [10, 20] } } },
+    ],
+  };
+
+  it("selects frames, source rectangles, size, flip and anchor", async () => {
+    const rt = await Runtime.create(project(scene, { manifest: m, behaviors: { driver: jsBehavior(() => ({})) } }));
+    const sprites = () => Object.fromEntries(rt.frame().items.flatMap((i) => (i.kind === "sprite" ? [[i.entity, i]] : [])));
+    let s = sprites();
+    assert.equal(s.still!.frame, 4);
+    assert.deepEqual(s.still!.source, [16, 8, 16, 8]); // frame 4 = column 1, row 1
+    assert.deepEqual(s.still!.size, [16, 8]);
+    assert.deepEqual(s.still!.anchor, [0, 1]);
+    assert.equal(s.still!.matrix[0], -1, "flipX mirrors horizontally");
+    assert.equal(s.still!.pixelated, true);
+    assert.equal(s.driven!.frame, 2, "frameState wraps around the frame count (7 % 5)");
+    assert.equal(s.whole!.source, undefined);
+    assert.deepEqual(s.whole!.size, [10, 20]);
+    assert.equal(s.anim!.frame, 1);
+    rt.step();
+    rt.step(); // 2 ticks at 60 Hz = 1 frame at 30 fps
+    s = sprites();
+    assert.equal(s.anim!.frame, 2);
+    rt.step();
+    rt.step();
+    assert.equal(sprites().anim!.frame, 1, "animation loops");
+  });
+
+  it("animates spawned entities from their spawn tick", async () => {
+    const spawner = jsBehavior((h) => ({ ms_update: () => { if (h.time() < 0.02) h.spawn(0); } }));
+    const mm = { ...m, behaviors: { spawner: { wasm: "s.wasm", prefabs: ["puff"] } } };
+    const sc: SceneSource = { format: 1, entities: [{ id: "s", components: { behavior: { module: "spawner" } } }] };
+    const rt = await Runtime.create(project(sc, { manifest: mm, behaviors: { spawner } }));
+    for (let i = 0; i < 4; i++) rt.step();
+    rt.step();
+    const puff = rt.frame().items.find((i) => i.entity === "puff-1");
+    assert.equal(puff?.kind === "sprite" && puff.frame, 4, "born at tick 1, 4 ticks later at 60 fps = frame 4");
+    for (let i = 0; i < 10; i++) rt.step();
+    const held = rt.frame().items.find((i) => i.entity === "puff-1");
+    assert.equal(held?.kind === "sprite" && held.frame, 4, "loop: false holds the last frame");
+  });
+});

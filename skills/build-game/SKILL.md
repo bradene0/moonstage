@@ -8,8 +8,9 @@ description: Turn a game or interactive-experience request into a working Moonst
 Work in small verified steps. Never hand off a project that you have not validated and tested.
 
 1. **Capabilities**: `moonstage describe --json`. Note `components`, `behaviorAbi.imports` and
-   `plugin.capabilities`. Built-in rendering covers `shape` (rect/circle/polygon) and `text`. Anything
-   else (physics engine, 3D, sprites, audio) needs a plugin: see [author-plugin](../author-plugin/SKILL.md).
+   `plugin.capabilities`. Built-in rendering covers `shape` (rect/circle/polygon), `text` and `sprite`
+   (images and sprite sheets declared under `assets`). Anything else (physics engine, 3D, audio) needs a
+   plugin: see [author-plugin](../author-plugin/SKILL.md).
 2. **Project**: if none exists, follow [create-project](../create-project/SKILL.md). Then run
    `moonstage inspect --json` to see the current state.
 3. **Design the data first**:

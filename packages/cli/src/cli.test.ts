@@ -64,6 +64,7 @@ describe("moonstage CLI", () => {
     const scenePath = join(dir, "scenes", "main.scene.json");
     const scene = JSON.parse(readFileSync(scenePath, "utf8"));
     scene.entities.find((e: { id: string }) => e.id === "flame").parent = "ghost";
+    rmSync(join(dir, "assets", "crystal.png"));
     scene.entities.find((e: { id: string }) => e.id === "lander").components.behavior.params.thrustt = 1;
     writeFileSync(scenePath, JSON.stringify(scene));
     const r = cli("validate", dir, "--json");
@@ -73,6 +74,7 @@ describe("moonstage CLI", () => {
     assert.equal(byCode.MS2002.file, "scenes/main.scene.json");
     assert.equal(byCode.MS2006.entity, "lander");
     assert.ok(byCode.MS2006.hint);
+    assert.equal(byCode.MS1003.path, "assets.crystal.path");
   });
 
   it("builds MoonBit behaviors and a web bundle", moon, () => {
@@ -114,6 +116,8 @@ describe("moonstage CLI", () => {
     assert.match(svg, /^<svg /);
     assert.match(svg, /data-entity="lander"/);
     assert.match(svg, />Crystals: 0</);
+    assert.match(svg, /<image id="asset-crystal" href="data:image\/png;base64,[A-Za-z0-9+/=]+" width="64" height="16"/);
+    assert.match(svg, /data-entity="crystal-1" data-frame="\d"/);
     assert.doesNotMatch(svg, /data-entity="flame"/, "flame is inactive without thrust");
   });
 

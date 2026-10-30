@@ -33,7 +33,9 @@ Create `tests/<name>.test.json` (the schema is `schemas/test.schema.json`):
 ## Render
 
 - `moonstage render --tick 120 --output frame.svg`: an SVG with one element per draw item. Each element
-  has a `data-entity` attribute, so you can search the file for entity ids.
+  has a `data-entity` attribute, so you can search the file for entity ids. Sprites also carry `data-frame`.
+  Images are embedded, so the file is self-contained; a magenta box with `data-missing-asset` marks an
+  image that could not be read.
 - `--output -` prints the SVG to stdout. `--json` reports `items`, `entities` and `camera`.
 - Render the important moments (start, after the key input, after an event) and check visibility,
   camera framing and HUD text (for example `Crystals: 1`).

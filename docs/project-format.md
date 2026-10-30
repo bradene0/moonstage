@@ -28,7 +28,21 @@ A project is a folder. All paths are relative to the project root. The canonical
 - `prefabs` are entity templates (an entity without `id` or `parent`). Behaviors that list a prefab in their
   `prefabs` can spawn it, and plugins with `world.write` can too. Spawned copies get ids `<prefab>-<n>`.
 - `plugins` lists plugins to load. See [plugins.md](plugins.md).
-- `assets` is reserved for the asset registry and is not used by the built-in renderers yet.
+- `assets` declares files by id. Images (`.png`, `.jpg`, `.gif`, `.webp`, `.svg`, or `"type": "image"`) can be
+  drawn with the `sprite` component. Plugins may define other asset types.
+
+  ```json
+  "assets": {
+    "crystal": {
+      "path": "assets/crystal.png",
+      "frame": { "width": 16, "height": 16, "columns": 4, "count": 4 },
+      "pixelated": true
+    }
+  }
+  ```
+
+  `frame` describes a sprite sheet of equal-size frames, numbered left to right, top to bottom.
+  `pixelated` turns off smoothing when scaled, for pixel art.
 
 ## Scenes
 
@@ -60,7 +74,12 @@ Entities update and draw in scene order, unless `layer` says otherwise.
 | `shape` | `kind` (`rect` \| `circle` \| `polygon`), `size` (rect), `radius` (circle), `points` (polygon), `fill`, `stroke`, `strokeWidth`, `opacity`, `layer`, `space` (`world` \| `screen`) |
 | `text` | `value`, `size`, `fill`, `align`, `opacity`, `layer`, `space`. `{entityId.stateName}` in `value` is replaced with live state. |
 | `behavior` | `module`, `params` {name: number}, `refs` {name: entityId}, `state` {name: initial number}. Can also be a list of these; they run in order and share state. |
+| `sprite` | `asset`, `size` (default: frame size or natural size), `anchor` [0..1, 0..1] (default center), `frame`, `frameState` (a state name whose value picks the frame), `animation` {`fps`, `frames`, `loop`}, `flipX`, `flipY`, `opacity`, `layer`, `space` |
 | `camera` | `zoom`. The scene's `camera` entity is centered in the view. |
+
+A sprite picks its frame from `frameState` first, then `animation` (played on simulation time, counted from
+when the entity was created), then `frame`. Animation is deterministic, so tests and `moonstage render` see
+exactly the frame a player would.
 
 `extensions.<plugin>` holds plugin-owned data. The plugin validates it.
 

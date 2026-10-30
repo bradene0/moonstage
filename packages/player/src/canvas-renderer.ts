@@ -1,11 +1,18 @@
 /** Canvas 2D implementation of the core Renderer interface. */
 
-import type { DrawItem, RenderFrame, Renderer } from "@moonstage/core";
+import type { DrawItem, RenderFrame, Renderer, SpriteItem } from "@moonstage/core";
+
+/** Loaded images by asset id. Anything drawImage accepts (HTMLImageElement, ImageBitmap, ...). */
+export type ImageMap = ReadonlyMap<string, CanvasImageSource & { width: number; height: number }>;
 
 export class CanvasRenderer implements Renderer {
   private readonly ctx: CanvasRenderingContext2D;
+  private readonly warned = new Set<string>();
 
-  constructor(readonly canvas: HTMLCanvasElement) {
+  constructor(
+    readonly canvas: HTMLCanvasElement,
+    private readonly images: ImageMap = new Map(),
+  ) {
     const ctx = canvas.getContext("2d");
     if (ctx === null) throw new Error("Canvas 2D is not available");
     this.ctx = ctx;
@@ -41,6 +48,10 @@ export class CanvasRenderer implements Renderer {
       ctx.fillText(item.text, 0, 0);
       return;
     }
+    if (item.kind === "sprite") {
+      this.drawSprite(item);
+      return;
+    }
 
     ctx.beginPath();
     if (item.kind === "rect") {
@@ -62,6 +73,31 @@ export class CanvasRenderer implements Renderer {
       ctx.strokeStyle = item.stroke;
       ctx.lineWidth = item.strokeWidth ?? 1;
       ctx.stroke();
+    }
+  }
+
+  private drawSprite(item: SpriteItem): void {
+    const { ctx } = this;
+    const image = this.images.get(item.asset);
+    const [w, h] = item.size ?? (image ? [image.width, image.height] : [16, 16]);
+    const x = -item.anchor[0] * w;
+    const y = -item.anchor[1] * h;
+    if (image === undefined) {
+      // Visible placeholder so a missing image is obvious rather than silent.
+      if (!this.warned.has(item.asset)) {
+        this.warned.add(item.asset);
+        console.warn(`moonstage: image for asset "${item.asset}" is not loaded`);
+      }
+      ctx.fillStyle = "#ff00ff";
+      ctx.fillRect(x, y, w, h);
+      return;
+    }
+    ctx.imageSmoothingEnabled = !item.pixelated;
+    if (item.source) {
+      const [sx, sy, sw, sh] = item.source;
+      ctx.drawImage(image, sx, sy, sw, sh, x, y, w, h);
+    } else {
+      ctx.drawImage(image, x, y, w, h);
     }
   }
 }

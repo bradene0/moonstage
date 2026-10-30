@@ -23,6 +23,7 @@ export {
   validateProjectSemantics,
   inputNames,
   behaviorsOf,
+  isImageAsset,
   TEXT_BINDING,
   type ProjectManifest,
   type BehaviorModuleDecl,
@@ -35,6 +36,8 @@ export {
   type TextComponent,
   type BehaviorComponent,
   type CameraComponent,
+  type SpriteComponent,
+  type AssetDecl,
   type TestSource,
   type Assertion,
   type Comparison,
@@ -72,6 +75,7 @@ export {
 export { Runtime, type LoadedProject, type RuntimeOptions, type Snapshot } from "./runtime.js";
 export {
   buildFrame,
+  spriteFrame,
   type RenderFrame,
   type Renderer,
   type DrawItem,
@@ -79,6 +83,7 @@ export {
   type CircleItem,
   type PolygonItem,
   type TextItem,
+  type SpriteItem,
 } from "./render.js";
 export {
   loadProject,

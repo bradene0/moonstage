@@ -38,6 +38,8 @@ export interface Entity {
   readonly extensions: Readonly<Record<string, Record<string, unknown>>>;
   /** Name of the prefab this entity was spawned from, if any. */
   readonly prefab: string | undefined;
+  /** Tick the entity was created at (0 for scene entities). Sprite animations count from here. */
+  born: number;
 }
 
 function transformFrom(source: PrefabSource): Transform {
@@ -85,6 +87,7 @@ export class World {
       components: source.components ?? {},
       extensions: source.extensions ?? {},
       prefab,
+      born: 0,
     };
     this.slots.push(entity);
     this.entities.push(entity);

@@ -257,6 +257,107 @@
             }
           ]
         },
+        "sprite": {
+          "type": "object",
+          "required": [
+            "asset"
+          ],
+          "additionalProperties": false,
+          "description": "Image renderable from an asset. Draws one frame of a sprite sheet, optionally animated.",
+          "properties": {
+            "asset": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Asset id declared in moonstage.json."
+            },
+            "size": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "Drawn size in pixels (default: frame size, or the image's natural size)."
+            },
+            "anchor": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "Point of the image placed at the entity origin, 0..1 (default [0.5, 0.5])."
+            },
+            "frame": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Frame to draw (default 0)."
+            },
+            "frameState": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Use this entity state value as the frame; lets behaviors drive it."
+            },
+            "animation": {
+              "type": "object",
+              "required": [
+                "fps"
+              ],
+              "additionalProperties": false,
+              "description": "Play frames on simulation time, counted from when the entity was created.",
+              "properties": {
+                "fps": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "frames": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minItems": 1,
+                  "description": "Default: every frame."
+                },
+                "loop": {
+                  "type": "boolean",
+                  "description": "Default true; false holds the last frame."
+                }
+              }
+            },
+            "flipX": {
+              "type": "boolean"
+            },
+            "flipY": {
+              "type": "boolean"
+            },
+            "opacity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "layer": {
+              "type": "integer"
+            },
+            "space": {
+              "enum": [
+                "world",
+                "screen"
+              ],
+              "description": "'world' (default) is transformed by the camera; 'screen' is fixed to the viewport."
+            }
+          }
+        },
         "camera": {
           "type": "object",
           "additionalProperties": false,

@@ -508,29 +508,15 @@
             820
           ]
         },
-        "shape": {
-          "kind": "polygon",
-          "points": [
-            [
-              0,
-              -12
-            ],
-            [
-              9,
-              0
-            ],
-            [
-              0,
-              12
-            ],
-            [
-              -9,
-              0
-            ]
+        "sprite": {
+          "asset": "crystal",
+          "size": [
+            28,
+            28
           ],
-          "fill": "#7df9ff",
-          "stroke": "#e0ffff",
-          "strokeWidth": 1,
+          "animation": {
+            "fps": 8
+          },
           "layer": 3
         },
         "behavior": [
@@ -568,29 +554,15 @@
             760
           ]
         },
-        "shape": {
-          "kind": "polygon",
-          "points": [
-            [
-              0,
-              -12
-            ],
-            [
-              9,
-              0
-            ],
-            [
-              0,
-              12
-            ],
-            [
-              -9,
-              0
-            ]
+        "sprite": {
+          "asset": "crystal",
+          "size": [
+            28,
+            28
           ],
-          "fill": "#7df9ff",
-          "stroke": "#e0ffff",
-          "strokeWidth": 1,
+          "animation": {
+            "fps": 8
+          },
           "layer": 3
         },
         "behavior": [
@@ -628,29 +600,15 @@
             420
           ]
         },
-        "shape": {
-          "kind": "polygon",
-          "points": [
-            [
-              0,
-              -12
-            ],
-            [
-              9,
-              0
-            ],
-            [
-              0,
-              12
-            ],
-            [
-              -9,
-              0
-            ]
+        "sprite": {
+          "asset": "crystal",
+          "size": [
+            28,
+            28
           ],
-          "fill": "#7df9ff",
-          "stroke": "#e0ffff",
-          "strokeWidth": 1,
+          "animation": {
+            "fps": 8
+          },
           "layer": 3
         },
         "behavior": [
@@ -688,29 +646,15 @@
             500
           ]
         },
-        "shape": {
-          "kind": "polygon",
-          "points": [
-            [
-              0,
-              -12
-            ],
-            [
-              9,
-              0
-            ],
-            [
-              0,
-              12
-            ],
-            [
-              -9,
-              0
-            ]
+        "sprite": {
+          "asset": "crystal",
+          "size": [
+            28,
+            28
           ],
-          "fill": "#7df9ff",
-          "stroke": "#e0ffff",
-          "strokeWidth": 1,
+          "animation": {
+            "fps": 8
+          },
           "layer": 3
         },
         "behavior": [
@@ -748,29 +692,15 @@
             300
           ]
         },
-        "shape": {
-          "kind": "polygon",
-          "points": [
-            [
-              0,
-              -12
-            ],
-            [
-              9,
-              0
-            ],
-            [
-              0,
-              12
-            ],
-            [
-              -9,
-              0
-            ]
+        "sprite": {
+          "asset": "crystal",
+          "size": [
+            28,
+            28
           ],
-          "fill": "#7df9ff",
-          "stroke": "#e0ffff",
-          "strokeWidth": 1,
+          "animation": {
+            "fps": 8
+          },
           "layer": 3
         },
         "behavior": [

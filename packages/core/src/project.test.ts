@@ -96,6 +96,25 @@ describe("project validation", () => {
     assert.equal(bad[0]!.path, "entities[0].components.behavior[0].oops");
   });
 
+  it("validates sprite assets and frames", () => {
+    const m = manifest({
+      assets: { sheet: { path: "a.png", frame: { width: 8, height: 8, columns: 2 } }, sound: { path: "a.ogg" } },
+      behaviors: { b: { source: "b", state: ["pose"] } },
+    });
+    const scene: SceneSource = {
+      format: 1,
+      entities: [
+        { id: "ok", components: { sprite: { asset: "sheet", frame: 1, frameState: "pose" }, behavior: { module: "b" } } },
+        { id: "missing", components: { sprite: { asset: "nope" } } },
+        { id: "notImage", components: { sprite: { asset: "sound" } } },
+        { id: "tooFar", components: { sprite: { asset: "sheet", animation: { fps: 1, frames: [0, 2] } } } },
+        { id: "noState", components: { sprite: { asset: "sheet", frameState: "pose" } } },
+      ],
+    };
+    const found = validateProjectSemantics(m, { main: scene }).map((d) => `${d.code}:${d.entity}`);
+    assert.deepEqual(found.sort(), ["MS2012:noState", "MS2015:missing", "MS2015:notImage", "MS2015:tooFar"]);
+  });
+
   it("requires exactly one of source or wasm for behaviors", () => {
     const both = manifest({ behaviors: { x: { source: "a", wasm: "b.wasm" } } });
     assert.ok(codes(validateProjectSemantics(both, {})).includes("MS1001"));
