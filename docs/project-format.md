@@ -81,7 +81,20 @@ Entities update and draw in scene order, unless `layer` says otherwise.
 | `text` | `value`, `size`, `fill`, `align`, `opacity`, `layer`, `space`. `{entityId.stateName}` in `value` is replaced with live state. |
 | `behavior` | `module`, `params` {name: number}, `refs` {name: entityId}, `state` {name: initial number}. Can also be a list of these; they run in order and share state. |
 | `sprite` | `asset`, `size` (default: frame size or natural size), `anchor` [0..1, 0..1] (default center), `frame`, `frameState` (a state name whose value picks the frame), `animation` {`fps`, `frames`, `loop`, `offset`: frames or `"auto"` for a stable per-entity offset}, `flipX`, `flipY`, `opacity`, `layer`, `space` |
+| `tilemap` | `tileSize` [w, h], `rows` (one string per row, one character per tile), `tiles` {char: {`fill` \| `asset` + `frame`, `solid`}}, `opacity`, `layer` |
 | `camera` | `zoom`. The scene's `camera` entity is centered in the view. |
+
+A tilemap draws its grid with the entity position as the top-left corner; a space or an unknown character is
+an empty tile (unknown characters warn, `MS2020`). Solid tiles block bodies of the physics provider and make
+`@sdk.tile_solid(x, y)` true, so behaviors without physics can collide with walls too:
+
+```json
+"tilemap": {
+  "tileSize": [40, 40],
+  "rows": ["#####", "#..g#", "#####"],
+  "tiles": { "#": { "fill": "#334155", "solid": true }, ".": { "fill": "#1e293b" }, "g": { "asset": "tiles", "frame": 2 } }
+}
+```
 
 A sprite picks its frame from `frameState` first, then `animation` (played on simulation time, counted from
 when the entity was created), then `frame`. Animation is deterministic, so tests and `moonstage render` see

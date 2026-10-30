@@ -87,6 +87,9 @@ fn host_is_prefab(entity : Int32, prefab : Int32) -> Int32 = "moonstage" "is_pre
 fn host_count_tagged(tag : Int32) -> Int32 = "moonstage" "count_tagged"
 
 ///|
+fn host_tile_solid(x : Double, y : Double) -> Int32 = "moonstage" "tile_solid"
+
+///|
 fn host_nth_tagged(tag : Int32, n : Int32) -> Int32 = "moonstage" "nth_tagged"
 
 ///|
@@ -295,6 +298,13 @@ pub fn store_save(slot : Int32, value : Double) -> Unit {
 /// Use it to tell what a collision event's other entity is.
 pub fn is_prefab(entity : Int32, prefab : Int32) -> Bool {
   entity >= 0 && host_is_prefab(entity, prefab) != 0
+}
+
+///|
+/// True when a solid tile of any active tilemap covers world point (x, y). Check the point you are about
+/// to move to (or each corner of your box) before moving there.
+pub fn tile_solid(x : Double, y : Double) -> Bool {
+  host_tile_solid(x, y) != 0
 }
 
 ///|

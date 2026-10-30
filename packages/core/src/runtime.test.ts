@@ -5,6 +5,7 @@ import { definePlugin, type PluginContext } from "./plugin.js";
 import type { SceneSource } from "./project.js";
 import { Runtime } from "./runtime.js";
 import { runTest } from "./testing.js";
+import { validateProjectSemantics } from "./project.js";
 import { jsBehavior, manifest, minimalWasm, project } from "./test-helpers.test.js";
 
 const moverManifest = manifest({
@@ -806,5 +807,44 @@ describe("tag queries (ABI 5)", () => {
     assert.deepEqual(seen[0], [2, 1, 2, -1, 2], "two tagged; nearest is 'near'; past the end is -1");
     assert.deepEqual(seen[1], [2, 1, 4, -1, 1], "'near' removed, the spawned brick counts; 'far' is now nearest");
     assert.deepEqual(rt.tagged("block").map((e) => e.id), ["far", "brick-1"]);
+  });
+});
+
+describe("tilemaps", () => {
+  const map = {
+    tileSize: [10, 10] as [number, number],
+    rows: ["##..#", "#   x"],
+    tiles: { "#": { fill: "#445566", solid: true }, ".": { fill: "#112233" }, x: { fill: "#445566" } },
+  };
+  const scene: SceneSource = {
+    format: 1,
+    entities: [
+      { id: "probe", components: { behavior: { module: "probe" } } },
+      { id: "level", components: { transform: { position: [100, 50] }, tilemap: map } },
+    ],
+  };
+  const m = manifest({ behaviors: { probe: { wasm: "p.wasm" } } });
+
+  it("draws rows as merged rects and answers tile_solid in world space", async () => {
+    const hits: number[] = [];
+    const probe = jsBehavior((h) => ({
+      ms_update() {
+        for (const [x, y] of [[105, 55], [125, 55], [145, 55], [115, 65], [145, 65], [99, 55]] as const) hits.push(h.tile_solid(x, y));
+      },
+    }));
+    const rt = await Runtime.create(project(scene, { manifest: m, behaviors: { probe } }));
+    rt.step();
+    assert.deepEqual(hits, [1, 0, 1, 0, 0, 0], "solid '#', open '.', solid '#', empty ' ', non-solid 'x', outside");
+    const rects = rt.frame(1).items.filter((i) => i.kind === "rect");
+    // Row 0: "##" merged, ".." merged, "#"; row 1: "#", "x" (same fill as '#' but not adjacent).
+    assert.deepEqual(rects.map((r) => (r.kind === "rect" ? r.size[0] : 0)), [20, 20, 10, 10, 10]);
+    assert.deepEqual([rects[0]!.matrix[4], rects[0]!.matrix[5]], [110, 55], "centered on the merged tiles, offset by the entity");
+  });
+
+  it("warns about characters missing from tiles", () => {
+    const bad: SceneSource = { format: 1, entities: [{ id: "level", components: { tilemap: { ...map, rows: ["#?#", "!  "] } } }] };
+    const found = validateProjectSemantics(manifest(), { main: bad }).filter((d) => d.code === "MS2020");
+    assert.equal(found.length, 1);
+    assert.match(found[0]!.message, /"\?", "!"/);
   });
 });

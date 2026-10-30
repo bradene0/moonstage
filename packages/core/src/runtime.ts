@@ -39,7 +39,8 @@ import {
   type PluginLoadContext,
   type TransformPatch,
 } from "./plugin.js";
-import { behaviorsOf, inputNames, type Assertion, type ProjectManifest, type SceneSource, type TestSource } from "./project.js";
+import { behaviorsOf, inputNames, tileAt, type Assertion, type ProjectManifest, type SceneSource, type TestSource } from "./project.js";
+import { apply, invert } from "./math.js";
 import { createRandom, type Random } from "./random.js";
 import { buildFrame, type RenderFrame } from "./render.js";
 import { validateSchema } from "./schema/validate.js";
@@ -368,6 +369,7 @@ export class Runtime {
       save_get: (slot) => this.saves.get(this.slotName(iface.saves, slot, "save")) ?? 0,
       save_set: (slot, value) => this.setSave(this.slotName(iface.saves, slot, "save"), value),
       is_prefab: (entity, slot) => (this.entityAt(entity).prefab === this.slotName(iface.prefabs, slot, "prefab") ? 1 : 0),
+      tile_solid: (x, y) => (this.solidAt(x, y) ? 1 : 0),
       count_tagged: (slot) => this.tagged(this.slotName(iface.tags, slot, "tag")).length,
       nth_tagged: (slot, n) => this.tagged(this.slotName(iface.tags, slot, "tag"))[Math.trunc(n)]?.handle ?? -1,
       nearest_tagged: (slot, entity) => {
@@ -381,6 +383,17 @@ export class Runtime {
         return best;
       },
     };
+  }
+
+  /** True when a solid tile of an active tilemap covers world point (x, y). */
+  solidAt(x: number, y: number): boolean {
+    for (const e of this.world.entities) {
+      const map = e.components.tilemap;
+      if (map === undefined || !this.exists(e.handle) || !this.world.activeInHierarchy(e.handle)) continue;
+      const [lx, ly] = apply(invert(this.world.worldMatrix(e.handle)), x, y);
+      if (tileAt(map, lx, ly)?.solid === true) return true;
+    }
+    return false;
   }
 
   /** Live entities (not being removed) with a tag, in world order. */
@@ -493,6 +506,7 @@ export class Runtime {
       entities: () => this.world.entities.filter((e) => this.world.activeInHierarchy(e.handle)).map((e) => e.id),
       withExtension: () => this.world.entities.filter((e) => name in e.extensions).map((e) => e.id),
       tagged: (tag: string) => this.tagged(tag).map((e) => e.id),
+      tileSolid: (x: number, y: number) => this.solidAt(x, y),
       extension: (id: string) => entity(id).extensions[name],
       transform: (id: string) => ({ ...entity(id).transform }),
       state: (id: string, key: string) => entity(id).state.get(key) ?? 0,

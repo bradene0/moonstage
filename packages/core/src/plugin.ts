@@ -50,6 +50,8 @@ export interface PluginContext {
     withExtension(): string[];
     /** API 4: ids of live entities with a tag, in world order. */
     tagged(tag: string): string[];
+    /** API 4: true when a solid tile of an active tilemap covers world point (x, y). */
+    tileSolid(x: number, y: number): boolean;
     /** This plugin's extension data on an entity. */
     extension(id: string): Readonly<Record<string, unknown>> | undefined;
     transform(id: string): Transform;

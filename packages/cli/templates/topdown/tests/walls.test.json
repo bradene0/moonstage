@@ -1,0 +1,10 @@
+{
+  "format": 1,
+  "name": "walls block the player, and pushing diagonally into one slides along it",
+  "ticks": 60,
+  "input": [{ "tick": 0, "set": { "moveY": 1, "moveX": 1 } }],
+  "expect": [
+    { "target": "player", "property": "transform.position.y", "approx": 548, "tolerance": 0.5 },
+    { "target": "player", "property": "transform.position.x", "approx": 540, "tolerance": 0.5 }
+  ]
+}

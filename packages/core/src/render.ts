@@ -8,7 +8,7 @@
  */
 
 import { compose, lerp, multiply, type Matrix } from "./math.js";
-import { TEXT_BINDING, type AssetDecl, type SpriteComponent, type Vec2 } from "./project.js";
+import { TEXT_BINDING, type AssetDecl, type SpriteComponent, type TilemapComponent, type Vec2 } from "./project.js";
 import type { Entity } from "./world.js";
 import type { Runtime } from "./runtime.js";
 
@@ -119,6 +119,50 @@ export function spriteFrame(sprite: SpriteComponent, asset: AssetDecl | undefine
   return sprite.frame ?? 0;
 }
 
+/**
+ * Draw items for a tilemap: neighbouring tiles with the same fill in a row merge into one rect, and
+ * sprite tiles draw one frame each. `matrix` places the map's top-left corner.
+ */
+function tilemapItems(rt: Runtime, entity: string, map: TilemapComponent, matrix: Matrix): DrawItem[] {
+  const [tw, th] = map.tileSize;
+  const items: DrawItem[] = [];
+  const base = { entity, layer: map.layer ?? 0, opacity: map.opacity ?? 1 };
+  const at = (x: number, y: number): Matrix => multiply(matrix, [1, 0, 0, 1, x, y]);
+  map.rows.forEach((row, r) => {
+    let c = 0;
+    while (c < row.length) {
+      const tile = map.tiles[row[c]!];
+      if (tile?.asset !== undefined) {
+        const asset = rt.manifest.assets?.[tile.asset];
+        const f = asset?.frame;
+        const frame = tile.frame ?? 0;
+        const columns = f?.columns ?? 1;
+        items.push({
+          ...base,
+          kind: "sprite",
+          matrix: at(c * tw + tw / 2, r * th + th / 2),
+          asset: tile.asset,
+          size: [tw, th],
+          anchor: [0.5, 0.5],
+          source: f ? [(frame % columns) * f.width, Math.floor(frame / columns) * f.height, f.width, f.height] : undefined,
+          frame,
+          pixelated: asset?.pixelated ?? false,
+        });
+        c += 1;
+      } else if (tile?.fill !== undefined) {
+        let end = c + 1;
+        while (end < row.length && map.tiles[row[end]!]?.asset === undefined && map.tiles[row[end]!]?.fill === tile.fill) end += 1;
+        const width = (end - c) * tw;
+        items.push({ ...base, kind: "rect", matrix: at(c * tw + width / 2, r * th + th / 2), size: [width, th], fill: tile.fill });
+        c = end;
+      } else {
+        c += 1;
+      }
+    }
+  });
+  return items;
+}
+
 function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
 }
@@ -149,10 +193,15 @@ export function buildFrame(rt: Runtime, alpha: number): RenderFrame {
   const items: DrawItem[] = [];
   const matrices = new Map<number, Matrix>();
   for (const e of world.entities) {
-    const { shape, text, sprite } = e.components;
+    const { shape, text, sprite, tilemap } = e.components;
     const drawnBy = rt.drawingPlugins.filter((p) => e.extensions[p] !== undefined);
-    if ((shape === undefined && text === undefined && sprite === undefined && drawnBy.length === 0) || !world.activeInHierarchy(e.handle)) continue;
+    if (
+      (shape === undefined && text === undefined && sprite === undefined && tilemap === undefined && drawnBy.length === 0) ||
+      !world.activeInHierarchy(e.handle)
+    )
+      continue;
     const local = world.worldMatrix(e.handle, alpha, matrices);
+    if (tilemap !== undefined) items.push(...tilemapItems(rt, e.id, tilemap, multiply(view, local)));
     if (shape !== undefined) {
       const base = {
         entity: e.id,

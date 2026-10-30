@@ -92,9 +92,9 @@ function imageDefs(ids: Iterable<string>, images: ReadonlyMap<string, SvgImage>)
   return defs.length > 0 ? ["<defs>", ...defs, "</defs>"] : [];
 }
 
-/** A frame's background and items, without the surrounding <svg> or image definitions. */
-export function frameBody(frame: RenderFrame, images: ReadonlyMap<string, SvgImage>, drawCustom: SvgCustomDraw = () => undefined): string {
-  return [`<rect width="100%" height="100%" fill="${frame.background}"/>`, ...frame.items.map((item) => element(item, images, drawCustom))].join("\n");
+/** A frame's background and items as SVG elements, without the surrounding <svg> or image definitions. */
+export function frameElements(frame: RenderFrame, images: ReadonlyMap<string, SvgImage>, drawCustom: SvgCustomDraw = () => undefined): string[] {
+  return [`<rect width="100%" height="100%" fill="${frame.background}"/>`, ...frame.items.map((item) => element(item, images, drawCustom))];
 }
 
 export function renderSvg(
@@ -105,7 +105,7 @@ export function renderSvg(
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${frame.width}" height="${frame.height}" viewBox="0 0 ${frame.width} ${frame.height}" data-tick="${frame.tick}">`,
     ...imageDefs(usedImages(frame, images), images),
-    frameBody(frame, images, drawCustom),
+    ...frameElements(frame, images, drawCustom),
     "</svg>",
     "",
   ].join("\n");
@@ -114,25 +114,33 @@ export function renderSvg(
 /**
  * An animated SVG that plays captured frames in a loop, for `moonstage record`. The frames sit side by
  * side in a strip (each clipped to the view) and one CSS animation steps the strip across the view, so it
- * plays in any browser without scripts.
+ * plays in any browser without scripts. Elements that appear in several frames unchanged (walls, tiles,
+ * the HUD while it is still) are defined once and reused.
  */
 export function renderAnimatedSvg(
   width: number,
   height: number,
-  frames: { tick: number; body: string }[],
+  frames: { tick: number; elements: string[] }[],
   fps: number,
   imageIds: Iterable<string>,
   images: ReadonlyMap<string, SvgImage>,
 ): string {
   const n = frames.length;
+  const uses = new Map<string, number>();
+  for (const f of frames) for (const e of f.elements) uses.set(e, (uses.get(e) ?? 0) + 1);
+  const shared = new Map<string, string>();
+  for (const [e, count] of uses) if (count > 1 && e.length > 24) shared.set(e, `e${shared.size}`);
+  const defs = imageDefs(imageIds, images);
+  const reused = [...shared].map(([e, id]) => `<g id="${id}">${e}</g>`);
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" data-frames="${n}" data-fps="${fps}">`,
     `<style>@keyframes ms-play { to { transform: translateX(${-n * width}px) } } .ms-strip { animation: ms-play ${num(n / fps)}s steps(${n}) infinite }</style>`,
-    ...imageDefs(imageIds, images),
+    ...(defs.length > 0 ? [...defs.slice(0, -1), ...reused, "</defs>"] : reused.length > 0 ? ["<defs>", ...reused, "</defs>"] : []),
     `<g class="ms-strip">`,
-    ...frames.map(
-      (f, i) => `<svg x="${i * width}" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" overflow="hidden" data-tick="${f.tick}">\n${f.body}\n</svg>`,
-    ),
+    ...frames.map((f, i) => {
+      const body = f.elements.map((e) => (shared.has(e) ? `<use href="#${shared.get(e)}"/>` : e)).join("\n");
+      return `<svg x="${i * width}" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" overflow="hidden" data-tick="${f.tick}">\n${body}\n</svg>`;
+    }),
     "</g>",
     "</svg>",
     "",

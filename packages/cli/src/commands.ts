@@ -52,7 +52,7 @@ import { buildMoonbitBehaviors, findMoon } from "./moonbit.js";
 import { EXIT, formatDiagnostic, result, type CommandResult } from "./output.js";
 import { ioFor, isPackage, load, loadTests, projectRoot, resolvePlugin } from "./project-io.js";
 import { slotCollisions, staleSlotFiles, writeSlotFiles } from "./slots.js";
-import { frameBody, renderAnimatedSvg, renderSvg, svgImage, usedImages, type SvgImage } from "./svg.js";
+import { frameElements, renderAnimatedSvg, renderSvg, svgImage, usedImages, type SvgImage } from "./svg.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -71,7 +71,7 @@ export const COMMANDS: CommandSpec[] = [
   {
     name: "new",
     summary: "Create a new project from a template: minimal (default), platformer or shooter.",
-    usage: "moonstage new <dir> [--template minimal|platformer|shooter] [--name <name>] [--json]",
+    usage: "moonstage new <dir> [--template minimal|platformer|shooter|topdown] [--name <name>] [--json]",
   },
   { name: "validate", summary: "Validate project files, references, plugins and tests.", usage: "moonstage validate [dir] [--json]" },
   { name: "inspect", summary: "Summarize scenes, entities, behaviors and plugins.", usage: "moonstage inspect [dir] [--json]" },
@@ -323,6 +323,7 @@ export const TEMPLATES = {
   minimal: "One moving square and a MoonBit behavior: the smallest working project.",
   platformer: "Run, jump and collect coins on physics platforms, with a following camera and a saved best score.",
   shooter: "Move, fire and destroy falling enemies; lives, game-over scene, restart and a saved best score.",
+  topdown: "Walk a tile maze and collect every gem against the clock; tilemap walls, tagged gems and a saved best time.",
 } as const;
 
 /** Copy a template into an empty directory, filling in placeholders. */
@@ -1161,7 +1162,7 @@ export async function check(opts: { dir?: string; ticks?: string }): Promise<Com
   // Behaviors and slot files are rebuilt now, so validate's "not built" and "slots out of date" warnings
   // no longer apply.
   for (let i = diagnostics.length - 1; i >= 0; i--) if (diagnostics[i]!.code === "MS3001" || diagnostics[i]!.code === "MS3008") diagnostics.splice(i, 1);
-  if (lines[0]?.includes("warning")) lines[0] = lines[0].replace(/ \(\d+ warning\(s\)\)$/, diagnostics.length ? ` (${diagnostics.length} warning(s))` : "");
+  if (lines[0]?.includes("warning")) lines[0] = lines[0].replace(/ \(\d+ warning\(s\)\)$/, diagnostics.some((d) => d.severity === "warning") ? ` (${diagnostics.filter((d) => d.severity === "warning").length} warning(s))` : "");
   const results = (tests.data.results as TestResult[]) ?? [];
   data.testsPassed = tests.data.passed;
   data.testsFailed = tests.data.failed;
@@ -1236,7 +1237,7 @@ export async function record(opts: {
   const fps = int(opts.fps, "fps", 20);
   const images = await svgImages(p.root, p.project);
   const every = Math.max(1, Math.round((p.project.manifest.simulation?.tickRate ?? 60) / fps));
-  const frames: { tick: number; body: string }[] = [];
+  const frames: { tick: number; elements: string[] }[] = [];
   const used = new Set<string>();
   let size = { width: 800, height: 600 };
   const rt = await simulate(p.project, { ...fromTest.opts, ticks }, (rt) => {
@@ -1244,7 +1245,7 @@ export async function record(opts: {
     const frame = rt.frame(1);
     size = { width: frame.width, height: frame.height };
     for (const id of usedImages(frame, images)) used.add(id);
-    frames.push({ tick: frame.tick, body: frameBody(frame, images, (item) => rt.plugin(item.plugin)?.drawSvg?.(item)) });
+    frames.push({ tick: frame.tick, elements: frameElements(frame, images, (item) => rt.plugin(item.plugin)?.drawSvg?.(item)) });
   });
   const actualFps = (p.project.manifest.simulation?.tickRate ?? 60) / every;
   const svg = renderAnimatedSvg(size.width, size.height, frames, actualFps, used, images);

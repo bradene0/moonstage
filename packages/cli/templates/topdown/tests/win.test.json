@@ -1,0 +1,27 @@
+{
+  "format": 1,
+  "name": "collecting the last gem wins, shows the banner and saves a better time",
+  "ticks": 30,
+  "saves": { "best": 99 },
+  "setup": [
+    { "operation": "remove_entity", "target": "gem-2" },
+    { "operation": "remove_entity", "target": "gem-3" },
+    { "operation": "remove_entity", "target": "gem-4" },
+    { "operation": "remove_entity", "target": "gem-5" },
+    { "operation": "remove_entity", "target": "gem-6" },
+    { "operation": "remove_entity", "target": "gem-7" },
+    { "operation": "remove_entity", "target": "gem-8" },
+    {
+      "operation": "set_property",
+      "target": "gem-1",
+      "property": "transform.position",
+      "value": [380, 540]
+    }
+  ],
+  "expect": [
+    { "target": "banner", "property": "active", "equals": true },
+    { "target": "player", "property": "state.won", "equals": 1 },
+    { "save": "best", "lt": 1 },
+    { "target": "player", "property": "state.time", "approx": 0.0167, "tolerance": 0.001 }
+  ]
+}

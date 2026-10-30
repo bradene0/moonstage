@@ -139,6 +139,34 @@ const components = {
         space,
       },
     },
+    tilemap: {
+      type: "object",
+      required: ["tileSize", "rows", "tiles"],
+      additionalProperties: false,
+      description:
+        "A grid of tiles written as text: each character of `rows` is one tile, looked up in `tiles`. The entity position is the map's top-left corner. Solid tiles block physics bodies and answer tile_solid().",
+      properties: {
+        tileSize: { ...vec2, description: "Tile width and height in pixels." },
+        rows: { type: "array", items: { type: "string" }, minItems: 1, description: 'One string per row, e.g. "#..#". Spaces and unknown characters are empty.' },
+        tiles: {
+          type: "object",
+          propertyNames: { minLength: 1, maxLength: 1 },
+          additionalProperties: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              fill: { ...color, description: "Draw the tile as a filled square." },
+              asset: { ...id, description: "Draw the tile from this image asset (a sprite sheet with `frame` set)." },
+              frame: { type: "integer", minimum: 0, description: "Sprite-sheet frame (default 0)." },
+              solid: { type: "boolean", description: "Blocks physics bodies and makes tile_solid() return 1 (default false)." },
+            },
+          },
+          description: 'What each character means, e.g. { "#": { "fill": "#445566", "solid": true } }.',
+        },
+        opacity: { type: "number", minimum: 0, maximum: 1 },
+        layer: { type: "integer" },
+      },
+    },
     physicsBody: {
       type: "object",
       additionalProperties: false,

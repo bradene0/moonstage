@@ -25,6 +25,14 @@ export function apply(m: Matrix, x: number, y: number): [number, number] {
   return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
 }
 
+/** Inverse of an affine matrix (identity when it is singular). */
+export function invert(m: Matrix): Matrix {
+  const [a, b, c, d, e, f] = m;
+  const det = a * d - b * c;
+  if (det === 0) return [1, 0, 0, 1, 0, 0];
+  return [d / det, -b / det, -c / det, a / det, (c * f - d * e) / det, (b * e - a * f) / det];
+}
+
 export function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }

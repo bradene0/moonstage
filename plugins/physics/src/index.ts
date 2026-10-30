@@ -17,7 +17,7 @@
  * (with motors) pin bodies together. Polygons collide as their bounding box.
  */
 
-import type { MoonstagePlugin, PluginContext } from "@moonstage/core";
+import type { MoonstagePlugin, PluginContext, TilemapComponent } from "@moonstage/core";
 
 /** Replaced with the engine's WebAssembly (base64) by scripts/build-physics.mjs. */
 const ENGINE_WASM = "__MOONSTAGE_PHYSICS_ENGINE__";
@@ -110,7 +110,44 @@ export function createPhysicsPlugin(): MoonstagePlugin<{ substeps?: number; iter
       const joints = new Map<string, number>();
       let touching = new Set<string>();
 
+      const tileBodies = new Map<string, number[]>();
+
+      /** Each row's consecutive solid tiles as one rectangle, in the map's local pixels. */
+      const solidRuns = (map: TilemapComponent) => {
+        const [tw, th] = map.tileSize;
+        const runs: { x: number; y: number; width: number; height: number }[] = [];
+        map.rows.forEach((row, r) => {
+          let start = -1;
+          for (let c = 0; c <= row.length; c++) {
+            const solid = c < row.length && map.tiles[row[c]!]?.solid === true;
+            if (solid && start < 0) start = c;
+            if (!solid && start >= 0) {
+              runs.push({ x: start * tw, y: r * th, width: (c - start) * tw, height: th });
+              start = -1;
+            }
+          }
+        });
+        return runs;
+      };
+
+      // A tilemap's solid tiles become static boxes, one per run of solid tiles in a row. Contacts with
+      // them report the tilemap entity.
+      const addTiles = (id: string) => {
+        const map = ctx.world.component(id, "tilemap") as TilemapComponent | undefined;
+        if (map === undefined || tileBodies.has(id)) return;
+        const t = ctx.world.transform(id);
+        const indices = solidRuns(map).map((run) => {
+          const index = engine.add_body(KIND.static, 1, run.width, run.height);
+          engine.set_material(index, 0.3, 0, 0);
+          engine.set_pose(index, t.x + run.x + run.width / 2, t.y + run.y + run.height / 2, 0);
+          byIndex.set(index, { id, index, kind: "static", written: { x: NaN, y: NaN, angle: NaN, vx: NaN, vy: NaN, av: NaN } });
+          return index;
+        });
+        tileBodies.set(id, indices);
+      };
+
       const add = (id: string) => {
+        addTiles(id);
         if (bodies.has(id)) return;
         const spec = ctx.world.component(id, "physicsBody");
         const collider = ctx.world.component(id, "collider");
@@ -166,6 +203,11 @@ export function createPhysicsPlugin(): MoonstagePlugin<{ substeps?: number; iter
       };
 
       const release = (id: string) => {
+        for (const index of tileBodies.get(id) ?? []) {
+          engine.remove_body(index);
+          byIndex.delete(index);
+        }
+        tileBodies.delete(id);
         const body = bodies.get(id);
         if (body === undefined) return;
         engine.remove_body(body.index); // also removes its joints in the engine
@@ -257,6 +299,7 @@ export function createPhysicsPlugin(): MoonstagePlugin<{ substeps?: number; iter
           engine.reset();
           bodies.clear();
           byIndex.clear();
+          tileBodies.clear();
           joints.clear();
           touching = new Set();
         },

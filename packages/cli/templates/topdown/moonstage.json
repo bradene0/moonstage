@@ -1,0 +1,29 @@
+{
+  "format": 1,
+  "name": "__NAME__",
+  "entryScene": "main",
+  "scenes": { "main": "scenes/main.scene.json" },
+  "display": { "width": 800, "height": 600, "background": "#0f172a" },
+  "simulation": { "tickRate": 60, "seed": 1 },
+  "input": {
+    "axes": {
+      "moveX": { "negative": ["ArrowLeft", "KeyA"], "positive": ["ArrowRight", "KeyD"] },
+      "moveY": { "negative": ["ArrowUp", "KeyW"], "positive": ["ArrowDown", "KeyS"] }
+    },
+    "buttons": { "restart": ["KeyR"] }
+  },
+  "behaviors": {
+    "player": {
+      "description": "Walks the maze without entering solid tiles, collects gems, times the run and keeps a saved best time.",
+      "source": "behaviors/player",
+      "params": ["speed", "size", "reach"],
+      "state": ["left", "time", "best", "won"],
+      "refs": ["banner"],
+      "inputs": ["moveX", "moveY", "restart"],
+      "scenes": ["main"],
+      "saves": ["best"],
+      "tags": ["gem"]
+    }
+  },
+  "prefabs": {}
+}

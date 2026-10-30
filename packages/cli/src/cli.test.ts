@@ -413,7 +413,7 @@ describe("moonstage CLI", () => {
     assert.equal(cli("validate", join(scratch, "evil.msp"), "--json").json.diagnostics[0].code, "MS1003");
   });
 
-  for (const template of ["platformer", "shooter"]) {
+  for (const template of ["platformer", "shooter", "topdown"]) {
     it(`creates a ${template} from its template that passes its own tests`, moon, () => {
       const dir = join(scratch, `tpl-${template}`);
       assert.equal(cli("new", dir, "--template", template, "--json").code, 0);

@@ -157,6 +157,20 @@ describe("@moonstage/physics", () => {
     assert.ok(Math.abs(moved - 12) < 1, `the crate rides the slow platform (moved ${moved.toFixed(2)} px of 12)`);
   });
 
+  it("collides with a tilemap's solid tiles", async () => {
+    const level: EntitySource = {
+      id: "level",
+      components: {
+        transform: { position: [-200, 400] },
+        tilemap: { tileSize: [40, 40], rows: ["          ", "##########"], tiles: { "#": { fill: "#555555", solid: true } } },
+      },
+    };
+    const rt = await simulate(world([level, box("crate", 0, 300)]), 120);
+    // The solid row's top is at y = 440; the 40 px crate rests with its center 20 px above it.
+    assert.ok(Math.abs((rt.read("crate", "transform.position.y") as number) - 420) < 1.5, `rests on the tiles (y=${rt.read("crate", "transform.position.y")})`);
+    assert.ok(rt.events.some((e) => e.name === "collision" && e.source === "level"), "contacts report the tilemap entity");
+  });
+
   it("is deterministic and isolates worlds", async () => {
     const make = () => world([ground, box("c1", 0, 100, 0.3), box("c2", 10, 0, 0.8), box("c3", -15, -100, 1.2)]);
     const [one, two] = await Promise.all([simulate(make(), 180), simulate(make(), 180)]);

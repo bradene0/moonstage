@@ -62,6 +62,8 @@ export interface HostFunctions {
   nth_tagged(tag: number, n: number): number;
   /** ABI 5: the live entity with the tag nearest to `entity` (excluding it), or -1. */
   nearest_tagged(tag: number, entity: number): number;
+  /** ABI 5: 1 if a solid tile of any active tilemap covers world point (x, y). */
+  tile_solid(x: number, y: number): number;
 }
 
 export const HOST_FUNCTIONS = [
@@ -89,6 +91,7 @@ export const HOST_FUNCTIONS = [
   "count_tagged",
   "nth_tagged",
   "nearest_tagged",
+  "tile_solid",
 ] as const satisfies readonly (keyof HostFunctions)[];
 
 export interface BehaviorImports {

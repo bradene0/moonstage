@@ -125,6 +125,50 @@ export interface SpriteComponent {
   space?: "world" | "screen";
 }
 
+export interface TilemapTile {
+  fill?: string;
+  asset?: string;
+  frame?: number;
+  solid?: boolean;
+}
+
+export interface TilemapComponent {
+  tileSize: Vec2;
+  rows: string[];
+  tiles: Record<string, TilemapTile>;
+  opacity?: number;
+  layer?: number;
+}
+
+/**
+ * Runs of solid tiles: each row's consecutive solid characters merged into one rectangle, in the map's
+ * local pixels (top-left origin). Physics providers turn these into static colliders.
+ */
+export function solidRuns(map: TilemapComponent): { x: number; y: number; width: number; height: number }[] {
+  const [tw, th] = map.tileSize;
+  const runs: { x: number; y: number; width: number; height: number }[] = [];
+  map.rows.forEach((row, r) => {
+    let start = -1;
+    for (let c = 0; c <= row.length; c++) {
+      const solid = c < row.length && map.tiles[row[c]!]?.solid === true;
+      if (solid && start < 0) start = c;
+      if (!solid && start >= 0) {
+        runs.push({ x: start * tw, y: r * th, width: (c - start) * tw, height: th });
+        start = -1;
+      }
+    }
+  });
+  return runs;
+}
+
+/** The tile at a point in the map's local pixels, or undefined outside the map or on an empty tile. */
+export function tileAt(map: TilemapComponent, x: number, y: number): TilemapTile | undefined {
+  const [tw, th] = map.tileSize;
+  if (x < 0 || y < 0) return undefined;
+  const char = map.rows[Math.floor(y / th)]?.[Math.floor(x / tw)];
+  return char === undefined ? undefined : map.tiles[char];
+}
+
 export interface PhysicsBodyComponent {
   type?: "dynamic" | "static" | "kinematic";
   mass?: number;
@@ -170,6 +214,7 @@ export interface Components {
   shape?: ShapeComponent;
   text?: TextComponent;
   sprite?: SpriteComponent;
+  tilemap?: TilemapComponent;
   physicsBody?: PhysicsBodyComponent;
   collider?: ColliderComponent;
   joint?: JointComponent;
@@ -357,6 +402,7 @@ export function validateProjectSemantics(
     // Prefab refs resolve against whichever scene spawns them, so only names are checked here.
     out.push(...checkBehaviors(prefab, manifest, `prefabs.${name}.components.behavior`, where, undefined));
     out.push(...checkSprite(prefab, manifest, `prefabs.${name}.components.sprite`, where));
+    out.push(...checkTilemap(prefab, manifest, `prefabs.${name}.components.tilemap`, where));
     out.push(...checkPhysicsState(prefab, manifest, `prefabs.${name}.components.behavior`, where));
     for (const namespace of Object.keys(prefab.extensions ?? {})) {
       if (!(namespace in plugins)) {
@@ -417,6 +463,7 @@ export function validateProjectSemantics(
       }
 
       out.push(...checkSprite(entity, manifest, at(".components.sprite"), where));
+      out.push(...checkTilemap(entity, manifest, at(".components.tilemap"), where));
       out.push(...checkPhysicsState(entity, manifest, at(".components.behavior"), where));
       const joint = entity.components?.joint;
       if (joint !== undefined && (!byId.has(joint.target) || joint.target === entity.id)) {
@@ -591,6 +638,47 @@ function checkBehaviors(
       }
     }
   });
+  return out;
+}
+
+/** Check a tilemap's tile assets and that every character in its rows means something. */
+function checkTilemap(
+  entity: PrefabSource,
+  manifest: ProjectManifest,
+  path: string,
+  where: { file: string | undefined; entity: string },
+): Diagnostic[] {
+  const map = entity.components?.tilemap;
+  if (map === undefined) return [];
+  const out: Diagnostic[] = [];
+  const twhere = { ...where, component: "tilemap" };
+  for (const [char, tile] of Object.entries(map.tiles)) {
+    if (tile.asset === undefined) continue;
+    const asset = manifest.assets?.[tile.asset];
+    if (asset === undefined || !isImageAsset(asset)) {
+      out.push(
+        diagnostic("MS2015", `tile "${char}" uses asset "${tile.asset}", which is not an image declared in moonstage.json`, {
+          ...twhere,
+          path: `${path}.tiles.${char}.asset`,
+        }),
+      );
+    } else {
+      const count = asset.frame ? (asset.frame.count ?? asset.frame.columns ?? 1) : 1;
+      if ((tile.frame ?? 0) >= count) {
+        out.push(diagnostic("MS2015", `tile "${char}" uses frame ${tile.frame}, but asset "${tile.asset}" has ${count}`, { ...twhere, path: `${path}.tiles.${char}.frame` }));
+      }
+    }
+  }
+  const unknown = [...new Set(map.rows.join(""))].filter((c) => c !== " " && map.tiles[c] === undefined);
+  if (unknown.length > 0) {
+    out.push(
+      diagnostic("MS2020", `tilemap rows use ${unknown.map((c) => `"${c}"`).join(", ")}, which ${unknown.length === 1 ? "is" : "are"} not in \`tiles\``, {
+        ...twhere,
+        severity: "warning",
+        path: `${path}.rows`,
+      }),
+    );
+  }
   return out;
 }
 

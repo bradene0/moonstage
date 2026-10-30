@@ -1,0 +1,18 @@
+{
+  "format": 1,
+  "name": "walking over a gem collects it",
+  "ticks": 1,
+  "setup": [
+    {
+      "operation": "set_property",
+      "target": "gem-1",
+      "property": "transform.position",
+      "value": [380, 540]
+    }
+  ],
+  "expect": [
+    { "target": "gem-1", "exists": false },
+    { "target": "player", "property": "state.left", "equals": 7 },
+    { "target": "banner", "property": "active", "equals": false }
+  ]
+}

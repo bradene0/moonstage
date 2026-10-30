@@ -154,6 +154,7 @@ Every function is `@sdk.<name>`. Entities are `Int32` handles; slots are generat
 | `count_tagged(tag_x)` | How many live entities have that tag (e.g. blocks left, enemies alive) |
 | `nth_tagged(tag_x, n)` | The n-th tagged entity, for `n` from 0 below the count, or `no_entity` |
 | `nearest_tagged(tag_x, e)` | The tagged entity closest to `e` (not `e` itself), or `no_entity` |
+| `tile_solid(x, y)` | Is there a solid tilemap tile at this world point (check before moving there) |
 | `load_scene(scene_x)` | Switch scenes at the end of the tick |
 | `play_sound(sound_x, volume)` | Play an audio asset |
 | `load_save(save_x)`, `store_save(save_x, v)` | Numbers that survive reloads (and scene switches) |

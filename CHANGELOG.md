@@ -53,6 +53,10 @@ versions so you can tell what moved.
 - **Tags and entity queries (behavior ABI 5).** Entities and prefabs take `tags`; behaviors count, visit
   and find the nearest tagged entity (`@sdk.count_tagged`, `nth_tagged`, `nearest_tagged`), and plugins
   list them with `ctx.world.tagged`. ABI 1–4 modules keep working.
+- **Tilemaps.** A `tilemap` component draws a grid written as text rows, with tiles as colors or sprite-sheet
+  frames. Solid tiles block physics bodies and answer `@sdk.tile_solid(x, y)`; `MS2020` warns about
+  characters missing from `tiles`.
+- **`moonstage new --template topdown`**: walk a tile maze and collect tagged gems against the clock.
 
 ### Changed
 

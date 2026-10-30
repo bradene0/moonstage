@@ -1,0 +1,203 @@
+{
+  "format": 1,
+  "entities": [
+    {
+      "id": "level",
+      "components": {
+        "transform": { "position": [0, 0] },
+        "tilemap": {
+          "tileSize": [40, 40],
+          "rows": [
+            "####################",
+            "#..........#.......#",
+            "#.####.###.#.#####.#",
+            "#.#......#...#...#.#",
+            "#.#.####.#####.#.#.#",
+            "#...#..........#...#",
+            "###.#.##~~~~##.###.#",
+            "#...#.#~~~~~~#.....#",
+            "#.###.##~~~~##.###.#",
+            "#..........#.....#.#",
+            "#.######.#.#.###.#.#",
+            "#.#....#.#...#...#.#",
+            "#.#.##.#.#####.###.#",
+            "#..................#",
+            "####################"
+          ],
+          "tiles": {
+            "#": { "fill": "#334155", "solid": true },
+            ".": { "fill": "#1e293b" },
+            "~": { "fill": "#1d4ed8", "solid": true }
+          }
+        }
+      }
+    },
+    {
+      "id": "gem-1",
+      "tags": ["gem"],
+      "components": {
+        "transform": { "position": [60, 60], "rotation": 0.785 },
+        "shape": {
+          "kind": "rect",
+          "size": [14, 14],
+          "fill": "#facc15",
+          "stroke": "#fef08a",
+          "strokeWidth": 2,
+          "layer": 1
+        }
+      }
+    },
+    {
+      "id": "gem-2",
+      "tags": ["gem"],
+      "components": {
+        "transform": { "position": [740, 60], "rotation": 0.785 },
+        "shape": {
+          "kind": "rect",
+          "size": [14, 14],
+          "fill": "#facc15",
+          "stroke": "#fef08a",
+          "strokeWidth": 2,
+          "layer": 1
+        }
+      }
+    },
+    {
+      "id": "gem-3",
+      "tags": ["gem"],
+      "components": {
+        "transform": { "position": [60, 540], "rotation": 0.785 },
+        "shape": {
+          "kind": "rect",
+          "size": [14, 14],
+          "fill": "#facc15",
+          "stroke": "#fef08a",
+          "strokeWidth": 2,
+          "layer": 1
+        }
+      }
+    },
+    {
+      "id": "gem-4",
+      "tags": ["gem"],
+      "components": {
+        "transform": { "position": [740, 540], "rotation": 0.785 },
+        "shape": {
+          "kind": "rect",
+          "size": [14, 14],
+          "fill": "#facc15",
+          "stroke": "#fef08a",
+          "strokeWidth": 2,
+          "layer": 1
+        }
+      }
+    },
+    {
+      "id": "gem-5",
+      "tags": ["gem"],
+      "components": {
+        "transform": { "position": [380, 220], "rotation": 0.785 },
+        "shape": {
+          "kind": "rect",
+          "size": [14, 14],
+          "fill": "#facc15",
+          "stroke": "#fef08a",
+          "strokeWidth": 2,
+          "layer": 1
+        }
+      }
+    },
+    {
+      "id": "gem-6",
+      "tags": ["gem"],
+      "components": {
+        "transform": { "position": [260, 380], "rotation": 0.785 },
+        "shape": {
+          "kind": "rect",
+          "size": [14, 14],
+          "fill": "#facc15",
+          "stroke": "#fef08a",
+          "strokeWidth": 2,
+          "layer": 1
+        }
+      }
+    },
+    {
+      "id": "gem-7",
+      "tags": ["gem"],
+      "components": {
+        "transform": { "position": [620, 300], "rotation": 0.785 },
+        "shape": {
+          "kind": "rect",
+          "size": [14, 14],
+          "fill": "#facc15",
+          "stroke": "#fef08a",
+          "strokeWidth": 2,
+          "layer": 1
+        }
+      }
+    },
+    {
+      "id": "gem-8",
+      "tags": ["gem"],
+      "components": {
+        "transform": { "position": [500, 140], "rotation": 0.785 },
+        "shape": {
+          "kind": "rect",
+          "size": [14, 14],
+          "fill": "#facc15",
+          "stroke": "#fef08a",
+          "strokeWidth": 2,
+          "layer": 1
+        }
+      }
+    },
+    {
+      "id": "player",
+      "components": {
+        "transform": { "position": [380, 540] },
+        "shape": {
+          "kind": "rect",
+          "size": [24, 24],
+          "fill": "#34d399",
+          "stroke": "#a7f3d0",
+          "strokeWidth": 2,
+          "layer": 2
+        },
+        "behavior": {
+          "module": "player",
+          "params": { "speed": 160, "size": 24, "reach": 22 },
+          "refs": { "banner": "banner" }
+        }
+      }
+    },
+    {
+      "id": "hud",
+      "components": {
+        "transform": { "position": [14, 26] },
+        "text": {
+          "value": "Gems left: {player.left}   Time: {player.time}   Best: {player.best}",
+          "size": 16,
+          "fill": "#e2e8f0",
+          "space": "screen",
+          "layer": 10
+        }
+      }
+    },
+    {
+      "id": "banner",
+      "active": false,
+      "components": {
+        "transform": { "position": [400, 300] },
+        "text": {
+          "value": "All gems! Press R to play again",
+          "size": 30,
+          "fill": "#facc15",
+          "align": "center",
+          "space": "screen",
+          "layer": 10
+        }
+      }
+    }
+  ]
+}

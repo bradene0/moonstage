@@ -72,6 +72,8 @@ pub fn state(Int32, Int32) -> Double
 
 pub fn store_save(Int32, Double) -> Unit
 
+pub fn tile_solid(Double, Double) -> Bool
+
 pub fn time() -> Double
 
 pub fn x(Int32) -> Double

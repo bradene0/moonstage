@@ -8,7 +8,7 @@ WebAssembly can implement a behavior. MoonBit is the first-party language and ha
 ABI 5 is an early contract and may change. The runtime accepts modules that report ABI 1 to 5, because
 each version only added imports: ABI 2 added `spawn`, `remove` and `entity_exists`; ABI 3 added
 `load_scene` and `play_sound`; ABI 4 added `save_get`, `save_set` and `is_prefab`; ABI 5 added
-`count_tagged`, `nth_tagged` and `nearest_tagged`. A breaking change increments `BEHAVIOR_ABI`
+`count_tagged`, `nth_tagged`, `nearest_tagged` and `tile_solid`. A breaking change increments `BEHAVIOR_ABI`
 and raises the minimum accepted version.
 
 ## Declaring a module
@@ -80,6 +80,7 @@ is `@sdk.set_active(entity, Bool)`); see the SDK table in `moonstage guide moonb
 | `count_tagged` | `(tag: i32) -> i32` | ABI 5. Live entities with tag `slot` (from this module's `tags` list). |
 | `nth_tagged` | `(tag: i32, n: i32) -> i32` | ABI 5. The n-th live tagged entity (scene order, then spawn order), or -1. |
 | `nearest_tagged` | `(tag: i32, entity: i32) -> i32` | ABI 5. The live tagged entity nearest to `entity`, excluding it, or -1. |
+| `tile_solid` | `(x: f64, y: f64) -> i32` | ABI 5. 1 if a solid tile of an active tilemap covers world point (x, y). |
 
 An invalid handle, field or slot makes the host function throw. The runtime reports the throw as `MS3004`
 and disables that entity's behavior.
