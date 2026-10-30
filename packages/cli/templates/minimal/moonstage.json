@@ -1,0 +1,24 @@
+{
+  "format": 1,
+  "name": "__NAME__",
+  "entryScene": "main",
+  "scenes": {
+    "main": "scenes/main.scene.json"
+  },
+  "display": { "width": 800, "height": 600, "background": "#101418" },
+  "simulation": { "tickRate": 60, "seed": 1 },
+  "input": {
+    "axes": {
+      "moveX": { "negative": ["ArrowLeft", "KeyA"], "positive": ["ArrowRight", "KeyD"] },
+      "moveY": { "negative": ["ArrowUp", "KeyW"], "positive": ["ArrowDown", "KeyS"] }
+    }
+  },
+  "behaviors": {
+    "mover": {
+      "description": "Moves the entity with the moveX/moveY axes and keeps it on screen.",
+      "source": "behaviors/mover",
+      "params": ["speed", "minX", "maxX", "minY", "maxY"],
+      "inputs": ["moveX", "moveY"]
+    }
+  }
+}

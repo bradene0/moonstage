@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Moonstage scene operation",
+  "description": "A semantic edit to a scene. Shared by tests, the CLI and future editor/MCP surfaces.",
+  "anyOf": [
+    {
+      "title": "set_property",
+      "type": "object",
+      "required": [
+        "operation",
+        "target",
+        "property",
+        "value"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "operation": {
+          "const": "set_property"
+        },
+        "target": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+          "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+        },
+        "property": {
+          "type": "string",
+          "description": "Component-relative path, e.g. transform.position.x"
+        },
+        "value": {}
+      }
+    },
+    {
+      "title": "add_entity",
+      "type": "object",
+      "required": [
+        "operation",
+        "entity"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "operation": {
+          "const": "add_entity"
+        },
+        "entity": {
+          "type": "object",
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "title": "remove_entity",
+      "type": "object",
+      "required": [
+        "operation",
+        "target"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "operation": {
+          "const": "remove_entity"
+        },
+        "target": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+          "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "../../../schemas/test.schema.json",
+  "format": 1,
+  "name": "touching a crystal scores a point, shakes the camera and respawns the crystal",
+  "ticks": 2,
+  "setup": [
+    { "operation": "set_property", "target": "crystal-1", "property": "transform.position", "value": [800, 905] }
+  ],
+  "expect": [
+    { "event": "collected", "count": { "equals": 1 } },
+    { "target": "score", "property": "state.points", "equals": 1 },
+    { "target": "camera", "property": "state.shake", "gt": 0.9 },
+    { "target": "crystal-1", "property": "transform.position.y", "lte": 1000 }
+  ]
+}

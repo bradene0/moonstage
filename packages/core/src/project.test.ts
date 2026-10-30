@@ -1,0 +1,110 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { applyOperation, applyOperations } from "./operations.js";
+import { validateManifestShape, validateProjectSemantics, validateSceneShape, validateTestShape, type SceneSource } from "./project.js";
+import { validateSchema } from "./schema/validate.js";
+import { manifest } from "./test-helpers.test.js";
+
+const codes = (ds: { code: string }[]) => ds.map((d) => d.code);
+
+describe("schema validator", () => {
+  it("reports type, required, enum and unknown-property issues with paths", () => {
+    const schema = {
+      type: "object",
+      required: ["a"],
+      additionalProperties: false,
+      properties: { a: { type: "integer" }, b: { enum: ["x", "y"] }, c: { type: "array", items: { type: "string" } } },
+    };
+    assert.deepEqual(validateSchema(schema, { a: 1, b: "x", c: ["ok"] }), []);
+    const issues = validateSchema(schema, { a: 1.5, b: "z", c: ["ok", 3], d: true });
+    assert.deepEqual(
+      issues.map((i) => i.path),
+      ["a", "b", "c[1]", "d"],
+    );
+    assert.match(validateSchema(schema, {})[0]!.message, /missing required property "a"/);
+  });
+
+  it("supports $ref, anyOf, prefixItems and numeric bounds", () => {
+    const schema = {
+      $defs: { pos: { type: "array", prefixItems: [{ type: "number" }, { type: "number" }], minItems: 2, maxItems: 2 } },
+      type: "object",
+      properties: { p: { $ref: "#/$defs/pos" }, q: { anyOf: [{ type: "string" }, { type: "null" }] }, r: { type: "number", minimum: 0, maximum: 1 } },
+    };
+    assert.deepEqual(validateSchema(schema, { p: [1, 2], q: null, r: 0.5 }), []);
+    assert.equal(validateSchema(schema, { p: [1, 2, 3], q: 4, r: 2 }).length, 3);
+  });
+});
+
+describe("project validation", () => {
+  it("accepts a well-formed manifest and rejects unknown format versions", () => {
+    assert.deepEqual(validateManifestShape(manifest()), []);
+    assert.ok(codes(validateManifestShape({ ...manifest(), format: 2 })).includes("MS1004"));
+    assert.ok(codes(validateManifestShape({ ...manifest(), nope: 1 })).includes("MS1001"));
+  });
+
+  it("validates scene shape", () => {
+    assert.deepEqual(validateSceneShape({ format: 1, entities: [{ id: "a", components: { transform: { position: [1, 2] } } }] }), []);
+    const issues = validateSceneShape({ format: 1, entities: [{ id: "1bad", components: { shape: { kind: "hexagon" } } }] });
+    assert.ok(issues.length >= 2);
+    assert.ok(issues.every((d) => d.code === "MS1001"));
+  });
+
+  it("finds cross-reference problems with stable codes", () => {
+    const m = manifest({
+      behaviors: { mover: { source: "behaviors/mover", params: ["speed"], refs: ["target"], state: ["hp"], inputs: ["jump"] } },
+    });
+    const scene: SceneSource = {
+      format: 1,
+      camera: "a",
+      entities: [
+        { id: "a", parent: "b" },
+        { id: "b", parent: "a" },
+        { id: "a" },
+        { id: "c", parent: "ghost" },
+        {
+          id: "d",
+          components: { behavior: { module: "mover", params: { speed: 1, typo: 2 }, refs: { target: "nobody" }, state: { mana: 1 } } },
+          extensions: { unknownPlugin: {} },
+        },
+        { id: "e", components: { behavior: { module: "missing" }, text: { value: "{d.points}" } } },
+      ],
+    };
+    const found = codes(validateProjectSemantics(m, { main: scene }));
+    for (const code of ["MS2001", "MS2002", "MS2003", "MS2005", "MS2006", "MS2007", "MS2008", "MS2009", "MS2010", "MS2011", "MS2012"]) {
+      assert.ok(found.includes(code), `expected ${code} in ${found.join(",")}`);
+    }
+  });
+
+  it("requires exactly one of source or wasm for behaviors", () => {
+    const both = manifest({ behaviors: { x: { source: "a", wasm: "b.wasm" } } });
+    assert.ok(codes(validateProjectSemantics(both, {})).includes("MS1001"));
+  });
+
+  it("validates test files with MS5002", () => {
+    assert.deepEqual(validateTestShape({ format: 1, name: "t", ticks: 1, expect: [{ event: "x" }] }), []);
+    assert.deepEqual(codes(validateTestShape({ format: 1, name: "t", ticks: 0, expect: [] })), ["MS5002", "MS5002"]);
+  });
+});
+
+describe("operations", () => {
+  const scene: SceneSource = { format: 1, entities: [{ id: "a", components: { transform: { position: [1, 2] } } }, { id: "b", parent: "a" }] };
+
+  it("sets component properties by path without mutating the input", () => {
+    const next = applyOperation(scene, { operation: "set_property", target: "a", property: "transform.position.x", value: 300 });
+    assert.deepEqual(next.entities[0]!.components!.transform!.position, [300, 2]);
+    assert.deepEqual(scene.entities[0]!.components!.transform!.position, [1, 2]);
+    const created = applyOperation(scene, { operation: "set_property", target: "b", property: "shape", value: { kind: "circle" } });
+    assert.deepEqual(created.entities[1]!.components!.shape, { kind: "circle" });
+  });
+
+  it("adds and removes entities, detaching children", () => {
+    const next = applyOperations(scene, [
+      { operation: "add_entity", entity: { id: "c" } },
+      { operation: "remove_entity", target: "a" },
+    ]);
+    assert.deepEqual(next.entities.map((e) => e.id), ["b", "c"]);
+    assert.equal(next.entities[0]!.parent, null);
+    assert.throws(() => applyOperation(scene, { operation: "remove_entity", target: "zzz" }), /MS5003/);
+    assert.throws(() => applyOperation(scene, { operation: "add_entity", entity: { id: "a" } }), /MS2001/);
+  });
+});

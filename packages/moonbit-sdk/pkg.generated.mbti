@@ -1,0 +1,63 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonstage/sdk"
+
+// Values
+pub let abi_version : Int32
+
+pub fn clamp(Double, Double, Double) -> Double
+
+pub fn distance(Int32, Int32) -> Double
+
+pub fn emit(Int32, Double) -> Unit
+
+pub fn input(Int32) -> Double
+
+pub fn is_active(Int32) -> Bool
+
+pub fn log(Double) -> Unit
+
+pub let no_entity : Int32
+
+pub fn param(Int32) -> Double
+
+pub fn random() -> Double
+
+pub fn random_range(Double, Double) -> Double
+
+pub fn ref_entity(Int32) -> Int32
+
+pub fn rotation(Int32) -> Double
+
+pub fn scale_x(Int32) -> Double
+
+pub fn scale_y(Int32) -> Double
+
+pub fn set_active(Int32, Bool) -> Unit
+
+pub fn set_position(Int32, Double, Double) -> Unit
+
+pub fn set_rotation(Int32, Double) -> Unit
+
+pub fn set_scale(Int32, Double, Double) -> Unit
+
+pub fn set_state(Int32, Int32, Double) -> Unit
+
+pub fn set_x(Int32, Double) -> Unit
+
+pub fn set_y(Int32, Double) -> Unit
+
+pub fn state(Int32, Int32) -> Double
+
+pub fn time() -> Double
+
+pub fn x(Int32) -> Double
+
+pub fn y(Int32) -> Double
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

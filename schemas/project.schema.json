@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Moonstage project manifest (moonstage.json)",
+  "type": "object",
+  "required": [
+    "format",
+    "name",
+    "entryScene",
+    "scenes"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "format": {
+      "const": 1,
+      "description": "Project format version."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "entryScene": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+      "description": "Scene loaded first."
+    },
+    "scenes": {
+      "type": "object",
+      "description": "Scene id -> scene file path.",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Path relative to the project root."
+      }
+    },
+    "display": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "background": {
+          "type": "string",
+          "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$",
+          "description": "Hex color: #rgb, #rrggbb or #rrggbbaa."
+        }
+      }
+    },
+    "simulation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tickRate": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000,
+          "description": "Fixed simulation ticks per second (default 60)."
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Default random seed (default 1)."
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "axes": {
+          "type": "object",
+          "description": "Axis name -> keys. Axis values range from -1 to 1.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "negative": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "positive": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "buttons": {
+          "type": "object",
+          "description": "Button name -> keys (KeyboardEvent.code values). Button values are 0 or 1.",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "assets": {
+      "type": "object",
+      "description": "Asset id -> asset declaration.",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Path relative to the project root."
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "behaviors": {
+      "type": "object",
+      "description": "Behavior module id -> module interface.",
+      "additionalProperties": {
+        "$ref": "#/$defs/behaviorModule"
+      }
+    },
+    "plugins": {
+      "type": "object",
+      "description": "Plugin name -> how to load and configure it.",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "module"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "module": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Project-relative path (./...) or package specifier."
+          },
+          "config": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "behaviorModule": {
+      "title": "behavior module",
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A WebAssembly behavior and its interface. Slot indices used across the ABI follow the order of each list.",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "language": {
+          "enum": [
+            "moonbit",
+            "wasm"
+          ],
+          "description": "Default: 'moonbit' when `source` is set, else 'wasm'."
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "MoonBit package directory, compiled by `moonstage build`."
+        },
+        "wasm": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Prebuilt WebAssembly module (any language)."
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+            "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+          },
+          "description": "Numeric parameters, read with param(slot)."
+        },
+        "state": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+            "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+          },
+          "description": "Numeric per-entity state, read/written with state_get/state_set(entity, slot)."
+        },
+        "refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+            "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+          },
+          "description": "Entity references, resolved with ref(slot)."
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+            "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+          },
+          "description": "Input axes/buttons, read with input(slot)."
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+            "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+          },
+          "description": "Events this module emits or receives."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "moonstage-monorepo",
+  "private": true,
+  "type": "module",
+  "description": "Moonstage: a lightweight, browser-first interactive media and game runtime built on MoonBit and WebAssembly.",
+  "license": "MIT",
+  "workspaces": [
+    "packages/core",
+    "packages/player",
+    "packages/cli"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "typecheck": "tsc -b",
+    "test": "npm run build && node --test \"packages/*/dist/**/*.test.js\"",
+    "check": "npm test",
+    "size": "npm run build && node scripts/size-report.mjs",
+    "schemas": "npm run build && node packages/cli/dist/main.js schemas --write"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "ajv": "^8.20.0",
+    "typescript": "^7.0.2"
+  }
+}

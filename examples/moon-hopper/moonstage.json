@@ -1,0 +1,55 @@
+{
+  "$schema": "../../schemas/project.schema.json",
+  "format": 1,
+  "name": "moon-hopper",
+  "description": "Pilot a small lander around a moon base and collect crystals. Reference project for Moonstage.",
+  "entryScene": "main",
+  "scenes": {
+    "main": "scenes/main.scene.json"
+  },
+  "display": { "width": 800, "height": 600, "background": "#0b1020" },
+  "simulation": { "tickRate": 60, "seed": 7 },
+  "input": {
+    "axes": {
+      "turn": { "negative": ["ArrowLeft", "KeyA"], "positive": ["ArrowRight", "KeyD"] }
+    },
+    "buttons": {
+      "thrust": ["ArrowUp", "KeyW", "Space"]
+    }
+  },
+  "behaviors": {
+    "lander": {
+      "description": "Player ship: turn, thrust, gravity, bounce off the world bounds.",
+      "source": "behaviors/lander",
+      "params": ["thrust", "gravity", "turnSpeed", "bounce", "minX", "maxX", "minY", "maxY"],
+      "state": ["vx", "vy"],
+      "refs": ["flame"],
+      "inputs": ["turn", "thrust"]
+    },
+    "crystal": {
+      "description": "Pulses; emits `collected` when the lander touches it, then respawns.",
+      "source": "behaviors/crystal",
+      "params": ["pickupRadius", "value", "minX", "maxX", "minY", "maxY"],
+      "state": ["phase"],
+      "refs": ["lander"],
+      "events": ["collected"]
+    },
+    "score": {
+      "description": "Adds each `collected` payload to `points`.",
+      "source": "behaviors/score",
+      "state": ["points"],
+      "events": ["collected"]
+    },
+    "camera": {
+      "description": "Follows its target smoothly and shakes on `collected`.",
+      "source": "behaviors/camera",
+      "params": ["follow", "shake"],
+      "state": ["shake", "cx", "cy"],
+      "refs": ["target"],
+      "events": ["collected"]
+    }
+  },
+  "plugins": {
+    "spin": { "module": "./plugins/spin.js", "config": { "defaultSpeed": 0.5 } }
+  }
+}

@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Moonstage headless test (tests/*.test.json)",
+  "type": "object",
+  "required": [
+    "format",
+    "name",
+    "ticks",
+    "expect"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "format": {
+      "const": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scene": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+      "description": "Scene to run (default: entryScene)."
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "ticks": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Fixed simulation ticks to run."
+    },
+    "setup": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/operation"
+      },
+      "description": "Scene operations applied before loading."
+    },
+    "input": {
+      "type": "array",
+      "description": "Input changes, applied at the start of the given tick and held until changed.",
+      "items": {
+        "type": "object",
+        "required": [
+          "tick",
+          "set"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "tick": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "set": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "expect": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/assertion"
+      }
+    }
+  },
+  "$defs": {
+    "operation": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Moonstage scene operation",
+      "description": "A semantic edit to a scene. Shared by tests, the CLI and future editor/MCP surfaces.",
+      "anyOf": [
+        {
+          "title": "set_property",
+          "type": "object",
+          "required": [
+            "operation",
+            "target",
+            "property",
+            "value"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "operation": {
+              "const": "set_property"
+            },
+            "target": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+            },
+            "property": {
+              "type": "string",
+              "description": "Component-relative path, e.g. transform.position.x"
+            },
+            "value": {}
+          }
+        },
+        {
+          "title": "add_entity",
+          "type": "object",
+          "required": [
+            "operation",
+            "entity"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "operation": {
+              "const": "add_entity"
+            },
+            "entity": {
+              "type": "object",
+              "required": [
+                "id"
+              ]
+            }
+          }
+        },
+        {
+          "title": "remove_entity",
+          "type": "object",
+          "required": [
+            "operation",
+            "target"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "operation": {
+              "const": "remove_entity"
+            },
+            "target": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+            }
+          }
+        }
+      ]
+    },
+    "assertion": {
+      "anyOf": [
+        {
+          "title": "event assertion",
+          "type": "object",
+          "required": [
+            "event"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "event": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+            },
+            "count": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "equals": {
+                  "type": [
+                    "number",
+                    "boolean"
+                  ]
+                },
+                "approx": {
+                  "type": "number"
+                },
+                "tolerance": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "gt": {
+                  "type": "number"
+                },
+                "gte": {
+                  "type": "number"
+                },
+                "lt": {
+                  "type": "number"
+                },
+                "lte": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "property assertion",
+          "type": "object",
+          "required": [
+            "target",
+            "property"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "target": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+            },
+            "property": {
+              "type": "string",
+              "description": "transform.position.x, transform.rotation, state.<name>, active"
+            },
+            "equals": {
+              "type": [
+                "number",
+                "boolean"
+              ]
+            },
+            "approx": {
+              "type": "number"
+            },
+            "tolerance": {
+              "type": "number",
+              "minimum": 0
+            },
+            "gt": {
+              "type": "number"
+            },
+            "gte": {
+              "type": "number"
+            },
+            "lt": {
+              "type": "number"
+            },
+            "lte": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "title": "existence assertion",
+          "type": "object",
+          "required": [
+            "target",
+            "exists"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "target": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+            },
+            "exists": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

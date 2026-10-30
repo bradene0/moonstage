@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "lib": ["ES2023"],
+    // Node types are for *.test.ts only. packages/cli/src/invariants.test.ts
+    // enforces that core source never imports Node or DOM APIs.
+    "types": ["node"]
+  },
+  "include": ["src"]
+}

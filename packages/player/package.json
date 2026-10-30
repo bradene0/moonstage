@@ -1,0 +1,29 @@
+{
+  "name": "@moonstage/player",
+  "version": "0.0.0",
+  "description": "Browser player for Moonstage projects: Canvas 2D renderer, keyboard input, <moonstage-player> element.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "./dist/element.js"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./element": {
+      "types": "./dist/element.d.ts",
+      "default": "./dist/element.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*"
+  ],
+  "dependencies": {
+    "@moonstage/core": "0.0.0"
+  }
+}

@@ -1,0 +1,142 @@
+// End-to-end tests: run the real `moonstage` binary against the reference
+// project and freshly generated projects. MoonBit-dependent tests are skipped
+// when `moon` is not installed, unless MOONSTAGE_REQUIRE_MOON=1 (set in CI).
+
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { after, describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
+import { findMoon } from "./moonbit.js";
+
+const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const bin = join(repo, "packages", "cli", "dist", "main.js");
+const example = join(repo, "examples", "moon-hopper");
+
+const hasMoon = findMoon() !== undefined;
+if (!hasMoon && process.env.MOONSTAGE_REQUIRE_MOON === "1") throw new Error("MOONSTAGE_REQUIRE_MOON=1 but `moon` was not found");
+const moon = { skip: hasMoon ? false : "MoonBit toolchain not installed" };
+
+const scratch = mkdtempSync(join(tmpdir(), "moonstage-cli-"));
+after(() => rmSync(scratch, { recursive: true, force: true }));
+
+function cli(...args: string[]): { code: number; json: Record<string, any>; stdout: string; stderr: string } {
+  const r = spawnSync(process.execPath, [bin, ...args], { encoding: "utf8" });
+  let json: Record<string, any> = {};
+  if (args.includes("--json")) json = JSON.parse(r.stdout);
+  return { code: r.status ?? -1, json, stdout: r.stdout, stderr: r.stderr };
+}
+
+describe("moonstage CLI", () => {
+  it("describes itself in JSON", () => {
+    const r = cli("describe", "--json");
+    assert.equal(r.code, 0);
+    assert.equal(r.json.moonstage.projectFormat, 1);
+    assert.ok(r.json.commands.some((c: { name: string }) => c.name === "render"));
+    assert.ok("MS2001" in r.json.diagnosticCodes);
+    assert.ok(r.json.behaviorAbi.imports.includes("transform_get"));
+  });
+
+  it("uses meaningful exit codes for usage errors and missing projects", () => {
+    assert.equal(cli("frobnicate", "--json").code, 2);
+    assert.equal(cli("validate", "--bogus-flag", "--json").code, 2);
+    const missing = cli("validate", join(scratch, "nope"), "--json");
+    assert.equal(missing.code, 2);
+    assert.equal(missing.json.diagnostics[0].code, "MS9002");
+  });
+
+  it("validates and inspects the reference project", () => {
+    const v = cli("validate", example, "--json");
+    assert.equal(v.code, 0, v.stdout);
+    assert.equal(v.json.errors, 0);
+    const i = cli("inspect", example, "--json");
+    assert.equal(i.code, 0);
+    const ids = i.json.scenes.main.entities.map((e: { id: string }) => e.id);
+    for (const id of ["lander", "flame", "camera", "score", "crystal-1"]) assert.ok(ids.includes(id));
+    assert.equal(i.json.behaviors.lander.language, "moonbit");
+  });
+
+  it("reports broken projects with stable codes, locations and exit code 1", () => {
+    const dir = join(scratch, "broken");
+    cpSync(example, dir, { recursive: true, filter: (src) => !src.includes(".moonstage") && !src.includes("dist") });
+    const scenePath = join(dir, "scenes", "main.scene.json");
+    const scene = JSON.parse(readFileSync(scenePath, "utf8"));
+    scene.entities.find((e: { id: string }) => e.id === "flame").parent = "ghost";
+    scene.entities.find((e: { id: string }) => e.id === "lander").components.behavior.params.thrustt = 1;
+    writeFileSync(scenePath, JSON.stringify(scene));
+    const r = cli("validate", dir, "--json");
+    assert.equal(r.code, 1);
+    const byCode = Object.fromEntries(r.json.diagnostics.map((d: { code: string }) => [d.code, d]));
+    assert.equal(byCode.MS2002.entity, "flame");
+    assert.equal(byCode.MS2002.file, "scenes/main.scene.json");
+    assert.equal(byCode.MS2006.entity, "lander");
+    assert.ok(byCode.MS2006.hint);
+  });
+
+  it("builds MoonBit behaviors and a web bundle", moon, () => {
+    const out = join(scratch, "bundle");
+    const r = cli("build", example, "--out", out, "--json");
+    assert.equal(r.code, 0, r.stdout);
+    assert.deepEqual(r.json.behaviors.map((b: { name: string }) => b.name).sort(), ["camera", "crystal", "lander", "score"]);
+    const html = readFileSync(join(out, "index.html"), "utf8");
+    assert.match(html, /<moonstage-player src="\.\/game\/"/);
+    readFileSync(join(out, "game", ".moonstage", "behaviors", "lander.wasm"));
+    readFileSync(join(out, "runtime", "core", "index.js"));
+    readFileSync(join(out, "game", "plugins", "spin.js"));
+  });
+
+  it("passes the reference project's tests", moon, () => {
+    const r = cli("test", example, "--json");
+    assert.equal(r.code, 0, r.stdout);
+    assert.equal(r.json.failed, 0);
+    assert.equal(r.json.passed, 3);
+  });
+
+  it("simulates headlessly and deterministically", moon, () => {
+    const args = ["run", example, "--headless", "--ticks", "240", "--seed", "3", "--input", '{"thrust":1}', "--json"];
+    const a = cli(...args);
+    const b = cli(...args, "--no-build");
+    assert.equal(a.code, 0, a.stdout);
+    assert.equal(a.json.ticks, 240);
+    assert.deepEqual(a.json.snapshot, b.json.snapshot);
+    assert.ok(a.json.snapshot.entities.lander.transform.y < 900, "thrust should lift the lander");
+    assert.ok(a.json.snapshot.entities["planet-ring"].transform.rotation > 0, "spin plugin should rotate the ring");
+  });
+
+  it("renders a frame to SVG", moon, () => {
+    const output = join(scratch, "frame.svg");
+    const r = cli("render", example, "--tick", "30", "--output", output, "--json", "--no-build");
+    assert.equal(r.code, 0, r.stdout);
+    assert.equal(r.json.tick, 30);
+    const svg = readFileSync(output, "utf8");
+    assert.match(svg, /^<svg /);
+    assert.match(svg, /data-entity="lander"/);
+    assert.match(svg, />Crystals: 0</);
+    assert.doesNotMatch(svg, /data-entity="flame"/, "flame is inactive without thrust");
+  });
+
+  it("creates a new project that validates and passes its tests", moon, () => {
+    const dir = join(scratch, "fresh");
+    const created = cli("new", dir, "--name", "Fresh Game", "--json");
+    assert.equal(created.code, 0, created.stdout);
+    assert.ok(created.json.files.includes("moonstage.json"));
+    assert.equal(cli("validate", dir, "--json").code, 0);
+    const t = cli("test", dir, "--json");
+    assert.equal(t.code, 0, t.stdout);
+    assert.equal(t.json.passed, 1);
+    assert.equal(cli("new", dir, "--json").code, 2, "refuses to overwrite");
+  });
+
+  it("reports MoonBit compile errors as MS3006 with file locations", moon, () => {
+    const dir = join(scratch, "compile-error");
+    cli("new", dir);
+    writeFileSync(join(dir, "behaviors", "mover", "broken.mbt"), '///|\nfn broken() -> Int {\n  "not an int"\n}\n');
+    const r = cli("test", dir, "--json");
+    assert.equal(r.code, 1);
+    const d = r.json.diagnostics.find((x: { code: string }) => x.code === "MS3006");
+    assert.ok(d, r.stdout);
+    assert.equal(d.file, "behaviors/mover/broken.mbt");
+  });
+});

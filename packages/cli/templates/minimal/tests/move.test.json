@@ -1,0 +1,10 @@
+{
+  "format": 1,
+  "name": "holding right moves the player right",
+  "ticks": 60,
+  "input": [{ "tick": 0, "set": { "moveX": 1 } }],
+  "expect": [
+    { "target": "player", "property": "transform.position.x", "approx": 640, "tolerance": 0.01 },
+    { "target": "player", "property": "transform.position.y", "equals": 300 }
+  ]
+}

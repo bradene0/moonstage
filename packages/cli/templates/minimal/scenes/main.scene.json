@@ -1,0 +1,23 @@
+{
+  "format": 1,
+  "entities": [
+    {
+      "id": "player",
+      "components": {
+        "transform": { "position": [400, 300] },
+        "shape": { "kind": "rect", "size": [40, 40], "fill": "#5eead4" },
+        "behavior": {
+          "module": "mover",
+          "params": { "speed": 240, "minX": 20, "maxX": 780, "minY": 20, "maxY": 580 }
+        }
+      }
+    },
+    {
+      "id": "title",
+      "components": {
+        "transform": { "position": [400, 60] },
+        "text": { "value": "__NAME__", "size": 28, "fill": "#e5e7eb", "align": "center", "space": "screen" }
+      }
+    }
+  ]
+}

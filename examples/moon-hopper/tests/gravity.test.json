@@ -1,0 +1,11 @@
+{
+  "$schema": "../../../schemas/test.schema.json",
+  "format": 1,
+  "name": "the lander falls and settles on the ground without input",
+  "ticks": 600,
+  "expect": [
+    { "target": "lander", "property": "transform.position.y", "approx": 1100, "tolerance": 0.5 },
+    { "target": "lander", "property": "state.vy", "equals": 0 },
+    { "target": "flame", "property": "active", "equals": false }
+  ]
+}

@@ -1,0 +1,794 @@
+{
+  "$schema": "../../../schemas/scene.schema.json",
+  "format": 1,
+  "camera": "camera",
+  "entities": [
+    {
+      "id": "camera",
+      "components": {
+        "transform": {
+          "position": [
+            800,
+            900
+          ]
+        },
+        "camera": {
+          "zoom": 1
+        },
+        "behavior": {
+          "module": "camera",
+          "params": {
+            "follow": 4,
+            "shake": 14
+          },
+          "refs": {
+            "target": "lander"
+          }
+        }
+      }
+    },
+    {
+      "id": "star-1",
+      "components": {
+        "transform": {
+          "position": [
+            120,
+            140
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 1.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.35,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "star-2",
+      "components": {
+        "transform": {
+          "position": [
+            380,
+            60
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 2.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.5,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "star-3",
+      "components": {
+        "transform": {
+          "position": [
+            660,
+            210
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 3.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.65,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "star-4",
+      "components": {
+        "transform": {
+          "position": [
+            940,
+            90
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 1.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.8,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "star-5",
+      "components": {
+        "transform": {
+          "position": [
+            1210,
+            160
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 2.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.35,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "star-6",
+      "components": {
+        "transform": {
+          "position": [
+            1480,
+            70
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 3.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.5,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "star-7",
+      "components": {
+        "transform": {
+          "position": [
+            240,
+            420
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 1.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.65,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "star-8",
+      "components": {
+        "transform": {
+          "position": [
+            720,
+            480
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 2.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.8,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "star-9",
+      "components": {
+        "transform": {
+          "position": [
+            1100,
+            380
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 3.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.35,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "star-10",
+      "components": {
+        "transform": {
+          "position": [
+            1400,
+            520
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 1.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.5,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "star-11",
+      "components": {
+        "transform": {
+          "position": [
+            90,
+            760
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 2.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.65,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "star-12",
+      "components": {
+        "transform": {
+          "position": [
+            520,
+            700
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 3.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.8,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "star-13",
+      "components": {
+        "transform": {
+          "position": [
+            980,
+            680
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 1.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.35,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "star-14",
+      "components": {
+        "transform": {
+          "position": [
+            1330,
+            820
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 2.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.5,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "star-15",
+      "components": {
+        "transform": {
+          "position": [
+            1560,
+            300
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 3.5,
+          "fill": "#c8d2ff",
+          "opacity": 0.65,
+          "layer": -10
+        }
+      }
+    },
+    {
+      "id": "planet",
+      "components": {
+        "transform": {
+          "position": [
+            1300,
+            260
+          ]
+        },
+        "shape": {
+          "kind": "circle",
+          "radius": 90,
+          "fill": "#2a3466",
+          "layer": -5
+        }
+      }
+    },
+    {
+      "id": "planet-ring",
+      "parent": "planet",
+      "components": {
+        "transform": {
+          "scale": [
+            1,
+            0.35
+          ]
+        },
+        "shape": {
+          "kind": "polygon",
+          "points": [
+            [
+              -150,
+              0
+            ],
+            [
+              0,
+              -150
+            ],
+            [
+              150,
+              0
+            ],
+            [
+              0,
+              150
+            ]
+          ],
+          "stroke": "#8f9bd9",
+          "strokeWidth": 3,
+          "layer": -4
+        }
+      },
+      "extensions": {
+        "spin": {
+          "speed": 0.3
+        }
+      }
+    },
+    {
+      "id": "ground",
+      "components": {
+        "transform": {
+          "position": [
+            800,
+            1145
+          ]
+        },
+        "shape": {
+          "kind": "rect",
+          "size": [
+            1700,
+            50
+          ],
+          "fill": "#3b3f58",
+          "layer": -1
+        }
+      }
+    },
+    {
+      "id": "beacon",
+      "components": {
+        "transform": {
+          "position": [
+            800,
+            1105
+          ]
+        },
+        "shape": {
+          "kind": "polygon",
+          "points": [
+            [
+              0,
+              -14
+            ],
+            [
+              12,
+              8
+            ],
+            [
+              -12,
+              8
+            ]
+          ],
+          "fill": "#ff6b8b",
+          "layer": 0
+        }
+      },
+      "extensions": {
+        "spin": {}
+      }
+    },
+    {
+      "id": "lander",
+      "components": {
+        "transform": {
+          "position": [
+            800,
+            900
+          ]
+        },
+        "shape": {
+          "kind": "polygon",
+          "points": [
+            [
+              0,
+              -18
+            ],
+            [
+              14,
+              14
+            ],
+            [
+              0,
+              8
+            ],
+            [
+              -14,
+              14
+            ]
+          ],
+          "fill": "#e8ecff",
+          "stroke": "#9aa7ff",
+          "strokeWidth": 1.5,
+          "layer": 5
+        },
+        "behavior": {
+          "module": "lander",
+          "params": {
+            "thrust": 360,
+            "gravity": 120,
+            "turnSpeed": 3.2,
+            "bounce": 0.45,
+            "minX": 30,
+            "maxX": 1570,
+            "minY": 30,
+            "maxY": 1100
+          },
+          "refs": {
+            "flame": "flame"
+          }
+        }
+      }
+    },
+    {
+      "id": "flame",
+      "parent": "lander",
+      "active": false,
+      "components": {
+        "transform": {
+          "position": [
+            0,
+            6
+          ]
+        },
+        "shape": {
+          "kind": "polygon",
+          "points": [
+            [
+              -6,
+              4
+            ],
+            [
+              6,
+              4
+            ],
+            [
+              0,
+              24
+            ]
+          ],
+          "fill": "#ffb347",
+          "layer": 4
+        }
+      }
+    },
+    {
+      "id": "crystal-1",
+      "components": {
+        "transform": {
+          "position": [
+            500,
+            820
+          ]
+        },
+        "shape": {
+          "kind": "polygon",
+          "points": [
+            [
+              0,
+              -12
+            ],
+            [
+              9,
+              0
+            ],
+            [
+              0,
+              12
+            ],
+            [
+              -9,
+              0
+            ]
+          ],
+          "fill": "#7df9ff",
+          "stroke": "#e0ffff",
+          "strokeWidth": 1,
+          "layer": 3
+        },
+        "behavior": {
+          "module": "crystal",
+          "params": {
+            "pickupRadius": 26,
+            "value": 1,
+            "minX": 80,
+            "maxX": 1520,
+            "minY": 120,
+            "maxY": 1000
+          },
+          "refs": {
+            "lander": "lander"
+          }
+        }
+      }
+    },
+    {
+      "id": "crystal-2",
+      "components": {
+        "transform": {
+          "position": [
+            1100,
+            760
+          ]
+        },
+        "shape": {
+          "kind": "polygon",
+          "points": [
+            [
+              0,
+              -12
+            ],
+            [
+              9,
+              0
+            ],
+            [
+              0,
+              12
+            ],
+            [
+              -9,
+              0
+            ]
+          ],
+          "fill": "#7df9ff",
+          "stroke": "#e0ffff",
+          "strokeWidth": 1,
+          "layer": 3
+        },
+        "behavior": {
+          "module": "crystal",
+          "params": {
+            "pickupRadius": 26,
+            "value": 1,
+            "minX": 80,
+            "maxX": 1520,
+            "minY": 120,
+            "maxY": 1000
+          },
+          "refs": {
+            "lander": "lander"
+          }
+        }
+      }
+    },
+    {
+      "id": "crystal-3",
+      "components": {
+        "transform": {
+          "position": [
+            300,
+            420
+          ]
+        },
+        "shape": {
+          "kind": "polygon",
+          "points": [
+            [
+              0,
+              -12
+            ],
+            [
+              9,
+              0
+            ],
+            [
+              0,
+              12
+            ],
+            [
+              -9,
+              0
+            ]
+          ],
+          "fill": "#7df9ff",
+          "stroke": "#e0ffff",
+          "strokeWidth": 1,
+          "layer": 3
+        },
+        "behavior": {
+          "module": "crystal",
+          "params": {
+            "pickupRadius": 26,
+            "value": 1,
+            "minX": 80,
+            "maxX": 1520,
+            "minY": 120,
+            "maxY": 1000
+          },
+          "refs": {
+            "lander": "lander"
+          }
+        }
+      }
+    },
+    {
+      "id": "crystal-4",
+      "components": {
+        "transform": {
+          "position": [
+            1350,
+            500
+          ]
+        },
+        "shape": {
+          "kind": "polygon",
+          "points": [
+            [
+              0,
+              -12
+            ],
+            [
+              9,
+              0
+            ],
+            [
+              0,
+              12
+            ],
+            [
+              -9,
+              0
+            ]
+          ],
+          "fill": "#7df9ff",
+          "stroke": "#e0ffff",
+          "strokeWidth": 1,
+          "layer": 3
+        },
+        "behavior": {
+          "module": "crystal",
+          "params": {
+            "pickupRadius": 26,
+            "value": 1,
+            "minX": 80,
+            "maxX": 1520,
+            "minY": 120,
+            "maxY": 1000
+          },
+          "refs": {
+            "lander": "lander"
+          }
+        }
+      }
+    },
+    {
+      "id": "crystal-5",
+      "components": {
+        "transform": {
+          "position": [
+            820,
+            300
+          ]
+        },
+        "shape": {
+          "kind": "polygon",
+          "points": [
+            [
+              0,
+              -12
+            ],
+            [
+              9,
+              0
+            ],
+            [
+              0,
+              12
+            ],
+            [
+              -9,
+              0
+            ]
+          ],
+          "fill": "#7df9ff",
+          "stroke": "#e0ffff",
+          "strokeWidth": 1,
+          "layer": 3
+        },
+        "behavior": {
+          "module": "crystal",
+          "params": {
+            "pickupRadius": 26,
+            "value": 1,
+            "minX": 80,
+            "maxX": 1520,
+            "minY": 120,
+            "maxY": 1000
+          },
+          "refs": {
+            "lander": "lander"
+          }
+        }
+      }
+    },
+    {
+      "id": "score",
+      "components": {
+        "behavior": {
+          "module": "score",
+          "state": {
+            "points": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "hud",
+      "components": {
+        "transform": {
+          "position": [
+            20,
+            34
+          ]
+        },
+        "text": {
+          "value": "Crystals: {score.points}",
+          "size": 22,
+          "fill": "#ffffff",
+          "space": "screen",
+          "layer": 100
+        }
+      }
+    },
+    {
+      "id": "help",
+      "components": {
+        "transform": {
+          "position": [
+            400,
+            580
+          ]
+        },
+        "text": {
+          "value": "← → turn   ↑ / Space thrust",
+          "size": 14,
+          "fill": "#8f9bd9",
+          "align": "center",
+          "space": "screen",
+          "layer": 100
+        }
+      }
+    }
+  ]
+}

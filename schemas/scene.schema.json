@@ -1,0 +1,294 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Moonstage scene (*.scene.json)",
+  "type": "object",
+  "required": [
+    "format",
+    "entities"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "format": {
+      "const": 1
+    },
+    "camera": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+      "description": "Id of the entity whose camera component drives the view."
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entity"
+      }
+    }
+  },
+  "$defs": {
+    "entity": {
+      "title": "entity",
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+          "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+        },
+        "name": {
+          "type": "string"
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Inactive entities are not updated or rendered (default true)."
+        },
+        "components": {
+          "$ref": "#/$defs/components"
+        },
+        "extensions": {
+          "type": "object",
+          "description": "Plugin-owned data keyed by plugin name. Validated by the plugin.",
+          "additionalProperties": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "transform": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Position in pixels (y down), rotation in radians (clockwise), scale. Relative to the parent.",
+          "properties": {
+            "position": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "[x, y]"
+            },
+            "rotation": {
+              "type": "number"
+            },
+            "scale": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "[x, y]"
+            }
+          }
+        },
+        "shape": {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "description": "Basic vector renderable, centered on the entity origin.",
+          "properties": {
+            "kind": {
+              "enum": [
+                "rect",
+                "circle",
+                "polygon"
+              ]
+            },
+            "size": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "rect: [width, height]"
+            },
+            "radius": {
+              "type": "number",
+              "minimum": 0,
+              "description": "circle radius"
+            },
+            "points": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "[x, y]"
+              },
+              "minItems": 3,
+              "description": "polygon points, local space"
+            },
+            "fill": {
+              "type": "string",
+              "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$",
+              "description": "Hex color: #rgb, #rrggbb or #rrggbbaa."
+            },
+            "stroke": {
+              "type": "string",
+              "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$",
+              "description": "Hex color: #rgb, #rrggbb or #rrggbbaa."
+            },
+            "strokeWidth": {
+              "type": "number",
+              "minimum": 0
+            },
+            "opacity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "layer": {
+              "type": "integer",
+              "description": "Draw order; higher draws on top (default 0)."
+            },
+            "space": {
+              "enum": [
+                "world",
+                "screen"
+              ],
+              "description": "'world' (default) is transformed by the camera; 'screen' is fixed to the viewport."
+            }
+          }
+        },
+        "text": {
+          "type": "object",
+          "required": [
+            "value"
+          ],
+          "additionalProperties": false,
+          "description": "Text renderable. {entityId.stateName} placeholders are replaced with live state values.",
+          "properties": {
+            "value": {
+              "type": "string"
+            },
+            "size": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "fill": {
+              "type": "string",
+              "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$",
+              "description": "Hex color: #rgb, #rrggbb or #rrggbbaa."
+            },
+            "align": {
+              "enum": [
+                "left",
+                "center",
+                "right"
+              ]
+            },
+            "opacity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "layer": {
+              "type": "integer"
+            },
+            "space": {
+              "enum": [
+                "world",
+                "screen"
+              ],
+              "description": "'world' (default) is transformed by the camera; 'screen' is fixed to the viewport."
+            }
+          }
+        },
+        "behavior": {
+          "type": "object",
+          "required": [
+            "module"
+          ],
+          "additionalProperties": false,
+          "description": "Attaches a behavior module declared in moonstage.json.",
+          "properties": {
+            "module": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+            },
+            "params": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "refs": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+                "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+              }
+            },
+            "state": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "camera": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "The view is centered on this entity's world position.",
+          "properties": {
+            "zoom": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}

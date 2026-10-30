@@ -1,0 +1,31 @@
+{
+  "name": "moonstage",
+  "version": "0.0.0",
+  "description": "Moonstage command-line interface: create, validate, inspect, build, run, test and render Moonstage projects. Human- and agent-friendly (--json everywhere).",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "moonstage": "./dist/main.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "templates",
+    "moonbit-sdk"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@moonstage/core": "0.0.0",
+    "@moonstage/player": "0.0.0"
+  }
+}

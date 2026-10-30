@@ -51,3 +51,15 @@ node_modules/
 *.exe
 # macOS debug symbol bundles.
 *.dSYM/
+
+# Moonstage
+
+# TypeScript build output.
+packages/*/dist/
+*.tsbuildinfo
+# Per-project build cache (compiled behaviors, generated moon.work).
+.moonstage/
+# Web bundles produced by `moonstage build`.
+dist/
+# Headless render output.
+*.frame.svg
