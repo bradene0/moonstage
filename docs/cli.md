@@ -5,7 +5,8 @@
 | Command | Purpose |
 | --- | --- |
 | `describe` | Versions, commands, components, behavior ABI, plugin capabilities, exit codes and every diagnostic code |
-| `new <dir> [--template minimal\|platformer\|shooter] [--name]` | Create a project from a template (default `minimal`) |
+| `new <dir> [--template minimal\|platformer\|shooter\|topdown] [--name] [--no-skills]` | Create a project from a template (default `minimal`), with the agent skills in `.claude/skills/` and `.agents/skills/` |
+| `skills [list]`, `skills install [dir] [--global] [--target claude\|agents\|all]` | List the agent skills, or install them into a project or your home directory |
 | `validate` | Schemas, cross-references, plugins and test files. Missing builds are warnings. |
 | `inspect` | Structured summary of scenes, entities, behaviors (built or not), plugins and tests |
 | `pack [--out file.msp]` | Build, then write an `.msp` package of the project's runtime files |
@@ -98,7 +99,7 @@ would leave the project invalid.
 
 `moonstage mcp` is a Model Context Protocol server over stdio. Its tools (`moonstage_describe`,
 `moonstage_inspect`, `moonstage_get_scene`, `moonstage_edit_scene`, `moonstage_validate`, `moonstage_test`,
-`moonstage_run_headless`, `moonstage_render`, `moonstage_build`, `moonstage_new_project`,
+`moonstage_check`, `moonstage_run_headless`, `moonstage_render`, `moonstage_record`, `moonstage_build`, `moonstage_new_project`,
 `moonstage_plugin_check`, `moonstage_schemas`) call the same functions as the CLI and return the same JSON.
 Example client configuration:
 

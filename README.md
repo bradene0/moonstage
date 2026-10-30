@@ -111,6 +111,10 @@ codes, and `moonstage check` validates, compiles, tests, simulates and renders i
 `import { play } from "@moonstage/player"; play("#game", "./game/")`. The player has no framework
 dependency.
 
+The player records every session: F8 (or `player.saveRecording()`) downloads it as a test file that
+replays exactly. Play one back with `<moonstage-player src="./game/" replay="./bug.test.json">`, the
+`replay` option of `play()`, or `?replay=` on a built page.
+
 ## Packages
 
 | Path | Package | What it is |
