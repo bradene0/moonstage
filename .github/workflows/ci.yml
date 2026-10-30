@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  # Pinned so upstream toolchain changes can't break CI silently.
+  # The moonbit-latest job below reports when a newer toolchain breaks us.
+  MOONBIT_VERSION: 0.10.18+6c83a7f62
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -17,9 +22,9 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: npm
-      - name: Install MoonBit
+      - name: Install MoonBit ${{ env.MOONBIT_VERSION }}
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | MOONBIT_INSTALL_VERSION="$MOONBIT_VERSION" bash
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - run: moon version --all
       - run: npm ci
@@ -28,5 +33,27 @@ jobs:
           MOONSTAGE_REQUIRE_MOON: "1"
       - name: Pack and install smoke test
         run: node scripts/pack-smoke.mjs
-      - name: Size report
-        run: node scripts/size-report.mjs >> "$GITHUB_STEP_SUMMARY"
+      - name: Size budget
+        run: node scripts/size-report.mjs --budget >> "$GITHUB_STEP_SUMMARY"
+      - name: Benchmark
+        run: node scripts/bench.mjs --quick >> "$GITHUB_STEP_SUMMARY"
+
+  moonbit-latest:
+    # Early warning only: does the newest MoonBit toolchain still work?
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install latest MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - run: moon version --all
+      - run: npm ci
+      - run: npm test
+        env:
+          MOONSTAGE_REQUIRE_MOON: "1"

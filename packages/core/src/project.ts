@@ -115,7 +115,7 @@ export interface SpriteComponent {
   anchor?: Vec2;
   frame?: number;
   frameState?: string;
-  animation?: { fps: number; frames?: number[]; loop?: boolean };
+  animation?: { fps: number; frames?: number[]; loop?: boolean; offset?: number | "auto" };
   flipX?: boolean;
   flipY?: boolean;
   opacity?: number;

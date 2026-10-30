@@ -566,3 +566,47 @@ describe("scene switching and sounds (ABI 3)", () => {
     assert.equal(result.passed, true, JSON.stringify(result.diagnostics));
   });
 });
+
+describe("performance structures stay correct", () => {
+  it("delivers events to spawned listeners and not to removed ones", async () => {
+    const m = manifest({
+      prefabs: { ear: { components: { behavior: { module: "ear" } } } },
+      behaviors: {
+        mouth: { wasm: "m", events: ["ping"], prefabs: ["ear"] },
+        ear: { wasm: "e", events: ["ping"], state: ["heard"] },
+      },
+    });
+    // tick 1: spawn an ear; ticks 2-3: ping; end of tick 3: remove the ear; tick 4: ping again.
+    const mouth = jsBehavior((h) => ({
+      ms_update: () => {
+        const t = Math.round(h.time() * 60);
+        if (t === 1) spawned.push(h.spawn(0));
+        if (t >= 2) h.emit(0, 1);
+        if (t === 3) h.remove(spawned[0]!);
+      },
+    }));
+    const spawned: number[] = [];
+    const ear = jsBehavior((h) => ({ ms_event: (self, _e, _s, v) => h.state_set(self, 0, h.state_get(self, 0) + v) }));
+    const scene: SceneSource = { format: 1, entities: [{ id: "mouth", components: { behavior: { module: "mouth" } } }] };
+    const rt = await Runtime.create(project(scene, { manifest: m, behaviors: { mouth, ear } }));
+    rt.step();
+    rt.step();
+    rt.step();
+    assert.equal(rt.read("ear-1", "state.heard"), undefined, "removed at the end of tick 3");
+    rt.step();
+    assert.equal(rt.diagnostics.length, 0, "no event reached the removed ear");
+    assert.equal(rt.events.filter((e) => e.name === "ping").length, 3);
+  });
+
+  it("offsets sprite animations per entity with offset: auto", async () => {
+    const { spriteFrame } = await import("./render.js");
+    const asset = { path: "a.png", frame: { width: 1, height: 1, columns: 4, count: 4 } };
+    const frameOf = (id: string, offset?: number | "auto") =>
+      spriteFrame({ asset: "a", animation: { fps: 8, ...(offset !== undefined && { offset }) } }, asset, { id, born: 0, state: new Map() } as never, 0, 1 / 60);
+    const frames = ["c1", "c2", "c3", "c4", "c5"].map((id) => frameOf(id, "auto"));
+    assert.ok(new Set(frames).size > 1, "copies start on different frames");
+    assert.deepEqual(frames, ["c1", "c2", "c3", "c4", "c5"].map((id) => frameOf(id, "auto")), "stable");
+    assert.equal(frameOf("x", 2), 2);
+    assert.equal(frameOf("x"), 0);
+  });
+});

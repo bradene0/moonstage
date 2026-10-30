@@ -2,8 +2,8 @@
 //
 // It implements Moonstage's physics contract (docs/physics.md) well enough for
 // arcade games and for testing the provider boundary. It is not a
-// general-purpose engine: boxes stay axis-aligned for collision, collisions
-// apply no torque, and broad-phase is O(n²). For serious physics, write a
+// general-purpose engine: boxes stay axis-aligned for collision and
+// collisions apply no torque. A uniform-grid broad phase keeps large scenes fast. For serious physics, write a
 // provider around an engine such as Rapier against the same contract.
 //
 // Contract summary:
@@ -73,16 +73,14 @@ export default {
         const now = new Set();
         for (let step = 0; step < substeps; step++) {
           for (const b of list) integrate(b, gravity, h);
-          for (let i = 0; i < list.length; i++) {
-            for (let k = i + 1; k < list.length; k++) {
-              const a = list[i];
-              const b = list[k];
-              if (a.invMass === 0 && b.invMass === 0 && !a.sensor && !b.sensor) continue;
-              const contact = collide(a, b);
-              if (contact === undefined) continue;
-              now.add(a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`);
-              if (!a.sensor && !b.sensor) resolve(a, b, contact);
-            }
+          for (const [i, k] of candidatePairs(list)) {
+            const a = list[i];
+            const b = list[k];
+            if (a.invMass === 0 && b.invMass === 0 && !a.sensor && !b.sensor) continue;
+            const contact = collide(a, b);
+            if (contact === undefined) continue;
+            now.add(a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`);
+            if (!a.sensor && !b.sensor) resolve(a, b, contact);
           }
           for (const j of joints) solveJoint(j);
         }
@@ -224,6 +222,54 @@ function integrate(b, gravity, h) {
     b.av *= 1 / (1 + b.angularDamping * h);
     b.angle += b.av * h;
   }
+}
+
+const CELL = 64;
+/** Bodies spanning more cells than this (huge static floors) are tested against everything instead. */
+const MAX_CELLS = 256;
+
+function bounds(b) {
+  const x = b.x + b.ox;
+  const y = b.y + b.oy;
+  const [hw, hh] = b.shape === "circle" ? [b.r, b.r] : [b.hw, b.hh];
+  return [Math.floor((x - hw) / CELL), Math.floor((y - hh) / CELL), Math.floor((x + hw) / CELL), Math.floor((y + hh) / CELL)];
+}
+
+/**
+ * Index pairs [i, k] (i < k) whose grid cells overlap, sorted so the solver
+ * visits them in the same deterministic order as an all-pairs loop.
+ */
+function candidatePairs(list) {
+  const grid = new Map();
+  const large = [];
+  const seen = new Set();
+  const pairs = [];
+  const add = (i, k) => {
+    const key = i < k ? i * list.length + k : k * list.length + i;
+    if (seen.has(key)) return;
+    seen.add(key);
+    pairs.push(key);
+  };
+  list.forEach((b, i) => {
+    const [x0, y0, x1, y1] = bounds(b);
+    if ((x1 - x0 + 1) * (y1 - y0 + 1) > MAX_CELLS) {
+      large.push(i);
+      return;
+    }
+    for (let cx = x0; cx <= x1; cx++) {
+      for (let cy = y0; cy <= y1; cy++) {
+        const key = (cx + 0x8000) * 0x10000 + (cy + 0x8000);
+        const cell = grid.get(key);
+        if (cell === undefined) grid.set(key, [i]);
+        else {
+          for (const k of cell) add(i, k);
+          cell.push(i);
+        }
+      }
+    }
+  });
+  for (const i of large) for (let k = 0; k < list.length; k++) if (k !== i) add(i, k);
+  return pairs.sort((p, q) => p - q).map((key) => [Math.floor(key / list.length), key % list.length]);
 }
 
 /** Contact normal (from a to b) and penetration depth, or undefined. */

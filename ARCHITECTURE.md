@@ -111,6 +111,17 @@ test keeps the two in sync. Ajv checks that the generated schemas are standard J
 (`moonstage mcp`, a thin adapter over the CLI command functions) all use it. A future visual editor should
 too.
 
+## Performance notes
+
+`npm run bench` measures the runtime at scale. At 5,000 entities, behavior updates (including real MoonBit
+WebAssembly) and frame building each take about 0.4–1 ms per tick on a laptop. Things that keep it that way:
+
+- Event dispatch uses a per-event index of listening bindings, rebuilt only after entities are bound or
+  removed, so it costs O(listeners), not O(entities).
+- Behavior calls allocate nothing (no closures or temporary arrays per call).
+- Transform snapshots for interpolation are copied in place.
+- Frame building caches world matrices of entities that have children.
+
 ## Known limits (deliberate, for now)
 
 - Built-in renderables are shapes, text and image sprites (with sprite sheets). There is no tinting,

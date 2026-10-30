@@ -77,7 +77,7 @@ Entities update and draw in scene order, unless `layer` says otherwise.
 | `shape` | `kind` (`rect` \| `circle` \| `polygon`), `size` (rect), `radius` (circle), `points` (polygon), `fill`, `stroke`, `strokeWidth`, `opacity`, `layer`, `space` (`world` \| `screen`) |
 | `text` | `value`, `size`, `fill`, `align`, `opacity`, `layer`, `space`. `{entityId.stateName}` in `value` is replaced with live state. |
 | `behavior` | `module`, `params` {name: number}, `refs` {name: entityId}, `state` {name: initial number}. Can also be a list of these; they run in order and share state. |
-| `sprite` | `asset`, `size` (default: frame size or natural size), `anchor` [0..1, 0..1] (default center), `frame`, `frameState` (a state name whose value picks the frame), `animation` {`fps`, `frames`, `loop`}, `flipX`, `flipY`, `opacity`, `layer`, `space` |
+| `sprite` | `asset`, `size` (default: frame size or natural size), `anchor` [0..1, 0..1] (default center), `frame`, `frameState` (a state name whose value picks the frame), `animation` {`fps`, `frames`, `loop`, `offset`: frames or `"auto"` for a stable per-entity offset}, `flipX`, `flipY`, `opacity`, `layer`, `space` |
 | `camera` | `zoom`. The scene's `camera` entity is centered in the view. |
 
 A sprite picks its frame from `frameState` first, then `animation` (played on simulation time, counted from

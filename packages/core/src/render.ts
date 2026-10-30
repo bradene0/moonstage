@@ -86,6 +86,13 @@ export interface Renderer {
   dispose?(): void;
 }
 
+/** FNV-1a: a small, stable hash so "auto" offsets are the same on every platform and run. */
+function stableHash(text: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  return h >>> 0;
+}
+
 /** Which sprite-sheet frame to show: frameState, then animation, then the static frame. */
 export function spriteFrame(sprite: SpriteComponent, asset: AssetDecl | undefined, entity: Entity, tick: number, dt: number): number {
   const count = asset?.frame ? (asset.frame.count ?? asset.frame.columns ?? 1) : 1;
@@ -95,7 +102,8 @@ export function spriteFrame(sprite: SpriteComponent, asset: AssetDecl | undefine
   }
   if (sprite.animation !== undefined) {
     const frames = sprite.animation.frames ?? Array.from({ length: count }, (_, i) => i);
-    const step = Math.floor((tick - entity.born) * dt * sprite.animation.fps);
+    const offset = sprite.animation.offset === "auto" ? stableHash(entity.id) % frames.length : (sprite.animation.offset ?? 0);
+    const step = Math.floor((tick - entity.born) * dt * sprite.animation.fps) + offset;
     const index = sprite.animation.loop === false ? Math.min(step, frames.length - 1) : step % frames.length;
     return frames[Math.max(0, index)] ?? 0;
   }
@@ -130,10 +138,11 @@ export function buildFrame(rt: Runtime, alpha: number): RenderFrame {
   );
 
   const items: DrawItem[] = [];
+  const matrices = new Map<number, Matrix>();
   for (const e of world.entities) {
     const { shape, text, sprite } = e.components;
     if ((shape === undefined && text === undefined && sprite === undefined) || !world.activeInHierarchy(e.handle)) continue;
-    const local = world.worldMatrix(e.handle, alpha);
+    const local = world.worldMatrix(e.handle, alpha, matrices);
     if (shape !== undefined) {
       const base = {
         entity: e.id,

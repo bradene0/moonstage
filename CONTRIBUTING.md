@@ -41,6 +41,16 @@ The easiest fixture is a scene plus a `tests/*.test.json` file in an example pro
 without MoonBit, build behaviors from JS with `jsBehavior()` from
 `packages/core/src/test-helpers.test.ts`.
 
+## Performance and size
+
+```bash
+npm run bench        # ms per tick and per frame build at 5,000 entities, events, spawning, physics
+npm run size         # raw and gzipped package sizes against their budgets
+```
+
+CI publishes both tables in the run summary and fails if a package exceeds its gzipped budget
+(`scripts/size-report.mjs`). Raise a budget only deliberately, in the change that needs it.
+
 ## Packaging
 
 ```bash

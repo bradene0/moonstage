@@ -94,6 +94,13 @@ interface Module {
   iface: BehaviorInterface;
 }
 
+/** Which lifecycle export a behavior call runs. */
+const enum Call {
+  Start,
+  Update,
+  Event,
+}
+
 const MAX_CATCH_UP_TICKS = 5;
 const MAX_LOGGED_EVENTS = 10_000;
 /** Spawn chains (ms_start spawning more entities) settle within this many rounds per tick. */
@@ -136,6 +143,7 @@ export class Runtime {
   private readonly removing = new Set<number>();
   private readonly modules = new Map<string, Module>();
   private readonly bindings = new Map<number, BehaviorBinding[]>();
+  private readonly eventIndex = new Map<string, { handle: number; binding: BehaviorBinding; slot: number }[]>();
   private readonly plugins: { name: string; instance: PluginInstance }[] = [];
   private readonly listeners = new Map<string, Set<(e: EventRecord) => void>>();
   private readonly maxEventRounds: number;
@@ -216,7 +224,10 @@ export class Runtime {
         disabled: false,
       };
     });
-    if (list.length > 0) this.bindings.set(entity.handle, list);
+    if (list.length > 0) {
+      this.bindings.set(entity.handle, list);
+      this.eventIndex.clear();
+    }
   }
 
   private entityAt(handle: number): Entity {
@@ -440,14 +451,20 @@ export class Runtime {
     this.pending.push({ tick: this.tick, name, source, value });
   }
 
-  /** Run a behavior call, converting traps into diagnostics and disabling the binding. */
-  private call(handle: number, binding: BehaviorBinding, fn: () => void): void {
+  /**
+   * Run one lifecycle export of a behavior, converting traps into diagnostics
+   * and disabling the binding. Hot path: no closures or temporary arrays.
+   */
+  private call(handle: number, binding: BehaviorBinding, kind: Call, slot = 0, source = -1, value = 0): void {
     if (binding.disabled) return;
-    const [outerEntity, outerBinding] = [this.current, this.currentBinding];
+    const outerEntity = this.current;
+    const outerBinding = this.currentBinding;
     this.current = handle;
     this.currentBinding = binding;
     try {
-      fn();
+      if (kind === Call.Update) binding.exports.ms_update(handle, this.dt);
+      else if (kind === Call.Event) binding.exports.ms_event(handle, slot, source, value);
+      else binding.exports.ms_start(handle);
     } catch (err) {
       binding.disabled = true;
       const entity = this.world.get(handle);
@@ -464,20 +481,22 @@ export class Runtime {
     }
   }
 
-  /** Call `fn` for every binding of every live, active entity in `entities`. */
-  private eachBinding(entities: readonly Entity[], fn: (handle: number, b: BehaviorBinding) => void): void {
+  /** Run `kind` for every binding of every live, active entity in `entities`, in order. */
+  private callAll(entities: readonly Entity[], kind: Call): void {
     for (const e of entities) {
       const list = this.bindings.get(e.handle);
       if (list === undefined || !this.exists(e.handle) || !this.world.activeInHierarchy(e.handle)) continue;
-      for (const b of list) fn(e.handle, b);
+      for (const b of list) this.call(e.handle, b, kind);
     }
   }
+
+
 
   /** Call ms_start on behaviors and start plugins. Idempotent. */
   start(): void {
     if (this.started) return;
     this.started = true;
-    this.eachBinding([...this.world.entities], (h, b) => this.call(h, b, () => b.exports.ms_start(h)));
+    this.callAll([...this.world.entities], Call.Start);
     for (const p of this.plugins) p.instance.start?.();
     this.dispatchEvents();
     this.settleLifecycle();
@@ -491,7 +510,7 @@ export class Runtime {
     this.switchesThisTick = 0;
     this.world.snapshotPrevious();
     // Entities spawned during this tick are not updated until the next one.
-    this.eachBinding([...this.world.entities], (h, b) => this.call(h, b, () => b.exports.ms_update(h, this.dt)));
+    this.callAll([...this.world.entities], Call.Update);
     for (const p of this.plugins) p.instance.update?.(this.dt);
     this.dispatchEvents();
     this.settleLifecycle();
@@ -504,7 +523,7 @@ export class Runtime {
       const batch = this.spawned;
       this.spawned = [];
       for (const e of batch) e.previous = { ...e.transform }; // no interpolation from the prefab origin
-      this.eachBinding(batch, (h, b) => this.call(h, b, () => b.exports.ms_start(h)));
+      this.callAll(batch, Call.Start);
       for (const e of batch) {
         if (this.world.get(e.handle) === undefined) continue;
         for (const p of this.plugins) p.instance.entityAdded?.(e.id);
@@ -515,7 +534,7 @@ export class Runtime {
       const removed = this.world.remove(this.removing);
       this.removing.clear();
       for (const e of removed) {
-        this.bindings.delete(e.handle);
+        if (this.bindings.delete(e.handle)) this.eventIndex.clear();
         for (const p of this.plugins) p.instance.entityRemoved?.(e.id);
       }
     }
@@ -541,6 +560,7 @@ export class Runtime {
     for (const p of this.plugins) p.instance.stop?.();
     for (const e of this.world.entities) for (const p of this.plugins) p.instance.entityRemoved?.(e.id);
     this.bindings.clear();
+    this.eventIndex.clear();
     this.removing.clear();
     this.spawned = [];
     this.pending = [];
@@ -552,7 +572,7 @@ export class Runtime {
       this.bind(e);
     }
     this.sceneHistory.push({ tick: this.tick, scene: sceneId });
-    this.eachBinding([...this.world.entities], (h, b) => this.call(h, b, () => b.exports.ms_start(h)));
+    this.callAll([...this.world.entities], Call.Start);
     for (const p of this.plugins) p.instance.start?.();
     this.dispatchEvents();
     // A scene's own start may spawn or switch again; settle once more.
@@ -582,13 +602,33 @@ export class Runtime {
       for (const event of batch) {
         if (this.events.length < MAX_LOGGED_EVENTS) this.events.push(event);
         const source = event.source === null ? -1 : this.world.handle(event.source);
-        this.eachBinding([...this.world.entities], (h, b) => {
-          const slot = b.iface.events.indexOf(event.name);
-          if (slot >= 0) this.call(h, b, () => b.exports.ms_event(h, slot, source, event.value));
-        });
+        for (const { handle: h, binding: b, slot } of this.listenersOf(event.name)) {
+          if (!this.exists(h) || !this.world.activeInHierarchy(h)) continue;
+          this.call(h, b, Call.Event, slot, source, event.value);
+        }
         for (const listener of this.listeners.get(event.name) ?? []) listener(event);
       }
     }
+  }
+
+  /**
+   * Behavior bindings that declare an event, in entity order. Cached per event
+   * name and rebuilt only after entities are bound or removed, so dispatch
+   * costs O(listeners) instead of O(entities).
+   */
+  private listenersOf(name: string): readonly { handle: number; binding: BehaviorBinding; slot: number }[] {
+    let list = this.eventIndex.get(name);
+    if (list === undefined) {
+      list = [];
+      for (const e of this.world.entities) {
+        for (const binding of this.bindings.get(e.handle) ?? []) {
+          const slot = binding.iface.events.indexOf(name);
+          if (slot >= 0) list.push({ handle: e.handle, binding, slot });
+        }
+      }
+      this.eventIndex.set(name, list);
+    }
+    return list;
   }
 
   /** Stop plugins. The runtime can be started again only by creating a new one. */
@@ -601,6 +641,7 @@ export class Runtime {
     this.plugins.length = 0;
     this.listeners.clear();
     this.bindings.clear();
+    this.eventIndex.clear();
   }
 
   /** Render description for the current state, interpolated by alpha (0..1). */

@@ -3,6 +3,21 @@
 Moonstage is in early development. Contracts may change between releases; each entry lists the contract
 versions so you can tell what moved.
 
+## Unreleased
+
+### Added
+
+- `animation.offset` on sprites: a frame count, or `"auto"` for a stable per-entity offset.
+- `npm run bench` (runtime benchmarks at scale) and gzipped size budgets enforced in CI.
+
+### Changed
+
+- Faster event dispatch (an index of listeners instead of scanning every entity: 19.7 → 6.8 ms per tick in
+  the 100,000-call benchmark), allocation-free behavior calls and transform snapshots, cached ancestor matrices.
+- The reference physics provider uses a uniform-grid broad phase (600 bodies: 8.3 → 5.0 ms per tick).
+- CI pins the MoonBit toolchain (`0.10.18+6c83a7f62`) and runs a non-blocking job against the latest one.
+- Moon Hopper's crystals no longer animate in lockstep.
+
 ## 0.3.0
 
 Contract versions: project format 1, behavior ABI 3 (accepts 1-3), plugin API 3 (accepts 1-3), package format 1.

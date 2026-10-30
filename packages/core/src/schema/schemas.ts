@@ -120,6 +120,10 @@ const components = {
             fps: { type: "number", exclusiveMinimum: 0 },
             frames: { type: "array", items: { type: "integer", minimum: 0 }, minItems: 1, description: "Default: every frame." },
             loop: { type: "boolean", description: "Default true; false holds the last frame." },
+            offset: {
+              anyOf: [{ type: "integer", minimum: 0 }, { const: "auto" }],
+              description: "Start this many frames in, or 'auto' to derive a stable offset from the entity id so copies don't animate in sync.",
+            },
           },
         },
         flipX: { type: "boolean" },

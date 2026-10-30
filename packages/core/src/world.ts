@@ -153,11 +153,25 @@ export class World {
 
   /** Remember transforms at the start of a tick so rendering can interpolate. */
   snapshotPrevious(): void {
-    for (const e of this.entities) e.previous = { ...e.transform };
+    for (const e of this.entities) {
+      const p = e.previous;
+      const t = e.transform;
+      p.x = t.x;
+      p.y = t.y;
+      p.rotation = t.rotation;
+      p.scaleX = t.scaleX;
+      p.scaleY = t.scaleY;
+    }
   }
 
-  /** World matrix, interpolated between the previous and current tick by alpha. */
-  worldMatrix(handle: number, alpha = 1): Matrix {
+  /**
+   * World matrix, interpolated between the previous and current tick by alpha.
+   * Pass a cache when computing many matrices for one frame so shared
+   * ancestors are composed once.
+   */
+  worldMatrix(handle: number, alpha = 1, cache?: Map<number, Matrix>): Matrix {
+    const cached = cache?.get(handle);
+    if (cached !== undefined) return cached;
     const e = this.slots[handle]!;
     const p = e.previous;
     const c = e.transform;
@@ -168,6 +182,9 @@ export class World {
       lerp(p.scaleX, c.scaleX, alpha),
       lerp(p.scaleY, c.scaleY, alpha),
     );
-    return e.parent >= 0 && this.slots[e.parent] !== undefined ? multiply(this.worldMatrix(e.parent, alpha), local) : local;
+    const m = e.parent >= 0 && this.slots[e.parent] !== undefined ? multiply(this.worldMatrix(e.parent, alpha, cache), local) : local;
+    // Only entities with children are reused as ancestors, so only they are worth caching.
+    if (e.children.length > 0) cache?.set(handle, m);
+    return m;
   }
 }

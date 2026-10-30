@@ -21,7 +21,8 @@
     "size": "npm run build && node scripts/size-report.mjs",
     "schemas": "npm run build && node packages/cli/dist/main.js schemas --write",
     "pack": "npm run build && npm pack --workspaces --pack-destination .release",
-    "smoke:pack": "npm run build && node scripts/pack-smoke.mjs"
+    "smoke:pack": "npm run build && node scripts/pack-smoke.mjs",
+    "bench": "npm run build && node scripts/bench.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
