@@ -1,0 +1,14 @@
+{
+  "name": "moonstage",
+  "description": "Moonstage: agent skills and an MCP server for building, testing and sharing browser games.",
+  "owner": {
+    "name": "Braden Evans"
+  },
+  "plugins": [
+    {
+      "name": "moonstage",
+      "source": "./",
+      "description": "Agent skills and the MCP server for building browser games with Moonstage."
+    }
+  ]
+}

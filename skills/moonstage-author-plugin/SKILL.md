@@ -1,6 +1,6 @@
 ---
-name: author-plugin
-description: Write a Moonstage plugin (runtime system, renderer or integration) without modifying core.
+name: moonstage-author-plugin
+description: 'Use when a Moonstage project needs functionality core does not provide (a renderer, an integration, a custom system): write and check a plugin without modifying core.'
 ---
 
 # Author a plugin
@@ -9,7 +9,7 @@ description: Write a Moonstage plugin (runtime system, renderer or integration) 
    formats and external runtimes are always plugins.
 2. Scaffold: `moonstage plugin new <dir> --name <name> --json`. This creates a package with a working
    plugin (`index.js`), a `conformance` fixture and a conformance test. For a quick project-local plugin,
-   copy `index.js` into the project's `plugins/` folder instead. The contract is in `docs/plugins.md`.
+   copy `index.js` into the project's `plugins/` folder instead. The contract is in `moonstage guide plugins`.
 3. Fill in the metadata: `name` (this is also the extension namespace), `version`, `pluginApi: 2`, and
    the smallest `capabilities` list that works (`world.read`, `world.write`, `events`, `input.read`).
 4. Write `configSchema` and `extensionSchema` (JSON Schema), and keep the exported `conformance` fixture's

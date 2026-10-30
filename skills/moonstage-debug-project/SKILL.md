@@ -1,6 +1,6 @@
 ---
-name: debug-project
-description: Diagnose and fix a failing Moonstage project using structured diagnostics.
+name: moonstage-debug-project
+description: 'Use when a Moonstage project fails: validation errors, MoonBit compile errors, failing tests, runtime traps or a game that misbehaves when played. Fixes by diagnostic code.'
 ---
 
 # Debug a project

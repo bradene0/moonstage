@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { gunzipSync } from "node:zlib";
 import { dirname, join, resolve } from "node:path";
@@ -425,6 +425,24 @@ describe("moonstage CLI", () => {
       assert.equal(single.code, 0, single.stdout);
     });
   }
+
+  it("installs the agent skills into new projects and on request", () => {
+    const dir = join(scratch, "skilled");
+    assert.equal(cli("new", dir, "--json").code, 0);
+    for (const folder of [".claude/skills", ".agents/skills"]) {
+      const skill = readFileSync(join(dir, folder, "moonstage-build-game", "SKILL.md"), "utf8");
+      assert.match(skill, /^name: moonstage-build-game$/m);
+      assert.match(skill, /^description: 'Use when/m);
+    }
+    const bare = join(scratch, "bare");
+    assert.equal(cli("new", bare, "--no-skills", "--json").code, 0);
+    assert.equal(existsSync(join(bare, ".claude")), false);
+    const installed = cli("skills", "install", bare, "--target", "claude", "--json");
+    assert.equal(installed.code, 0, installed.stdout);
+    assert.equal(installed.json.files.length, 5);
+    assert.equal(existsSync(join(bare, ".agents")), false, "--target claude writes only .claude/skills");
+    assert.equal(cli("guide", "moonstage-debug-project", "--json").json.topic, "debug-project", "full skill names work as topics");
+  });
 
   it("rejects unknown templates", () => {
     const r = cli("new", join(scratch, "nope"), "--template", "rpg", "--json");

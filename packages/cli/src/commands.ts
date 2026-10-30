@@ -6,6 +6,7 @@
 
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { cp, mkdir, readdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
@@ -71,7 +72,7 @@ export const COMMANDS: CommandSpec[] = [
   {
     name: "new",
     summary: "Create a new project from a template: minimal (default), platformer or shooter.",
-    usage: "moonstage new <dir> [--template minimal|platformer|shooter|topdown] [--name <name>] [--json]",
+    usage: "moonstage new <dir> [--template minimal|platformer|shooter|topdown] [--name <name>] [--no-skills] [--json]",
   },
   { name: "validate", summary: "Validate project files, references, plugins and tests.", usage: "moonstage validate [dir] [--json]" },
   { name: "inspect", summary: "Summarize scenes, entities, behaviors and plugins.", usage: "moonstage inspect [dir] [--json]" },
@@ -82,6 +83,11 @@ export const COMMANDS: CommandSpec[] = [
     usage: "moonstage run [dir] [--headless --ticks <n> --seed <n> --scene <id> --input <json> --input-script <json|file> --setup <json|file>] [--port <n>] [--no-build] [--json]",
   },
   { name: "test", summary: "Run tests/*.test.json headlessly.", usage: "moonstage test [dir] [--filter <text>] [--no-build] [--json]" },
+  {
+    name: "skills",
+    summary: "List the agent skills, or install them into a project (.claude/skills, .agents/skills) or globally.",
+    usage: "moonstage skills [list] | moonstage skills install [dir] [--global] [--target claude|agents|all] [--json]",
+  },
   {
     name: "record",
     summary: "Simulate a session and write it as an animated SVG that loops in any browser.",
@@ -250,6 +256,13 @@ interface GuideTopic {
   path: string;
 }
 
+/** A YAML scalar from skill frontmatter, without its quotes. */
+function unquote(value: string): string {
+  if (value.startsWith("'") && value.endsWith("'")) return value.slice(1, -1).replace(/''/g, "'");
+  if (value.startsWith('"') && value.endsWith('"')) return JSON.parse(value) as string;
+  return value;
+}
+
 async function guideTopics(): Promise<GuideTopic[]> {
   const dirs = guideDirs();
   if (dirs === undefined) return [];
@@ -258,7 +271,8 @@ async function guideTopics(): Promise<GuideTopic[]> {
     const path = join(dirs.skills, entry.name, "SKILL.md");
     if (!entry.isDirectory() || !existsSync(path)) continue;
     const text = await readFile(path, "utf8");
-    topics.push({ name: entry.name, kind: "skill", description: /^description:\s*(.+)$/m.exec(text)?.[1] ?? "", path });
+    // Skill folders are named moonstage-<topic> so they don't clash with other skills once installed.
+    topics.push({ name: entry.name.replace(/^moonstage-/, ""), kind: "skill", description: unquote(/^description:\s*(.+)$/m.exec(text)?.[1] ?? ""), path });
   }
   for (const name of (await readdir(dirs.docs)).filter((n) => n.endsWith(".md")).sort()) {
     const path = join(dirs.docs, name);
@@ -288,7 +302,7 @@ export async function guide(opts: { topic?: string }): Promise<CommandResult> {
       ],
     });
   }
-  const topic = topics.find((t) => t.name === opts.topic);
+  const topic = topics.find((t) => t.name === opts.topic || `moonstage-${t.name}` === opts.topic);
   if (topic === undefined) {
     return result({
       exitCode: EXIT.usage,
@@ -376,7 +390,7 @@ async function scaffold(
   return { target, name: display, files };
 }
 
-export async function create(opts: { dir?: string; name?: string; template?: string }): Promise<CommandResult> {
+export async function create(opts: { dir?: string; name?: string; template?: string; skills?: boolean }): Promise<CommandResult> {
   const template = opts.template ?? "minimal";
   if (!(template in TEMPLATES)) {
     return result({
@@ -389,6 +403,8 @@ export async function create(opts: { dir?: string; name?: string; template?: str
   const { target, name, files } = made;
   const manifest = JSON.parse(await readFile(join(target, "moonstage.json"), "utf8"));
   files.push(...(await writeSlotFiles(target, manifest)));
+  // Agents working in the project pick these up automatically (.claude/skills, .agents/skills).
+  if (opts.skills !== false) files.push(...(await copySkills(target, "all")).map((f) => relative(target, f)));
   files.sort();
   return result({
     data: { root: target, template, files, next: ["moonstage guide build-game", "moonstage check", "moonstage run"] },
@@ -402,6 +418,58 @@ export async function create(opts: { dir?: string; name?: string; template?: str
       "  moonstage check              # validate, compile, test, simulate and render in one step",
       "  moonstage run                # play in the browser",
     ],
+  });
+}
+
+// ---------------------------------------------------------------- skills
+
+const SKILL_TARGETS = { claude: ".claude/skills", agents: ".agents/skills" } as const;
+type SkillTarget = keyof typeof SKILL_TARGETS | "all";
+
+/** Copy the bundled skills into `<base>/.claude/skills` and/or `<base>/.agents/skills`. Returns the files written. */
+async function copySkills(base: string, target: SkillTarget): Promise<string[]> {
+  const dirs = guideDirs();
+  if (dirs === undefined) return [];
+  const written: string[] = [];
+  const folders = target === "all" ? Object.values(SKILL_TARGETS) : [SKILL_TARGETS[target]];
+  for (const entry of await readdir(dirs.skills, { withFileTypes: true })) {
+    const source = join(dirs.skills, entry.name, "SKILL.md");
+    if (!entry.isDirectory() || !existsSync(source)) continue;
+    for (const folder of folders) {
+      const out = join(base, folder, entry.name, "SKILL.md");
+      await mkdir(dirname(out), { recursive: true });
+      await writeFile(out, await readFile(source, "utf8"));
+      written.push(out);
+    }
+  }
+  return written;
+}
+
+/**
+ * Install the Moonstage agent skills where coding agents look for them: a project's `.claude/skills` and
+ * `.agents/skills`, or the user's (`--global`). Existing moonstage-* skills are replaced with this version.
+ */
+export async function skills(opts: { action?: string; dir?: string; global?: boolean; target?: string }): Promise<CommandResult> {
+  const target = (opts.target ?? "all") as SkillTarget;
+  if (!(target === "all" || target in SKILL_TARGETS)) {
+    return result({ exitCode: EXIT.usage, diagnostics: [diagnostic("MS9001", `--target must be claude, agents or all (got "${opts.target}")`)] });
+  }
+  if (opts.action === undefined || opts.action === "list") {
+    const topics = (await guideTopics()).filter((t) => t.kind === "skill");
+    return result({
+      data: { skills: topics.map((t) => ({ name: `moonstage-${t.name}`, description: t.description })) },
+      lines: [...topics.map((t) => `moonstage-${t.name}`.padEnd(28) + t.description), "", "Install with `moonstage skills install [dir] [--global]`."],
+    });
+  }
+  if (opts.action !== "install") {
+    return result({ exitCode: EXIT.usage, diagnostics: [diagnostic("MS9001", `unknown skills subcommand "${opts.action}": use "skills list" or "skills install"`)] });
+  }
+  const base = opts.global ? homedir() : resolve(opts.dir ?? ".");
+  const written = await copySkills(base, target);
+  if (written.length === 0) return result({ exitCode: EXIT.environment, diagnostics: [diagnostic("MS9001", "the bundled skills were not found")] });
+  return result({
+    data: { base, files: written },
+    lines: [`installed ${written.length} skill file(s) under ${base}:`, ...written.map((f) => `  ${relative(base, f)}`)],
   });
 }
 

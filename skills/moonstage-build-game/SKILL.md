@@ -1,6 +1,6 @@
 ---
-name: build-game
-description: Turn a game or interactive-experience request into a working Moonstage project, verified headlessly.
+name: moonstage-build-game
+description: 'Use when the user wants a browser game or interactive toy built with Moonstage ("make a game where…"): plan scenes, entities and MoonBit behaviors, write tests, and verify headlessly with `moonstage check`.'
 ---
 
 # Build a game with Moonstage
@@ -12,8 +12,8 @@ Work in small verified steps. Never hand off a project that you have not validat
    (images and sprite sheets declared under `assets`). For physics, add `physicsBody` / `collider` /
    `joint` components and the `@moonstage/physics` plugin (`"module": "@moonstage/physics"`, no install
    needed), and drive bodies through state `vx` / `vy` (see `moonstage guide physics`). Anything else (3D, advanced audio)
-   needs a plugin: see [author-plugin](../author-plugin/SKILL.md).
-2. **Project**: if none exists, follow [create-project](../create-project/SKILL.md), starting from the
+   needs a plugin: see [author-plugin](../moonstage-author-plugin/SKILL.md).
+2. **Project**: if none exists, follow [create-project](../moonstage-create-project/SKILL.md), starting from the
    closest template (`moonstage new <dir> --template platformer|shooter|minimal`). Then run
    `moonstage inspect --json` to see the current state.
 3. **Design the data first**:
@@ -36,7 +36,8 @@ Work in small verified steps. Never hand off a project that you have not validat
    - Spawn bullets, particles and enemies from `prefabs` with `@sdk.spawn_at(prefab_x, x, y)`, and clean up
      with `@sdk.remove`. Check `@sdk.exists(handle)` before using a handle kept in state.
    - Use only `@sdk.random()` for randomness.
-   - Reference: `docs/behavior-abi.md` and `examples/moon-hopper/behaviors/`.
+   - Reference: `moonstage guide moonbit` and `moonstage guide behavior-abi`; the templates' `behaviors/` folders
+     are small working examples.
 5. **Test**: add `tests/<feature>.test.json` for each mechanic, using scripted `input`, `setup`
    operations and assertions on `state.*`, `transform.*`, `active`, events and prefab counts.
 6. **Check after every edit**: run `moonstage fmt` (compact JSON keeps scenes short and diffs small), then
@@ -46,7 +47,7 @@ Work in small verified steps. Never hand off a project that you have not validat
 7. **Dig into one problem** only when `check` points at it: `moonstage run --headless --input-script
    tests/x.test.json --setup tests/x.test.json --json` replays a test with the full state snapshot, and
    `moonstage render --tick 120 --input-script …` shows any moment of it.
-8. **Iterate** on failures: see [debug-project](../debug-project/SKILL.md). When everything passes,
+8. **Iterate** on failures: see [debug-project](../moonstage-debug-project/SKILL.md). When everything passes,
    `moonstage run` lets a human play, and `moonstage build --single-file` produces one `.html` to share.
 
-The reference implementation of all of this is `examples/moon-hopper/`.
+Every template (`moonstage new <dir> --template platformer|shooter|topdown`) is a complete example of all of this.

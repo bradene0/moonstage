@@ -1,0 +1,26 @@
+{
+  "name": "moonstage",
+  "description": "Build browser games with Moonstage: agent skills for creating, building, testing and debugging projects, plus the moonstage MCP server.",
+  "version": "0.4.0",
+  "author": {
+    "name": "Braden Evans"
+  },
+  "homepage": "https://github.com/bradene0/moonstage",
+  "license": "MIT",
+  "keywords": [
+    "games",
+    "webassembly",
+    "moonbit",
+    "gamedev"
+  ],
+  "mcpServers": {
+    "moonstage": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "moonstage@latest",
+        "mcp"
+      ]
+    }
+  }
+}

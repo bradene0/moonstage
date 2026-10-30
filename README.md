@@ -45,7 +45,7 @@ You need Node.js 22 or newer and the [MoonBit toolchain](https://www.moonbitlang
 Start a project from npm:
 
 ```bash
-npx moonstage new my-game --template platformer   # or shooter, or minimal
+npx moonstage new my-game --template platformer   # or shooter, topdown, minimal
 cd my-game
 npx moonstage check     # validate, compile, test, simulate and render in one step
 npx moonstage run       # play at http://localhost:5173
@@ -72,6 +72,30 @@ node packages/cli/dist/main.js run examples/moon-hopper --headless --ticks 600 -
 
 Every command accepts `--json`, and the exit codes are meaningful (see `moonstage describe`). The docs and
 agent skills ship with the CLI: `moonstage guide`.
+
+## For coding agents
+
+Moonstage is built to be driven by agents: every command takes `--json`, problems are diagnostics with stable
+codes, and `moonstage check` validates, compiles, tests, simulates and renders in one call.
+
+- **Skills.** `moonstage new` puts the Moonstage skills in the project's `.claude/skills/` and
+  `.agents/skills/`, where agents pick them up. For an existing project or all your projects:
+
+  ```bash
+  npx moonstage skills install            # this project
+  npx moonstage skills install --global   # ~/.claude/skills and ~/.agents/skills
+  ```
+
+- **Claude Code plugin.** This repository is also a plugin marketplace with the skills and the MCP server:
+
+  ```text
+  /plugin marketplace add bradene0/moonstage
+  /plugin install moonstage@moonstage
+  ```
+
+- **MCP.** `moonstage mcp` serves the same commands as tools over stdio.
+- **Record and replay.** In `moonstage run`, F8 downloads the session as a test file that replays exactly;
+  `moonstage record` turns any session into an animated SVG an agent or a person can watch.
 
 ## Playing a project in a page
 

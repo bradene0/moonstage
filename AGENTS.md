@@ -70,8 +70,8 @@ those tests are skipped. CI sets `MOONSTAGE_REQUIRE_MOON=1`, which turns a missi
 
 Also available from the CLI anywhere, with no repository checkout: `moonstage guide [topic]`.
 
-- `skills/create-project/`
-- `skills/build-game/`
-- `skills/author-plugin/`
-- `skills/debug-project/`
-- `skills/test-render/`
+- `skills/moonstage-create-project/`
+- `skills/moonstage-build-game/`
+- `skills/moonstage-author-plugin/`
+- `skills/moonstage-debug-project/`
+- `skills/moonstage-test-render/`

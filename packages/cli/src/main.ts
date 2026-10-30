@@ -27,7 +27,8 @@ const sim = {
 
 const OPTIONS: Record<string, ParseArgsConfig["options"]> = {
   describe: shared,
-  new: { ...shared, name: { type: "string" }, template: { type: "string" } },
+  new: { ...shared, name: { type: "string" }, template: { type: "string" }, "no-skills": { type: "boolean" } },
+  skills: { ...shared, global: { type: "boolean" }, target: { type: "string" } },
   validate: shared,
   inspect: shared,
   build: { ...shared, out: { type: "string" }, "no-bundle": { type: "boolean" }, "single-file": { type: "boolean" } },
@@ -89,7 +90,12 @@ async function dispatch(name: string, values: Record<string, unknown>, dir: stri
     case "describe":
       return commands.describe();
     case "new":
-      return commands.create({ dir, ...(s("name") && { name: s("name") }), ...(s("template") && { template: s("template") }) });
+      return commands.create({
+        dir,
+        ...(s("name") && { name: s("name") }),
+        ...(s("template") && { template: s("template") }),
+        skills: !values["no-skills"],
+      });
     case "validate":
       return commands.validate({ dir });
     case "inspect":
@@ -164,6 +170,9 @@ async function dispatch(name: string, values: Record<string, unknown>, dir: stri
     case "mcp":
       await serveMcp();
       return result({});
+    case "skills":
+      // `dir` is the subcommand here; the project directory follows it.
+      return commands.skills({ action: dir, dir: rest[0], global: Boolean(values.global), ...(s("target") && { target: s("target") }) });
     case "plugin":
       // `dir` is the subcommand here; the path follows it.
       if (dir === "new") return commands.pluginNew({ dir: rest[0], ...(s("name") && { name: s("name") }) });

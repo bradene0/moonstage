@@ -58,6 +58,11 @@ versions so you can tell what moved.
   characters missing from `tiles`.
 - **`moonstage new --template topdown`**: walk a tile maze and collect tagged gems against the clock.
 
+- **Installable agent skills.** Skills are named `moonstage-*` with "Use when…" descriptions.
+  `moonstage new` installs them into the project (`.claude/skills/`, `.agents/skills/`; `--no-skills` to
+  skip), `moonstage skills install [--global]` installs them anywhere, and the repository is a Claude Code
+  plugin marketplace bundling the skills and the MCP server. A new skill section covers record and replay.
+
 ### Changed
 
 - **From the first agent eval** (`evals/results/2026-10-30.md`):

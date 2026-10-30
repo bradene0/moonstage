@@ -1,13 +1,13 @@
 ---
-name: test-render
-description: Write deterministic headless tests and render frames to verify a Moonstage project.
+name: moonstage-test-render
+description: 'Use when proving that a Moonstage game works: write deterministic headless tests, replay F8 recordings from the browser, render frames and record animated SVGs of a run.'
 ---
 
 # Test and render
 
 ## Tests
 
-Create `tests/<name>.test.json` (the schema is `schemas/test.schema.json`):
+Create `tests/<name>.test.json` (the schema: `moonstage schemas`):
 
 ```json
 {
@@ -41,3 +41,15 @@ Create `tests/<name>.test.json` (the schema is `schemas/test.schema.json`):
 - `--output -` prints the SVG to stdout. `--json` reports `items`, `entities` and `camera`.
 - Render the important moments (start, after the key input, after an event) and check visibility,
   camera framing and HUD text (for example `Crystals: 1`).
+
+## Record and replay
+
+- **From the browser:** `moonstage run` records every session. Press F8 to download it as
+  `<project>-recording.test.json`: a test with the same scene, seed, saves and input, which expects what
+  happened (final scene, saves and event counts). Put it in `tests/` and it is a regression test; edit
+  `expect` to say what *should* have happened and it reproduces a bug.
+- **Replay it:** `moonstage run --headless --test tests/x.test.json --json` runs a test's session without its
+  assertions and returns the full state; `moonstage run --replay tests/x.test.json` plays it back in the
+  browser.
+- **Watch a run:** `moonstage record --test tests/x.test.json` (or `--input-script …`) writes an animated SVG
+  of the session to `.moonstage/record/`. Open it in a browser to see motion, not just one frame.

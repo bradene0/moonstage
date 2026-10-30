@@ -1,6 +1,6 @@
 ---
-name: create-project
-description: Create a new Moonstage project and confirm it validates, builds and passes its tests.
+name: moonstage-create-project
+description: 'Use when starting a new Moonstage game or interactive project: pick a template with `moonstage new`, then confirm it validates, builds and passes its tests with `moonstage check`.'
 ---
 
 # Create a Moonstage project
@@ -18,4 +18,4 @@ description: Create a new Moonstage project and confirm it validates, builds and
    in `render` to see the scene.
 5. `moonstage run`: serves the game at http://localhost:5173 for a human to play.
 
-Next: [build-game](../build-game/SKILL.md). The format reference is `docs/project-format.md`.
+Next: [build-game](../moonstage-build-game/SKILL.md). The format reference is `moonstage guide project-format`.
