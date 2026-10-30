@@ -108,4 +108,5 @@ entity-level fields `parent`, `active` and `name` are addressed directly.
 | `.moonstage/moon/` | Generated `moon.work` and the MoonBit build cache |
 | `dist/` | Static web bundle from `moonstage build` |
 
-All of these are build artifacts, so do not commit them.
+All of these are build artifacts, so do not commit them. The exception is
+`behaviors/<name>/slots.generated.mbt`, which is generated but committed (see `docs/behavior-abi.md`).

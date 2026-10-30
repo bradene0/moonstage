@@ -63,7 +63,8 @@ host-side named state (`state_get` / `state_set`), not in WebAssembly globals. T
 - Any language works: the ABI passes only i32 and f64 values.
 
 Names never cross the ABI. A module declares `params`, `state`, `refs`, `inputs` and `events` in the
-manifest, and the slot is the index of a name in its list. See [docs/behavior-abi.md](docs/behavior-abi.md).
+manifest, and the slot is the index of a name in its list. For MoonBit, the CLI generates named slot
+constants from the manifest, so behavior code never contains bare indices. See [docs/behavior-abi.md](docs/behavior-abi.md).
 
 A trap in one behavior call becomes a `MS3004` diagnostic, and only that entity's binding is disabled.
 The rest of the scene keeps running.

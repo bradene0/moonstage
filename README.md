@@ -32,9 +32,9 @@ moon-hopper/
 ```moonbit
 ///|
 pub fn ms_update(entity : Int, dt : Double) -> Unit {
-  let vy = @sdk.state(entity, s_vy) + @sdk.param(p_gravity) * dt
+  let vy = @sdk.state(entity, state_vy) + @sdk.param(param_gravity) * dt
   @sdk.set_y(entity, @sdk.y(entity) + vy * dt)
-  @sdk.set_state(entity, s_vy, vy)
+  @sdk.set_state(entity, state_vy, vy)
 }
 ```
 

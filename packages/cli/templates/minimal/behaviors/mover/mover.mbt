@@ -1,49 +1,29 @@
-// Slots follow the order of the lists declared for "mover" in moonstage.json.
+// param_* and input_* come from slots.generated.mbt, which `moonstage build`
+// regenerates from the "mover" entry in moonstage.json.
 
 ///|
-let p_speed : Int = 0
-
-///|
-let p_min_x : Int = 1
-
-///|
-let p_max_x : Int = 2
-
-///|
-let p_min_y : Int = 3
-
-///|
-let p_max_y : Int = 4
-
-///|
-let in_move_x : Int = 0
-
-///|
-let in_move_y : Int = 1
-
-///|
-pub fn ms_abi_version() -> Int {
+pub fn ms_abi_version() -> Int32 {
   @sdk.abi_version
 }
 
 ///|
-pub fn ms_start(_entity : Int) -> Unit {
+pub fn ms_start(_entity : Int32) -> Unit {
   ()
 }
 
 ///|
-pub fn ms_update(entity : Int, dt : Double) -> Unit {
-  let speed = @sdk.param(p_speed)
-  let x = @sdk.x(entity) + @sdk.input(in_move_x) * speed * dt
-  let y = @sdk.y(entity) + @sdk.input(in_move_y) * speed * dt
+pub fn ms_update(entity : Int32, dt : Double) -> Unit {
+  let speed = @sdk.param(param_speed)
+  let x = @sdk.x(entity) + @sdk.input(input_move_x) * speed * dt
+  let y = @sdk.y(entity) + @sdk.input(input_move_y) * speed * dt
   @sdk.set_position(
     entity,
-    @sdk.clamp(x, @sdk.param(p_min_x), @sdk.param(p_max_x)),
-    @sdk.clamp(y, @sdk.param(p_min_y), @sdk.param(p_max_y)),
+    @sdk.clamp(x, @sdk.param(param_min_x), @sdk.param(param_max_x)),
+    @sdk.clamp(y, @sdk.param(param_min_y), @sdk.param(param_max_y)),
   )
 }
 
 ///|
-pub fn ms_event(_entity : Int, _event : Int, _source : Int, _value : Double) -> Unit {
+pub fn ms_event(_entity : Int32, _event : Int32, _source : Int32, _value : Double) -> Unit {
   ()
 }

@@ -33,6 +33,7 @@ import { serve, writeBundle } from "./bundle.js";
 import { buildMoonbitBehaviors, findMoon } from "./moonbit.js";
 import { EXIT, result, type CommandResult } from "./output.js";
 import { load, loadTests, projectRoot } from "./project-io.js";
+import { slotCollisions, staleSlotFiles, writeSlotFiles } from "./slots.js";
 import { renderSvg } from "./svg.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -176,6 +177,8 @@ export async function create(opts: { dir?: string; name?: string; template?: str
     await (await import("node:fs/promises")).rm(join(target, "gitignore"));
     files.splice(files.indexOf("gitignore"), 1, ".gitignore");
   }
+  const manifest = JSON.parse(await readFile(join(target, "moonstage.json"), "utf8"));
+  files.push(...(await writeSlotFiles(target, manifest)));
   files.sort();
   return result({
     data: { root: target, template, files, next: ["moonstage validate", "moonstage test", "moonstage run"] },
@@ -198,7 +201,8 @@ export async function validate(opts: { dir?: string }): Promise<CommandResult> {
   if (rootIssues.length > 0) return result({ diagnostics: rootIssues, exitCode: EXIT.usage });
   const loaded = await load(root, { behaviors: "optional" });
   const tests = await loadTests(root);
-  const diagnostics = [...loaded.diagnostics, ...tests.flatMap((t) => t.diagnostics)];
+  const slots = loaded.manifest ? [...slotCollisions(loaded.manifest), ...(await staleSlotFiles(root, loaded.manifest))] : [];
+  const diagnostics = [...loaded.diagnostics, ...slots, ...tests.flatMap((t) => t.diagnostics)];
   const entities = Object.values(loaded.scenes).reduce((n, s) => n + s.entities.length, 0);
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.length - errors;
@@ -313,6 +317,9 @@ async function prepare(dir: string | undefined, compile: boolean): Promise<Prepa
   }
   let behaviors: Prepared["behaviors"] = [];
   if (compile) {
+    const collisions = slotCollisions(first.manifest);
+    if (collisions.length > 0) return { root, diagnostics: [...first.diagnostics, ...collisions], behaviors };
+    await writeSlotFiles(root, first.manifest);
     const built = await buildMoonbitBehaviors(root, first.manifest);
     behaviors = built.behaviors;
     if (hasErrors(built.diagnostics)) {

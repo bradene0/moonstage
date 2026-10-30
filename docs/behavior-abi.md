@@ -26,7 +26,8 @@ ABI version 1 is an early contract and may change. A breaking change increments 
 - Use `wasm` for a prebuilt module written in any language.
 
 A **slot** is the index of a name in its list. Above, `pickupRadius` is param slot 0, `value` is param
-slot 1, and `collected` is event slot 0. Entities supply values by name in the scene:
+slot 1, and `collected` is event slot 0. MoonBit behaviors never write these numbers by hand: see
+[Generated slots](#generated-slots). Entities supply values by name in the scene:
 
 ```json
 "behavior": { "module": "crystal", "params": { "pickupRadius": 26, "value": 1 }, "refs": { "lander": "lander" } }
@@ -90,6 +91,25 @@ options(
 `moon build --target wasm --release` and copies each artifact to `.moonstage/behaviors/<name>.wasm`.
 You never add the SDK to `moon.mod` by hand, beyond the `import { "moonstage/sdk@0.0.0" }` line that the
 template already has.
+
+### Generated slots
+
+`moonstage build` (and `run`, `test` and `render`, which build first) writes a
+`slots.generated.mbt` file into each MoonBit behavior package. It contains one constant per declared name,
+in snake_case and prefixed by kind:
+
+```moonbit
+pub let param_pickup_radius : Int32 = 0
+pub let state_phase : Int32 = 0
+pub let ref_lander : Int32 = 0
+pub let event_collected : Int32 = 0
+```
+
+Use these names in behaviors, as in `@sdk.param(param_pickup_radius)`. Reordering or renaming entries in
+`moonstage.json` then either keeps working or fails to compile. It never silently reads the wrong slot.
+Commit the generated file so editors and `moon check` work before the first build. `moonstage validate`
+warns with `MS3008` when the file is stale. Names that collide after conversion (`minX` and `min_x`)
+are rejected with `MS2013`.
 
 The SDK wraps each import (`@sdk.x`, `@sdk.set_position`, `@sdk.state`, `@sdk.param`, `@sdk.ref_entity`,
 `@sdk.input`, `@sdk.emit`, `@sdk.random_range`, …). See `packages/moonbit-sdk/sdk.mbt`.

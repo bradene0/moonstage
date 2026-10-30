@@ -21,7 +21,6 @@ silently by implementation work.
 
 - Multiple behaviors per entity. Today there is one, for simplicity.
 - Host-provided math (sin, cos, sqrt) in the ABI. MoonBit's pure-WebAssembly `sin` adds about 15 KB per module.
-- Name-based slot generation for MoonBit, so that slot constants cannot drift from the manifest.
 - Entity spawning and removal from behaviors (`scene.spawn` / `scene.remove`).
 - Renderer plugins chosen by the project, and image and sprite assets.
 - Pinning the MoonBit toolchain version in CI.

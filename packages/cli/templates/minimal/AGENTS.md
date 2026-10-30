@@ -9,7 +9,8 @@ Moonstage projects are plain files. Edit them directly, then verify with the CLI
 
 Loop: edit → `moonstage validate --json` → `moonstage test --json` → `moonstage render --tick 120` → `moonstage run`.
 
-Behavior slots (param/state/ref/input/event numbers in MoonBit) are indices into the lists declared in
-`moonstage.json`. Keep them in the same order.
+In MoonBit, refer to params, state, refs, inputs and events by their generated names (`param_speed`,
+`input_move_x`, ...). `moonstage build` writes them to `behaviors/<name>/slots.generated.mbt` from the
+lists in `moonstage.json`. Do not edit that file.
 
 `moonstage describe --json` lists components, host functions, error codes and exit codes.

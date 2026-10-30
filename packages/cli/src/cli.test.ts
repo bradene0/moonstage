@@ -129,6 +129,29 @@ describe("moonstage CLI", () => {
     assert.equal(cli("new", dir, "--json").code, 2, "refuses to overwrite");
   });
 
+  it("regenerates slot constants when the manifest changes", moon, () => {
+    const dir = join(scratch, "slots");
+    cli("new", dir);
+    const slots = join(dir, "behaviors", "mover", "slots.generated.mbt");
+    assert.match(readFileSync(slots, "utf8"), /pub let param_speed : Int32 = 0/);
+    const codes = (r: ReturnType<typeof cli>) => r.json.diagnostics.map((d: { code: string }) => d.code);
+    assert.ok(!codes(cli("validate", dir, "--json")).includes("MS3008"), "fresh project has current slots");
+
+    // Reorder params: hand-written indices would now be wrong; generated names stay right.
+    const manifestPath = join(dir, "moonstage.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    manifest.behaviors.mover.params = ["minX", "maxX", "minY", "maxY", "speed"];
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    const stale = cli("validate", dir, "--json");
+    assert.equal(stale.code, 0);
+    assert.ok(codes(stale).includes("MS3008"));
+
+    const t = cli("test", dir, "--json");
+    assert.equal(t.code, 0, t.stdout);
+    assert.match(readFileSync(slots, "utf8"), /pub let param_speed : Int32 = 4/);
+    assert.equal(cli("validate", dir, "--json").json.warnings, 0, "built and slots current");
+  });
+
   it("reports MoonBit compile errors as MS3006 with file locations", moon, () => {
     const dir = join(scratch, "compile-error");
     cli("new", dir);
