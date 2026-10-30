@@ -69,6 +69,9 @@ versions so you can tell what moved.
   - The MoonBit primer explains reading another entity's state.
 - **From the third agent eval:**
   - `moonstage run` rebuilds on page reload when project files changed.
+  - Slightly bouncy blocks stack: only a new contact bounces, so `restitution` no longer feeds jitter
+    into resting stacks until they topple (a 4-block column with restitution 0.05 fell within 45 s).
+  - `--setup` with a test file also seeds the test's `saves`.
   - `check` no longer repeats validate's stale-slot warnings after regenerating slots.
   - The MoonBit primer covers trig (`@math.sin`, not a method), starting state versus `ms_start`, and
     which entities receive events.

@@ -118,6 +118,28 @@ describe("@moonstage/physics", () => {
     assert.ok(fell > 10, `the plank above a knocked-out post falls (moved ${fell.toFixed(1)} px)`);
   });
 
+  it("bounces on impact but keeps bouncy stacks still", async () => {
+    const column = [0, 1, 2, 3].map((i) => box(`b${i}`, 0, 460 - i * 40, 0, { restitution: 0.3, friction: 0.6 }));
+    let rt = await simulate(world([ground, ...column]), 90 * 60);
+    assert.ok(Math.abs(rt.read("b3", "transform.position.x") as number) < 1, "a column of bouncy blocks stands for 90 s");
+
+    const ball: EntitySource = {
+      id: "ball",
+      components: { transform: { position: [0, 200] }, physicsBody: {}, collider: { shape: "circle", radius: 10, restitution: 0.8 } },
+    };
+    rt = await Runtime.create(world([ground, ball]));
+    let landed = false;
+    let peak = Infinity;
+    for (let i = 0; i < 180; i++) {
+      rt.step();
+      const vy = rt.read("ball", "state.vy") as number;
+      const y = rt.read("ball", "transform.position.y") as number;
+      if (vy < 0) landed = true;
+      if (landed) peak = Math.min(peak, y);
+    }
+    assert.ok(landed && peak < 330, `a bouncy ball rebounds high (peak y ${peak.toFixed(0)}, dropped from 200 onto 480)`);
+  });
+
   it("keeps resting bodies awake while something slow moves them", async () => {
     const lift: EntitySource = {
       id: "lift",

@@ -161,12 +161,14 @@ describe("moonstage CLI", () => {
       ticks: 1,
       setup: [{ operation: "set_property", target: "beacon", property: "transform.position.x", value: 123 }],
       input: [{ tick: 0, set: { thrust: 1 } }],
+      saves: { best: 7 },
       expect: [],
     }));
     const replay = cli("run", example, "--headless", "--scene", "main", "--ticks", "20", "--input-script", testFile, "--setup", testFile, "--json", "--no-build");
     assert.equal(replay.code, 0, replay.stdout);
     assert.equal(replay.json.snapshot.entities.beacon.transform.x, 123);
     assert.equal(replay.json.snapshot.entities.flame.active, true);
+    assert.equal(replay.json.saves.best, 7, "--setup seeds the test's saves");
   });
 
   it("switches from the title scene and plays sounds headlessly", moon, () => {

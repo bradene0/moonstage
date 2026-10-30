@@ -882,14 +882,17 @@ function int(value: string | undefined, name: string, fallback: number): number 
  * `--input-script tests/x.test.json` replays that test's input and `--setup` applies its setup.
  */
 function jsonList(text: string, flag: string, field: string): unknown {
+  const value = jsonFlag(text, flag);
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? ((value as Record<string, unknown>)[field] ?? []) : value;
+}
+
+function jsonFlag(text: string, flag: string): unknown {
   const source = /^\s*[[{]/.test(text) ? text : readFileSync(resolve(text), "utf8");
-  let value: unknown;
   try {
-    value = JSON.parse(source);
+    return JSON.parse(source);
   } catch (err) {
     throw new MoonstageError([diagnostic("MS9001", `${flag} is not valid JSON: ${(err as Error).message}`)]);
   }
-  return value !== null && typeof value === "object" && !Array.isArray(value) ? ((value as Record<string, unknown>)[field] ?? []) : value;
 }
 
 /**
@@ -933,7 +936,11 @@ async function simulate(
 ) {
   const timeline = inputTimeline(opts);
   let sceneSource: SceneSource | undefined;
+  let saves: Record<string, number> | undefined;
   if (opts.setup) {
+    // A test file passed to --setup also seeds its saves, as the test does.
+    const whole = jsonFlag(opts.setup, "--setup") as { saves?: Record<string, number> } | null;
+    if (whole !== null && typeof whole === "object" && !Array.isArray(whole) && whole.saves) saves = whole.saves;
     const ops = jsonList(opts.setup, "--setup", "setup");
     if (!Array.isArray(ops)) throw new MoonstageError([diagnostic("MS9001", "--setup must be a list of edit operations")]);
     const scene = project.scenes[opts.scene ?? project.manifest.entryScene];
@@ -942,6 +949,7 @@ async function simulate(
   const rt = await Runtime.create(project, {
     ...(opts.scene !== undefined && { scene: opts.scene }),
     ...(sceneSource !== undefined && { sceneSource }),
+    ...(saves !== undefined && { storage: { load: () => saves!, store: () => {} } }),
     ...(opts.seed !== undefined && { seed: int(opts.seed, "seed", 1) }),
   });
   rt.start();

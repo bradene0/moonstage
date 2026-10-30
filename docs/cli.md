@@ -28,7 +28,7 @@
 `--input` holds values for the whole run. `--input-script` is a timeline in the same format as a test's
 `input`, inline or as a file: `[{"tick": 0, "set": {"fire": 1}}, {"tick": 30, "set": {"fire": 0}}]`.
 `--setup` applies edit operations to the scene first, like a test's `setup`. Both flags also take a test
-file and use its `input` or `setup`, so `run --headless --input-script tests/x.test.json --setup
+file and use its `input` or `setup` (and `--setup` seeds its `saves`), so `run --headless --input-script tests/x.test.json --setup
 tests/x.test.json --ticks 120` replays a test and shows the full state, not just pass or fail.
 
 Relative `--out` and `--output` paths are relative to the current directory, not the project.

@@ -856,7 +856,10 @@ fn prepare_contacts(h : Double) -> Unit {
     let rvx = point_vx(b, rby) - point_vx(a, ray)
     let rvy = point_vy(b, rbx) - point_vy(a, rax)
     let vn = rvx * nx + rvy * ny
-    let bounce = if -vn > rest_speed {
+    // Only a new contact bounces. A contact that already existed last substep is resting, and bouncing
+    // it would feed jitter back into stacks of slightly bouncy blocks until they topple.
+    let resting = warm_n.contains(c_key[k])
+    let bounce = if !resting && -vn > rest_speed {
       -vn * fmax(restitution[a], restitution[b])
     } else {
       0.0
