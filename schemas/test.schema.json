@@ -34,6 +34,13 @@
       "minimum": 1,
       "description": "Fixed simulation ticks to run."
     },
+    "saves": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "Saved numbers present when the test starts."
+    },
     "setup": {
       "type": "array",
       "items": {
@@ -400,6 +407,46 @@
               "type": "string",
               "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
               "description": "The scene that is current when the test ends."
+            }
+          }
+        },
+        {
+          "title": "save assertion",
+          "type": "object",
+          "required": [
+            "save"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "save": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "A saved number at the end of the test."
+            },
+            "equals": {
+              "type": [
+                "number",
+                "boolean"
+              ]
+            },
+            "approx": {
+              "type": "number"
+            },
+            "tolerance": {
+              "type": "number",
+              "minimum": 0
+            },
+            "gt": {
+              "type": "number"
+            },
+            "gte": {
+              "type": "number"
+            },
+            "lt": {
+              "type": "number"
+            },
+            "lte": {
+              "type": "number"
             }
           }
         },

@@ -140,7 +140,7 @@ describe("moonstage CLI", () => {
     const svg = readFileSync(output, "utf8");
     assert.match(svg, /^<svg /);
     assert.match(svg, /data-entity="lander"/);
-    assert.match(svg, />Crystals: 0</);
+    assert.match(svg, />Crystals: 0 {3}Best: 0</);
     assert.match(svg, /<image id="asset-crystal" href="data:image\/png;base64,[A-Za-z0-9+/=]+" width="64" height="16"/);
     assert.match(svg, /data-entity="crystal-1" data-frame="\d"/);
     assert.match(svg, /data-entity="beacon" data-plugin="radar"><circle /, "drawing plugins render headlessly");

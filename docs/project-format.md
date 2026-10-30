@@ -112,6 +112,7 @@ exactly the frame a player would.
 - `{ "prefab": … }` counts live entities spawned from that prefab.
 - `{ "scene": "main" }` checks the scene that is current at the end.
 - `{ "sound": "chime", "count": { … } }` counts plays of a sound.
+- `{ "save": "best", "gte": 1 }` checks a saved number; `"saves": { … }` at the top of a test seeds them.
 - `scene` in a test picks the starting scene (default: `entryScene`).
 - `property` accepts these paths: `transform.position.x` / `.y`, `transform.rotation`, `transform.scale.x` / `.y`,
   `state.<name>` and `active`.

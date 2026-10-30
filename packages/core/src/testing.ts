@@ -49,6 +49,11 @@ export function checkAssertion(rt: Runtime, a: Assertion, index: number, file?: 
   if ("scene" in a) {
     return rt.sceneId === a.scene ? [] : [fail(`expected scene "${a.scene}", current scene is "${rt.sceneId}"`)];
   }
+  if ("save" in a) {
+    const value = rt.saves.get(a.save);
+    if (value === undefined) return [fail(`save "${a.save}" was never written`)];
+    return compare(value, a).map((m) => fail(`save "${a.save}": ${m}`));
+  }
   if ("sound" in a) {
     const count = rt.sounds.filter((s) => s.asset === a.sound).length;
     return compare(count, a.count ?? { gte: 1 }).map((m) => fail(`sound "${a.sound}" plays: ${m}`));
@@ -78,9 +83,11 @@ export async function runTest(project: LoadedProject, test: TestSource, file?: s
     const base = project.scenes[sceneId];
     if (base === undefined) throw new MoonstageError([diagnostic("MS2004", `scene "${sceneId}" is not loaded`, { file })]);
     const sceneSource = applyOperations(base, test.setup ?? []);
+    const initial = test.saves ?? {};
     rt = await Runtime.create(project, {
       scene: sceneId,
       sceneSource,
+      storage: { load: () => initial, store: () => {} },
       ...(test.seed !== undefined && { seed: test.seed }),
     });
   } catch (err) {

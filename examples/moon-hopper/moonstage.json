@@ -139,13 +139,17 @@
       ]
     },
     "score": {
-      "description": "Adds each `collected` payload to `points`.",
+      "description": "Adds each `collected` payload to `points` and keeps a saved best score.",
       "source": "behaviors/score",
       "state": [
-        "points"
+        "points",
+        "best"
       ],
       "events": [
         "collected"
+      ],
+      "saves": [
+        "best"
       ]
     },
     "camera": {

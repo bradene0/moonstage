@@ -16,6 +16,10 @@ pub fn input(Int32) -> Double
 
 pub fn is_active(Int32) -> Bool
 
+pub fn is_prefab(Int32, Int32) -> Bool
+
+pub fn load_save(Int32) -> Double
+
 pub fn load_scene(Int32) -> Unit
 
 pub fn log(Double) -> Unit
@@ -59,6 +63,8 @@ pub fn spawn(Int32) -> Int32
 pub fn spawn_at(Int32, Double, Double) -> Int32
 
 pub fn state(Int32, Int32) -> Double
+
+pub fn store_save(Int32, Double) -> Unit
 
 pub fn time() -> Double
 

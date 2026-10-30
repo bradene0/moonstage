@@ -22,5 +22,5 @@ export const MIN_PLUGIN_API = 1;
  * WebAssembly behavior ABI implemented by this runtime's behavior host.
  * Modules reporting any version from MIN_BEHAVIOR_ABI up to this one are accepted.
  */
-export const BEHAVIOR_ABI = 3;
+export const BEHAVIOR_ABI = 4;
 export const MIN_BEHAVIOR_ABI = 1;

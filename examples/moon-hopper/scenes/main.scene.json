@@ -762,7 +762,7 @@
           ]
         },
         "text": {
-          "value": "Crystals: {score.points}",
+          "value": "Crystals: {score.points}   Best: {score.best}",
           "size": 22,
           "fill": "#ffffff",
           "space": "screen",

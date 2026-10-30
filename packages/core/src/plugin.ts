@@ -27,6 +27,7 @@ export const CAPABILITIES = {
   events: "Subscribe to and emit events.",
   "input.read": "Read named inputs.",
   audio: "Play sound assets (API 3).",
+  saves: "Read and write persistent saved numbers (API 4).",
 } as const;
 
 export type Capability = keyof typeof CAPABILITIES;
@@ -81,6 +82,8 @@ export interface PluginContext {
   readonly input: { get(name: string): number };
   /** API 3: play a sound asset at volume 0..1. Needs the "audio" capability. */
   readonly audio: { play(asset: string, volume?: number): void };
+  /** API 4: persistent saved numbers shared with behaviors. Needs the "saves" capability. */
+  readonly saves: { get(key: string): number; set(key: string, value: number): void };
   /** API 3: id of the current scene. On a scene switch, plugins get stop() then start(). */
   readonly scene: string;
   readonly time: { readonly tick: number; readonly elapsed: number; readonly dt: number };

@@ -1,4 +1,4 @@
-// MoonBit bindings for Moonstage Behavior ABI 3.
+// MoonBit bindings for Moonstage Behavior ABI 4.
 //
 // A behavior package imports this SDK and exports four functions:
 //
@@ -14,7 +14,7 @@
 
 ///|
 /// ABI version implemented by this SDK. Return it from `ms_abi_version`.
-pub let abi_version : Int32 = 3
+pub let abi_version : Int32 = 4
 
 ///|
 /// Handle value meaning "no entity" (e.g. an unset ref).
@@ -73,6 +73,15 @@ fn host_load_scene(scene : Int32) -> Unit = "moonstage" "load_scene"
 
 ///|
 fn host_play_sound(sound : Int32, volume : Double) -> Unit = "moonstage" "play_sound"
+
+///|
+fn host_save_get(slot : Int32) -> Double = "moonstage" "save_get"
+
+///|
+fn host_save_set(slot : Int32, value : Double) -> Unit = "moonstage" "save_set"
+
+///|
+fn host_is_prefab(entity : Int32, prefab : Int32) -> Int32 = "moonstage" "is_prefab"
 
 // Transform fields, in ABI order: x, y, rotation, scale_x, scale_y.
 // Positions are pixels (y grows downward), rotation is radians (clockwise),
@@ -257,4 +266,24 @@ pub fn load_scene(scene : Int32) -> Unit {
 /// Play sound `slot` (index in the module's `sounds` list) at volume 0..1.
 pub fn play_sound(sound : Int32, volume : Double) -> Unit {
   host_play_sound(sound, volume)
+}
+
+///|
+/// Read persistent number `slot` (index in the module's `saves` list); 0 if never saved.
+/// Saves survive page reloads in the browser player.
+pub fn load_save(slot : Int32) -> Double {
+  host_save_get(slot)
+}
+
+///|
+/// Store persistent number `slot`, e.g. a high score.
+pub fn store_save(slot : Int32, value : Double) -> Unit {
+  host_save_set(slot, value)
+}
+
+///|
+/// True if `entity` was spawned from prefab `slot` (index in the module's `prefabs` list).
+/// Use it to tell what a collision event's other entity is.
+pub fn is_prefab(entity : Int32, prefab : Int32) -> Bool {
+  entity >= 0 && host_is_prefab(entity, prefab) != 0
 }

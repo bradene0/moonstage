@@ -19,6 +19,7 @@ import {
   type Diagnostic,
   type ProjectIO,
   type ProjectManifest,
+  type SaveStorage,
   type Renderer,
 } from "@moonstage/core";
 import { SoundPlayer } from "./audio.js";
@@ -143,6 +144,27 @@ export async function openSource(src: Source, base: string = document.baseURI): 
   };
 }
 
+/** Saved numbers in localStorage, one key per project. Fails soft (private mode, quotas). */
+export function localSaves(project: string): SaveStorage {
+  const key = `moonstage:saves:${project}`;
+  return {
+    load: () => {
+      try {
+        return JSON.parse(globalThis.localStorage?.getItem(key) ?? "{}") as Record<string, number>;
+      } catch {
+        return {};
+      }
+    },
+    store: (values) => {
+      try {
+        globalThis.localStorage?.setItem(key, JSON.stringify(values));
+      } catch {
+        // Storage unavailable: saves last for this session only.
+      }
+    },
+  };
+}
+
 export class PlayerLoadError extends MoonstageError {
   constructor(diagnostics: Diagnostic[]) {
     super(diagnostics);
@@ -181,6 +203,7 @@ export async function play(target: string | HTMLElement, src: Source, options: P
   let runtime: Runtime;
   try {
     runtime = await Runtime.create(loaded.project, {
+      storage: localSaves(loaded.project.manifest.name),
       ...(options.scene !== undefined && { scene: options.scene }),
       ...(options.seed !== undefined && { seed: options.seed }),
     });

@@ -55,7 +55,15 @@ export interface LoadedProject {
   readFile?: (path: string) => Promise<Uint8Array | undefined>;
 }
 
+/** Where saved numbers persist. The browser player uses localStorage; headless runs keep them in memory. */
+export interface SaveStorage {
+  load(): Record<string, number>;
+  store(values: Record<string, number>): void;
+}
+
 export interface RuntimeOptions {
+  /** Persistence for save_get / save_set (default: in memory for this runtime). */
+  storage?: SaveStorage;
   /** Scene id (default: manifest.entryScene). */
   scene?: string;
   /** Use this scene source instead of the loaded one (e.g. after test setup operations). */
@@ -171,6 +179,10 @@ export class Runtime {
   readonly sceneHistory: { tick: number; scene: string }[] = [];
   private unplayed: SoundRequest[] = [];
   private pendingScene: string | undefined;
+  /** Saved numbers; written back to storage at the end of a tick that changed them. */
+  readonly saves: Map<string, number>;
+  private savesDirty = false;
+  private readonly storage: SaveStorage | undefined;
   private switchesThisTick = 0;
 
   tick = 0;
@@ -206,6 +218,14 @@ export class Runtime {
     this.dt = 1 / this.tickRate;
     this.random = createRandom(options.seed ?? project.manifest.simulation?.seed ?? 1);
     this.maxEventRounds = options.maxEventRounds ?? 8;
+    this.storage = options.storage;
+    let stored: Record<string, number> = {};
+    try {
+      stored = options.storage?.load() ?? {};
+    } catch {
+      // Unreadable storage behaves like an empty one.
+    }
+    this.saves = new Map(Object.entries(stored).filter(([, v]) => typeof v === "number" && Number.isFinite(v)));
     this.sceneHistory.push({ tick: 0, scene: this.sceneId });
   }
 
@@ -340,6 +360,9 @@ export class Runtime {
       load_scene: (slot) => this.requestScene(this.slotName(iface.scenes, slot, "scene")),
       play_sound: (slot, volume) =>
         this.playSound(this.slotName(iface.sounds, slot, "sound"), volume, this.world.get(this.current)?.id ?? null),
+      save_get: (slot) => this.saves.get(this.slotName(iface.saves, slot, "save")) ?? 0,
+      save_set: (slot, value) => this.setSave(this.slotName(iface.saves, slot, "save"), value),
+      is_prefab: (entity, slot) => (this.entityAt(entity).prefab === this.slotName(iface.prefabs, slot, "prefab") ? 1 : 0),
     };
   }
 
@@ -362,6 +385,24 @@ export class Runtime {
     const request = { tick: this.tick, asset, volume: Math.max(0, Math.min(1, volume)), source };
     if (this.sounds.length < MAX_LOGGED_EVENTS) this.sounds.push(request);
     this.unplayed.push(request);
+  }
+
+  private setSave(name: string, value: number): void {
+    if (!Number.isFinite(value)) throw new Error(`save "${name}" must be a finite number`);
+    if (this.saves.get(name) === value) return;
+    this.saves.set(name, value);
+    this.savesDirty = true;
+  }
+
+  /** Write changed saves to storage. Called at the end of every tick. */
+  private flushSaves(): void {
+    if (!this.savesDirty) return;
+    this.savesDirty = false;
+    try {
+      this.storage?.store(Object.fromEntries(this.saves));
+    } catch {
+      // Storage full or unavailable: keep playing with in-memory saves.
+    }
   }
 
   /** Sounds requested since the last call. Platforms call this after advancing and play them. */
@@ -483,6 +524,10 @@ export class Runtime {
       get scene() {
         return rt.sceneId;
       },
+      saves: gate(name, granted, "saves", {
+        get: (key: string) => this.saves.get(key) ?? 0,
+        set: (key: string, value: number) => this.setSave(key, value),
+      }),
       time: {
         get tick() {
           return rt.tick;
@@ -569,6 +614,7 @@ export class Runtime {
     for (const p of this.plugins) p.instance.update?.(this.dt);
     this.dispatchEvents();
     this.settleLifecycle();
+    this.flushSaves();
     this.input.endTick();
   }
 

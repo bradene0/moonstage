@@ -326,6 +326,7 @@ export const projectSchema: JsonSchema = {
         prefabs: { ...nameList, description: "Prefabs this module can spawn, with spawn(slot)." },
         scenes: { ...nameList, description: "Scenes this module can switch to, with load_scene(slot)." },
         sounds: { ...nameList, description: "Audio assets this module can play, with play_sound(slot, volume)." },
+        saves: { ...nameList, description: "Persistent numbers (high scores, progress), read and written with save_get / save_set." },
       },
     },
     prefab: {
@@ -468,6 +469,7 @@ export const testSchema: JsonSchema = {
     scene: { ...id, description: "Scene to run (default: entryScene)." },
     seed: { type: "integer", minimum: 0 },
     ticks: { type: "integer", minimum: 1, description: "Fixed simulation ticks to run." },
+    saves: { type: "object", additionalProperties: { type: "number" }, description: "Saved numbers present when the test starts." },
     setup: { type: "array", items: { $ref: "#/$defs/operation" }, description: "Scene operations applied before loading." },
     input: {
       type: "array",
@@ -513,6 +515,13 @@ export const testSchema: JsonSchema = {
           required: ["scene"],
           additionalProperties: false,
           properties: { scene: { ...id, description: "The scene that is current when the test ends." } },
+        },
+        {
+          title: "save assertion",
+          type: "object",
+          required: ["save"],
+          additionalProperties: false,
+          properties: { save: { ...id, description: "A saved number at the end of the test." }, ...comparison },
         },
         {
           title: "sound count assertion",

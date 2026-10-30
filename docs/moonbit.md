@@ -109,7 +109,7 @@ fn approach(value : Double, target : Double, step : Double) -> Double {
 
 Never write slot numbers. Declare names in the behavior's entry in `moonstage.json` and use the generated
 constants: `params: ["speed"]` → `param_speed`, `state: ["vx"]` → `state_vx`, and likewise `ref_`, `input_`,
-`event_`, `prefab_`, `scene_`, `sound_`. camelCase becomes snake_case (`turnSpeed` → `param_turn_speed`).
+`event_`, `prefab_`, `scene_`, `sound_`, `save_`. camelCase becomes snake_case (`turnSpeed` → `param_turn_speed`).
 An unknown name is error 4021 — add it to `moonstage.json` and rebuild.
 
 ## What to keep where

@@ -842,6 +842,7 @@ export async function runCommand(opts: {
         [...new Set(rt.sounds.map((s) => s.asset))].map((a) => [a, rt.sounds.filter((s) => s.asset === a).length]),
       ),
       scenes: rt.sceneHistory,
+      saves: Object.fromEntries(rt.saves),
       events: rt.events.slice(0, 200),
       logs: rt.logs.slice(0, 200),
       snapshot,

@@ -71,6 +71,7 @@ export interface BehaviorModuleDecl {
   prefabs?: string[];
   scenes?: string[];
   sounds?: string[];
+  saves?: string[];
 }
 
 export interface TransformComponent {
@@ -213,6 +214,7 @@ export type Assertion =
   | { prefab: string; count?: Comparison }
   | { scene: string }
   | { sound: string; count?: Comparison }
+  | ({ save: string } & Comparison)
   | ({ target: string; property: string } & Comparison)
   | { target: string; exists: boolean };
 
@@ -223,6 +225,7 @@ export interface TestSource {
   scene?: string;
   seed?: number;
   ticks: number;
+  saves?: Record<string, number>;
   setup?: import("./operations.js").Operation[];
   input?: { tick: number; set: Record<string, number> }[];
   expect: Assertion[];

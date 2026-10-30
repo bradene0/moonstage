@@ -322,6 +322,15 @@
             "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
           },
           "description": "Audio assets this module can play, with play_sound(slot, volume)."
+        },
+        "saves": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+            "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+          },
+          "description": "Persistent numbers (high scores, progress), read and written with save_get / save_set."
         }
       }
     },

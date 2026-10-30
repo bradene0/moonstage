@@ -1,13 +1,13 @@
-# Behavior ABI (version 3)
+# Behavior ABI (version 4)
 
 A behavior is a WebAssembly module. It controls entities through host functions and sees nothing of the
 engine's internals. Only `i32` and `f64` values cross the boundary, so any language that compiles to
 WebAssembly can implement a behavior. MoonBit is the first-party language and has an SDK in
 `packages/moonbit-sdk`.
 
-ABI 3 is an early contract and may change. The runtime accepts modules that report ABI 1, 2 or 3, because
+ABI 4 is an early contract and may change. The runtime accepts modules that report ABI 1 to 4, because
 each version only added imports: ABI 2 added `spawn`, `remove` and `entity_exists`; ABI 3 added
-`load_scene` and `play_sound`. A breaking change increments `BEHAVIOR_ABI`
+`load_scene` and `play_sound`; ABI 4 added `save_get`, `save_set` and `is_prefab`. A breaking change increments `BEHAVIOR_ABI`
 and raises the minimum accepted version.
 
 ## Declaring a module
@@ -43,7 +43,7 @@ slot 1, and `collected` is event slot 0. MoonBit behaviors never write these num
 
 | Export | Signature | Called |
 | --- | --- | --- |
-| `ms_abi_version` | `() -> i32` | Once, at load. It must return `1`, `2` or `3`. |
+| `ms_abi_version` | `() -> i32` | Once, at load. It must return `1` to `4`. |
 | `ms_start` | `(entity: i32) -> ()` | Once per entity: before the first tick, or at the end of the tick it was spawned in. |
 | `ms_update` | `(entity: i32, dt: f64) -> ()` | Every tick, for each active entity. `dt` is in seconds. |
 | `ms_event` | `(entity: i32, event: i32, source: i32, value: f64) -> ()` | For each event that the module declares. `event` is the module's slot. `source` is the emitting entity, or `-1`. |
@@ -70,6 +70,9 @@ slot 1, and `collected` is event slot 0. MoonBit behaviors never write these num
 | `entity_exists` | `(entity: i32) -> i32` | ABI 2. 1 for a live entity; 0 for removed handles and entities marked for removal. |
 | `load_scene` | `(scene: i32)` | ABI 3. Switch to scene `slot` (from this module's `scenes` list) at the end of the tick. |
 | `play_sound` | `(sound: i32, volume: f64)` | ABI 3. Play sound `slot` (from this module's `sounds` list) at volume 0..1. |
+| `save_get` | `(slot: i32) -> f64` | ABI 4. Persistent number `slot` (from this module's `saves` list), 0 if never saved. |
+| `save_set` | `(slot: i32, value: f64)` | ABI 4. Store a persistent number (high scores, unlocked levels). |
+| `is_prefab` | `(entity: i32, prefab: i32) -> i32` | ABI 4. 1 if the entity was spawned from prefab `slot`: tells you what a collision partner is. |
 
 An invalid handle, field or slot makes the host function throw. The runtime reports the throw as `MS3004`
 and disables that entity's behavior.
@@ -91,6 +94,14 @@ pending events are dropped. Plugins get `stop()` and then `start()`.
 
 `play_sound` does not play anything inside core. It records a request that the platform plays (the browser
 player uses Web Audio) and that tests can count. Volume is clamped to 0..1.
+
+## Saves
+
+Saved numbers outlive the session. The browser player keeps them in localStorage (one key per project name);
+headless runs keep them in memory, and tests can seed them (`"saves": { "best": 10 }`) and assert them
+(`{ "save": "best", "gte": 11 }`). Writes are flushed at the end of the tick. A module lists the names it
+uses under `saves`, which generates `save_*` constants; the SDK calls are `@sdk.load_save` and
+`@sdk.store_save`. Plugins use `ctx.saves` with the `saves` capability.
 
 ## Several behaviors on one entity
 

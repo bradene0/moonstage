@@ -9,6 +9,10 @@ versions so you can tell what moved.
 
 - **`moonstage guide`**: the docs and agent skills now ship inside the CLI package, so an agent with only
   `npx moonstage` can read them (also an MCP tool, `moonstage_guide`).
+- **Saves and prefab checks (behavior ABI 4).** `save_get` / `save_set` (`@sdk.load_save` /
+  `@sdk.store_save`) keep numbers across sessions (localStorage in the browser, in memory headless, seedable
+  and assertable in tests), and `is_prefab` tells a behavior what kind of entity it collided with. Plugins
+  get `ctx.saves`. Moon Hopper keeps a best score.
 - **Single-file games.** `moonstage build --single-file` writes one self-contained `.html` (runtime modules
   and the game's `.msp` inlined; about 200 KB for Moon Hopper) that plays with no server or network, e.g. as
   an attachment or inside a chat widget. `play()` also accepts `.msp` bytes directly.

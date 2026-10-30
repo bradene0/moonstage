@@ -1,5 +1,5 @@
 /**
- * Behavior host: implements Moonstage Behavior ABI 3 and accepts ABI 1 and 2
+ * Behavior host: implements Moonstage Behavior ABI 4 and accepts ABI 1-3
  * modules (each version only added imports).
  *
  * A behavior is a WebAssembly module that imports functions from the
@@ -50,6 +50,12 @@ export interface HostFunctions {
   load_scene(scene: number): void;
   /** ABI 3: play sound `slot` (from the module's `sounds` list) at volume 0..1. */
   play_sound(sound: number, volume: number): void;
+  /** ABI 4: persistent number `slot` (from the module's `saves` list); 0 when never saved. */
+  save_get(slot: number): number;
+  /** ABI 4: store a persistent number; survives reloads where the platform has storage. */
+  save_set(slot: number, value: number): void;
+  /** ABI 4: 1 if the entity was spawned from prefab `slot` (from the module's `prefabs` list). */
+  is_prefab(entity: number, prefab: number): number;
 }
 
 export const HOST_FUNCTIONS = [
@@ -71,6 +77,9 @@ export const HOST_FUNCTIONS = [
   "entity_exists",
   "load_scene",
   "play_sound",
+  "save_get",
+  "save_set",
+  "is_prefab",
 ] as const satisfies readonly (keyof HostFunctions)[];
 
 export interface BehaviorImports {
@@ -144,6 +153,7 @@ export interface BehaviorInterface {
   prefabs: string[];
   scenes: string[];
   sounds: string[];
+  saves: string[];
 }
 
 export function behaviorInterface(decl: BehaviorModuleDecl): BehaviorInterface {
@@ -156,5 +166,6 @@ export function behaviorInterface(decl: BehaviorModuleDecl): BehaviorInterface {
     prefabs: decl.prefabs ?? [],
     scenes: decl.scenes ?? [],
     sounds: decl.sounds ?? [],
+    saves: decl.saves ?? [],
   };
 }

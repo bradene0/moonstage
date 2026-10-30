@@ -48,6 +48,13 @@
       "count": {
         "equals": 1
       }
+    },
+    {
+      "save": "best",
+      "equals": 1
     }
-  ]
+  ],
+  "saves": {
+    "best": 0
+  }
 }

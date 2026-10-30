@@ -94,7 +94,7 @@ describe("runtime", () => {
     rt.step();
     assert.equal(rt.diagnostics.length, 0);
     await assert.rejects(
-      Runtime.create(project(moverScene, { manifest: moverManifest, behaviors: { mover: minimalWasm(4) } })),
+      Runtime.create(project(moverScene, { manifest: moverManifest, behaviors: { mover: minimalWasm(5) } })),
       (err: MoonstageError) => err.diagnostics[0]!.code === "MS3002",
     );
     // Older modules keep working: each ABI version only added imports.
@@ -680,5 +680,48 @@ describe("setTransform accepts what authors write", () => {
     assert.throws(() => ctx.world.setTransform("bike", { position: [1] } as never), /MS5003/);
     assert.throws(() => ctx.world.setTransform("bike", { x: Number.NaN }), /MS5003.*finite/);
     assert.equal(rt.read("bike", "transform.position.x"), 1, "a rejected patch changes nothing");
+  });
+});
+
+describe("saves and prefab checks (ABI 4)", () => {
+  it("reads, writes and flushes saved numbers, and tells prefabs apart", async () => {
+    const m = manifest({
+      prefabs: { coin: {}, rock: {} },
+      behaviors: { keeper: { wasm: "k", saves: ["best", "runs"], prefabs: ["coin", "rock"], state: ["isCoin"] } },
+    });
+    const keeper = jsBehavior((h) => ({
+      ms_start: () => h.save_set(1, h.save_get(1) + 1),
+      ms_update: (self) => {
+        if (h.time() < 0.02) {
+          const coin = h.spawn(0);
+          h.state_set(self, 0, h.is_prefab(coin, 0) * 10 + h.is_prefab(coin, 1));
+          h.save_set(0, Math.max(h.save_get(0), 42));
+        }
+      },
+    }));
+    const scene: SceneSource = { format: 1, entities: [{ id: "keeper", components: { behavior: { module: "keeper" } } }] };
+    const stored: Record<string, number>[] = [];
+    const storage = { load: () => ({ runs: 2, best: 7 }), store: (v: Record<string, number>) => void stored.push(v) };
+    const rt = await Runtime.create(project(scene, { manifest: m, behaviors: { keeper } }), { storage });
+    rt.step();
+    rt.step();
+    assert.equal(rt.read("keeper", "state.isCoin"), 10, "coin is a coin, not a rock");
+    assert.deepEqual(Object.fromEntries(rt.saves), { runs: 3, best: 42 });
+    assert.equal(stored.length, 1, "flushed once, at the end of the tick that changed it");
+    assert.deepEqual(stored[0], { runs: 3, best: 42 });
+  });
+
+  it("supports saves in tests", async () => {
+    const m = manifest({ behaviors: { keeper: { wasm: "k", saves: ["best"] } } });
+    const keeper = jsBehavior((h) => ({ ms_update: () => h.save_set(0, h.save_get(0) + 1) }));
+    const scene: SceneSource = { format: 1, entities: [{ id: "keeper", components: { behavior: { module: "keeper" } } }] };
+    const result = await runTest(project(scene, { manifest: m, behaviors: { keeper } }), {
+      format: 1,
+      name: "saves",
+      ticks: 3,
+      saves: { best: 10 },
+      expect: [{ save: "best", equals: 13 }],
+    });
+    assert.equal(result.passed, true, JSON.stringify(result.diagnostics));
   });
 });
