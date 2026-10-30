@@ -6,6 +6,8 @@ pub let abi_version : Int32
 
 pub fn clamp(Double, Double, Double) -> Double
 
+pub fn count_tagged(Int32) -> Int32
+
 pub fn distance(Int32, Int32) -> Double
 
 pub fn emit(Int32, Double) -> Unit
@@ -24,7 +26,11 @@ pub fn load_scene(Int32) -> Unit
 
 pub fn log(Double) -> Unit
 
+pub fn nearest_tagged(Int32, Int32) -> Int32
+
 pub let no_entity : Int32
+
+pub fn nth_tagged(Int32, Int32) -> Int32
 
 pub fn param(Int32) -> Double
 

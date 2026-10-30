@@ -331,6 +331,15 @@
             "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
           },
           "description": "Persistent numbers (high scores, progress), read and written with save_get / save_set."
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+            "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+          },
+          "description": "Entity tags this module queries, with count_tagged / nth_tagged / nearest_tagged."
         }
       }
     },
@@ -345,6 +354,16 @@
         },
         "active": {
           "type": "boolean"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+            "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+          },
+          "uniqueItems": true,
+          "description": "Labels behaviors can query (count_tagged, nth_tagged, nearest_tagged). Spawned copies keep their prefab's tags."
         },
         "components": {
           "$ref": "#/$defs/components"

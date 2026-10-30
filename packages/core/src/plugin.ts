@@ -48,6 +48,8 @@ export interface PluginContext {
     entities(): string[];
     /** Ids of entities carrying extension data for this plugin. */
     withExtension(): string[];
+    /** API 4: ids of live entities with a tag, in world order. */
+    tagged(tag: string): string[];
     /** This plugin's extension data on an entity. */
     extension(id: string): Readonly<Record<string, unknown>> | undefined;
     transform(id: string): Transform;

@@ -65,6 +65,9 @@ An entity has:
 - `id`: a stable identifier, unique in the scene. It starts with a letter and may contain letters, digits, `_` or `-`.
 - `parent`: optional. The transform is relative to the parent.
 - `active`: optional, default `true`. Inactive entities, and their descendants, are neither updated nor rendered.
+- `tags`: optional labels (`["block", "wood"]`) that behaviors can count and search (`@sdk.count_tagged`,
+  `nth_tagged`, `nearest_tagged`) and plugins can list (`ctx.world.tagged`). Prefabs can have tags too;
+  spawned copies keep them.
 - `components` and `extensions`.
 
 Entities update and draw in scene order, unless `layer` says otherwise.

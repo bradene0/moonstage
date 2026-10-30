@@ -368,7 +368,24 @@ export class Runtime {
       save_get: (slot) => this.saves.get(this.slotName(iface.saves, slot, "save")) ?? 0,
       save_set: (slot, value) => this.setSave(this.slotName(iface.saves, slot, "save"), value),
       is_prefab: (entity, slot) => (this.entityAt(entity).prefab === this.slotName(iface.prefabs, slot, "prefab") ? 1 : 0),
+      count_tagged: (slot) => this.tagged(this.slotName(iface.tags, slot, "tag")).length,
+      nth_tagged: (slot, n) => this.tagged(this.slotName(iface.tags, slot, "tag"))[Math.trunc(n)]?.handle ?? -1,
+      nearest_tagged: (slot, entity) => {
+        const from = this.entityAt(entity).transform;
+        let best = -1;
+        let bestDistance = Infinity;
+        for (const e of this.tagged(this.slotName(iface.tags, slot, "tag"))) {
+          const d = (e.transform.x - from.x) ** 2 + (e.transform.y - from.y) ** 2;
+          if (e.handle !== entity && d < bestDistance) [best, bestDistance] = [e.handle, d];
+        }
+        return best;
+      },
     };
+  }
+
+  /** Live entities (not being removed) with a tag, in world order. */
+  tagged(tag: string): Entity[] {
+    return this.world.entities.filter((e) => e.tags.includes(tag) && this.exists(e.handle));
   }
 
   private badField(field: number): never {
@@ -475,6 +492,7 @@ export class Runtime {
     const read = gate(name, granted, "world.read", {
       entities: () => this.world.entities.filter((e) => this.world.activeInHierarchy(e.handle)).map((e) => e.id),
       withExtension: () => this.world.entities.filter((e) => name in e.extensions).map((e) => e.id),
+      tagged: (tag: string) => this.tagged(tag).map((e) => e.id),
       extension: (id: string) => entity(id).extensions[name],
       transform: (id: string) => ({ ...entity(id).transform }),
       state: (id: string, key: string) => entity(id).state.get(key) ?? 0,

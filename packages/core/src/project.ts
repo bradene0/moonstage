@@ -72,6 +72,7 @@ export interface BehaviorModuleDecl {
   scenes?: string[];
   sounds?: string[];
   saves?: string[];
+  tags?: string[];
 }
 
 export interface TransformComponent {
@@ -188,6 +189,8 @@ export interface EntitySource {
   name?: string;
   parent?: string | null;
   active?: boolean;
+  /** Labels behaviors can query (count_tagged, nth_tagged, nearest_tagged). */
+  tags?: string[];
   components?: Components;
   extensions?: Record<string, Record<string, unknown>>;
 }

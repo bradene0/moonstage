@@ -30,6 +30,12 @@ const space = {
   description: "'world' (default) is transformed by the camera; 'screen' is fixed to the viewport.",
 };
 
+const tags = {
+  type: "array",
+  items: id,
+  uniqueItems: true,
+  description: "Labels behaviors can query (count_tagged, nth_tagged, nearest_tagged). Spawned copies keep their prefab's tags.",
+};
 const extensions = {
   type: "object",
   description: "Plugin-owned data keyed by plugin name. Validated by the plugin.",
@@ -327,6 +333,7 @@ export const projectSchema: JsonSchema = {
         scenes: { ...nameList, description: "Scenes this module can switch to, with load_scene(slot)." },
         sounds: { ...nameList, description: "Audio assets this module can play, with play_sound(slot, volume)." },
         saves: { ...nameList, description: "Persistent numbers (high scores, progress), read and written with save_get / save_set." },
+        tags: { ...nameList, description: "Entity tags this module queries, with count_tagged / nth_tagged / nearest_tagged." },
       },
     },
     prefab: {
@@ -337,6 +344,7 @@ export const projectSchema: JsonSchema = {
       properties: {
         name: { type: "string" },
         active: { type: "boolean" },
+        tags,
         components: { $ref: "#/$defs/components" },
         extensions,
       },
@@ -369,6 +377,7 @@ export const sceneSchema: JsonSchema = {
         name: { type: "string" },
         parent: { anyOf: [id, { type: "null" }] },
         active: { type: "boolean", description: "Inactive entities are not updated or rendered (default true)." },
+        tags,
         components: { $ref: "#/$defs/components" },
         extensions,
       },

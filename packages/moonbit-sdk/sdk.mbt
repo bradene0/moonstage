@@ -1,4 +1,4 @@
-// MoonBit bindings for Moonstage Behavior ABI 4.
+// MoonBit bindings for Moonstage Behavior ABI 5.
 //
 // A behavior package imports this SDK and exports four functions:
 //
@@ -14,7 +14,7 @@
 
 ///|
 /// ABI version implemented by this SDK. Return it from `ms_abi_version`.
-pub let abi_version : Int32 = 4
+pub let abi_version : Int32 = 5
 
 ///|
 /// Handle value meaning "no entity" (e.g. an unset ref).
@@ -82,6 +82,15 @@ fn host_save_set(slot : Int32, value : Double) -> Unit = "moonstage" "save_set"
 
 ///|
 fn host_is_prefab(entity : Int32, prefab : Int32) -> Int32 = "moonstage" "is_prefab"
+
+///|
+fn host_count_tagged(tag : Int32) -> Int32 = "moonstage" "count_tagged"
+
+///|
+fn host_nth_tagged(tag : Int32, n : Int32) -> Int32 = "moonstage" "nth_tagged"
+
+///|
+fn host_nearest_tagged(tag : Int32, entity : Int32) -> Int32 = "moonstage" "nearest_tagged"
 
 // Transform fields, in ABI order: x, y, rotation, scale_x, scale_y.
 // Positions are pixels (y grows downward), rotation is radians (clockwise),
@@ -286,4 +295,23 @@ pub fn store_save(slot : Int32, value : Double) -> Unit {
 /// Use it to tell what a collision event's other entity is.
 pub fn is_prefab(entity : Int32, prefab : Int32) -> Bool {
   entity >= 0 && host_is_prefab(entity, prefab) != 0
+}
+
+///|
+/// Number of live entities with tag `tag` (index in the module's `tags` list), e.g. blocks left.
+pub fn count_tagged(tag : Int32) -> Int {
+  host_count_tagged(tag)
+}
+
+///|
+/// The n-th live entity with the tag (0-based; scene order, then spawn order), or `no_entity`.
+/// Loop from 0 to `count_tagged(tag)` to visit every tagged entity.
+pub fn nth_tagged(tag : Int32, n : Int) -> Int32 {
+  host_nth_tagged(tag, n)
+}
+
+///|
+/// The live entity with the tag nearest to `entity` (never `entity` itself), or `no_entity`.
+pub fn nearest_tagged(tag : Int32, entity : Int32) -> Int32 {
+  host_nearest_tagged(tag, entity)
 }

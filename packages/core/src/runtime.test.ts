@@ -119,7 +119,7 @@ describe("runtime", () => {
     rt.step();
     assert.equal(rt.diagnostics.length, 0);
     await assert.rejects(
-      Runtime.create(project(moverScene, { manifest: moverManifest, behaviors: { mover: minimalWasm(5) } })),
+      Runtime.create(project(moverScene, { manifest: moverManifest, behaviors: { mover: minimalWasm(6) } })),
       (err: MoonstageError) => err.diagnostics[0]!.code === "MS3002",
     );
     // Older modules keep working: each ABI version only added imports.
@@ -769,5 +769,42 @@ describe("event totals", () => {
     for (let i = 0; i < 50; i++) rt.step();
     assert.equal(rt.events.length, 10_000, "the log is capped");
     assert.equal(rt.eventTotals.get("ping"), 15_000, "totals are exact");
+  });
+});
+
+describe("tag queries (ABI 5)", () => {
+  it("counts, lists and finds the nearest tagged entities, including spawned ones", async () => {
+    const m = manifest({
+      behaviors: { scout: { wasm: "s.wasm", tags: ["block"], prefabs: ["brick"] } },
+      prefabs: { brick: { tags: ["block"], components: { transform: { position: [500, 0] } } } },
+    });
+    const scene: SceneSource = {
+      format: 1,
+      entities: [
+        { id: "scout", components: { transform: { position: [0, 0] }, behavior: { module: "scout" } } },
+        { id: "far", tags: ["block"], components: { transform: { position: [300, 0] } } },
+        { id: "near", tags: ["block", "wood"], components: { transform: { position: [40, 30] } } },
+        { id: "plain", components: { transform: { position: [1, 1] } } },
+      ],
+    };
+    const seen: number[][] = [];
+    const scout = jsBehavior((h) => ({
+      ms_update(self) {
+        const count = h.count_tagged(0);
+        const all = Array.from({ length: count + 1 }, (_, n) => h.nth_tagged(0, n));
+        seen.push([count, ...all, h.nearest_tagged(0, self)]);
+        if (seen.length === 1) {
+          h.spawn(0);
+          h.remove(h.nearest_tagged(0, self));
+        }
+      },
+    }));
+    const rt = await Runtime.create(project(scene, { manifest: m, behaviors: { scout } }));
+    rt.step();
+    rt.step();
+    // Handles: scout 0, far 1, near 2, plain 3, spawned brick 4.
+    assert.deepEqual(seen[0], [2, 1, 2, -1, 2], "two tagged; nearest is 'near'; past the end is -1");
+    assert.deepEqual(seen[1], [2, 1, 4, -1, 1], "'near' removed, the spawned brick counts; 'far' is now nearest");
+    assert.deepEqual(rt.tagged("block").map((e) => e.id), ["far", "brick-1"]);
   });
 });

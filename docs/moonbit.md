@@ -110,7 +110,7 @@ fn approach(value : Double, target : Double, step : Double) -> Double {
 
 Never write slot numbers. Declare names in the behavior's entry in `moonstage.json` and use the generated
 constants: `params: ["speed"]` → `param_speed`, `state: ["vx"]` → `state_vx`, and likewise `ref_`, `input_`,
-`event_`, `prefab_`, `scene_`, `sound_`, `save_`. camelCase becomes snake_case (`turnSpeed` → `param_turn_speed`).
+`event_`, `prefab_`, `scene_`, `sound_`, `save_`, `tag_`. camelCase becomes snake_case (`turnSpeed` → `param_turn_speed`).
 An unknown name is error 4021 — add it to `moonstage.json` and rebuild.
 
 State slots are names, not per-module storage. To read or write another entity's state, list that name
@@ -151,6 +151,9 @@ Every function is `@sdk.<name>`. Entities are `Int32` handles; slots are generat
 | `spawn(prefab_x)`, `spawn_at(prefab_x, x, y)` | New entity from a prefab; returns its handle |
 | `remove(e)`, `exists(e)` | Remove at end of tick; check a handle is still live |
 | `is_prefab(e, prefab_x)` | Was `e` spawned from that prefab (e.g. what did I collide with?) |
+| `count_tagged(tag_x)` | How many live entities have that tag (e.g. blocks left, enemies alive) |
+| `nth_tagged(tag_x, n)` | The n-th tagged entity, for `n` from 0 below the count, or `no_entity` |
+| `nearest_tagged(tag_x, e)` | The tagged entity closest to `e` (not `e` itself), or `no_entity` |
 | `load_scene(scene_x)` | Switch scenes at the end of the tick |
 | `play_sound(sound_x, volume)` | Play an audio asset |
 | `load_save(save_x)`, `store_save(save_x, v)` | Numbers that survive reloads (and scene switches) |

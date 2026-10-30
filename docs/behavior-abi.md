@@ -5,9 +5,10 @@ engine's internals. Only `i32` and `f64` values cross the boundary, so any langu
 WebAssembly can implement a behavior. MoonBit is the first-party language and has an SDK in
 `packages/moonbit-sdk`.
 
-ABI 4 is an early contract and may change. The runtime accepts modules that report ABI 1 to 4, because
+ABI 5 is an early contract and may change. The runtime accepts modules that report ABI 1 to 5, because
 each version only added imports: ABI 2 added `spawn`, `remove` and `entity_exists`; ABI 3 added
-`load_scene` and `play_sound`; ABI 4 added `save_get`, `save_set` and `is_prefab`. A breaking change increments `BEHAVIOR_ABI`
+`load_scene` and `play_sound`; ABI 4 added `save_get`, `save_set` and `is_prefab`; ABI 5 added
+`count_tagged`, `nth_tagged` and `nearest_tagged`. A breaking change increments `BEHAVIOR_ABI`
 and raises the minimum accepted version.
 
 ## Declaring a module
@@ -43,7 +44,7 @@ slot 1, and `collected` is event slot 0. MoonBit behaviors never write these num
 
 | Export | Signature | Called |
 | --- | --- | --- |
-| `ms_abi_version` | `() -> i32` | Once, at load. It must return `1` to `4`. |
+| `ms_abi_version` | `() -> i32` | Once, at load. It must return `1` to `5`. |
 | `ms_start` | `(entity: i32) -> ()` | Once per entity: before the first tick, or at the end of the tick it was spawned in. |
 | `ms_update` | `(entity: i32, dt: f64) -> ()` | Every tick, for each active entity. `dt` is in seconds. |
 | `ms_event` | `(entity: i32, event: i32, source: i32, value: f64) -> ()` | For each event that the module declares. `event` is the module's slot. `source` is the emitting entity, or `-1`. |
@@ -76,6 +77,9 @@ is `@sdk.set_active(entity, Bool)`); see the SDK table in `moonstage guide moonb
 | `save_get` | `(slot: i32) -> f64` | ABI 4. Persistent number `slot` (from this module's `saves` list), 0 if never saved. |
 | `save_set` | `(slot: i32, value: f64)` | ABI 4. Store a persistent number (high scores, unlocked levels). |
 | `is_prefab` | `(entity: i32, prefab: i32) -> i32` | ABI 4. 1 if the entity was spawned from prefab `slot`: tells you what a collision partner is. |
+| `count_tagged` | `(tag: i32) -> i32` | ABI 5. Live entities with tag `slot` (from this module's `tags` list). |
+| `nth_tagged` | `(tag: i32, n: i32) -> i32` | ABI 5. The n-th live tagged entity (scene order, then spawn order), or -1. |
+| `nearest_tagged` | `(tag: i32, entity: i32) -> i32` | ABI 5. The live tagged entity nearest to `entity`, excluding it, or -1. |
 
 An invalid handle, field or slot makes the host function throw. The runtime reports the throw as `MS3004`
 and disables that entity's behavior.
@@ -105,6 +109,13 @@ headless runs keep them in memory, and tests can seed them (`"saves": { "best": 
 (`{ "save": "best", "gte": 11 }`). Writes are flushed at the end of the tick. A module lists the names it
 uses under `saves`, which generates `save_*` constants; the SDK calls are `@sdk.load_save` and
 `@sdk.store_save`. Plugins use `ctx.saves` with the `saves` capability.
+
+## Tags
+
+Entities and prefabs can carry `tags`. A module lists the tags it queries under `tags` (generating `tag_*`
+constants) and can then count them (`@sdk.count_tagged(tag_block)`, e.g. "blocks left"), visit them
+(`@sdk.nth_tagged(tag_block, n)` for `n` below the count) or find the closest one
+(`@sdk.nearest_tagged(tag_enemy, entity)`). Entities removed this tick no longer count.
 
 ## Several behaviors on one entity
 

@@ -56,6 +56,12 @@ export interface HostFunctions {
   save_set(slot: number, value: number): void;
   /** ABI 4: 1 if the entity was spawned from prefab `slot` (from the module's `prefabs` list). */
   is_prefab(entity: number, prefab: number): number;
+  /** ABI 5: number of live entities with tag `slot` (from the module's `tags` list). */
+  count_tagged(tag: number): number;
+  /** ABI 5: handle of the n-th live entity with the tag (scene order, then spawn order), or -1. */
+  nth_tagged(tag: number, n: number): number;
+  /** ABI 5: the live entity with the tag nearest to `entity` (excluding it), or -1. */
+  nearest_tagged(tag: number, entity: number): number;
 }
 
 export const HOST_FUNCTIONS = [
@@ -80,6 +86,9 @@ export const HOST_FUNCTIONS = [
   "save_get",
   "save_set",
   "is_prefab",
+  "count_tagged",
+  "nth_tagged",
+  "nearest_tagged",
 ] as const satisfies readonly (keyof HostFunctions)[];
 
 export interface BehaviorImports {
@@ -154,6 +163,7 @@ export interface BehaviorInterface {
   scenes: string[];
   sounds: string[];
   saves: string[];
+  tags: string[];
 }
 
 export function behaviorInterface(decl: BehaviorModuleDecl): BehaviorInterface {
@@ -167,5 +177,6 @@ export function behaviorInterface(decl: BehaviorModuleDecl): BehaviorInterface {
     scenes: decl.scenes ?? [],
     sounds: decl.sounds ?? [],
     saves: decl.saves ?? [],
+    tags: decl.tags ?? [],
   };
 }

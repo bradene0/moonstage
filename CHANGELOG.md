@@ -45,6 +45,15 @@ versions so you can tell what moved.
   the entry scene and render its last frame in one call, with one report. Skills, templates and `new`
   now point agents at it after every edit.
 
+- **Record and replay.** The browser player records every session; F8 downloads it as a test file that
+  replays exactly and expects what happened (final scene, saves, event counts). Play a test back in the
+  browser with `moonstage run --replay <file>`, `?replay=` on a built page, or the player's `replay`
+  option. `moonstage record` writes any session as an animated SVG that loops in a browser, and `run`,
+  `render` and `record` take `--test <file>` to reuse a test's scene, seed, setup, saves and input.
+- **Tags and entity queries (behavior ABI 5).** Entities and prefabs take `tags`; behaviors count, visit
+  and find the nearest tagged entity (`@sdk.count_tagged`, `nth_tagged`, `nearest_tagged`), and plugins
+  list them with `ctx.world.tagged`. ABI 1–4 modules keep working.
+
 ### Changed
 
 - **From the first agent eval** (`evals/results/2026-10-30.md`):
