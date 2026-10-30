@@ -87,7 +87,7 @@ describe("@moonstage/physics", () => {
     assert.ok(va > 100 && vb > 100 && va + vb < 300, `momentum shared through the joint (a=${va}, b=${vb})`);
   });
 
-  it("keeps a post-and-plank tower standing with default settings (warm starting)", async () => {
+  it("keeps a post-and-plank tower standing for minutes, and wakes it when hit", async () => {
     const platform: EntitySource = { id: "platform", components: { transform: { position: [600, 420] }, collider: { shape: "box", size: [300, 30] } } };
     const blocks: EntitySource[] = [];
     let y = 405;
@@ -101,14 +101,21 @@ describe("@moonstage/physics", () => {
     const project = world([platform, ...blocks]);
     const rt = await Runtime.create(project);
     const start = new Map(rt.world.entities.map((e) => [e.id, { ...e.transform }]));
-    for (let i = 0; i < 60 * 60; i++) rt.step();
+    for (let i = 0; i < 180 * 60; i++) rt.step();
     let drift = 0;
     for (const b of blocks) {
       const now = rt.world.byStableId(b.id)!.transform;
       const was = start.get(b.id)!;
       drift = Math.max(drift, Math.hypot(now.x - was.x, now.y - was.y));
     }
-    assert.ok(drift < 2, `untouched tower drifted ${drift.toFixed(2)} px in 60 s`);
+    assert.ok(drift < 2, `untouched tower drifted ${drift.toFixed(2)} px in 180 s`);
+
+    // Resting blocks sleep; knocking out a bottom post must wake the stack above it.
+    const plankY = rt.read("plank-0", "transform.position.y") as number;
+    rt.world.byStableId("post-0-560")!.state.set("vx", 800);
+    for (let i = 0; i < 120; i++) rt.step();
+    const fell = (rt.read("plank-0", "transform.position.y") as number) - plankY;
+    assert.ok(fell > 10, `the plank above a knocked-out post falls (moved ${fell.toFixed(1)} px)`);
   });
 
   it("is deterministic and isolates worlds", async () => {

@@ -75,7 +75,20 @@ let ang_damp : Array[Double] = []
 let sensor : Array[Bool] = []
 
 ///|
+/// Seconds each body has been nearly still; past `sleep_after` it stops integrating until pushed.
+let still_time : Array[Double] = []
+
+///|
 let gravity : Array[Double] = [0.0, 980.0]
+
+///|
+let sleep_speed : Double = 3.0
+
+///|
+let sleep_spin : Double = 0.05
+
+///|
+let sleep_after : Double = 0.5
 
 // ---------------------------------------------------------------- joints
 
@@ -259,6 +272,7 @@ pub fn reset() -> Unit {
     list.clear()
   }
   sensor.clear()
+  still_time.clear()
   j_motor_on.clear()
   c_key.clear()
   warm_n.clear()
@@ -292,6 +306,7 @@ pub fn add_body(body_kind : Int, body_shape : Int, a : Double, b : Double) -> In
   restitution.push(0.0)
   gravity_scale.push(1.0)
   sensor.push(false)
+  still_time.push(0.0)
   set_mass(id, 0.0, 1.0, 0)
   id
 }
@@ -367,6 +382,7 @@ pub fn set_pose(i : Int, x : Double, y : Double, angle : Double) -> Unit {
     px[i] = x
     py[i] = y
     ang[i] = angle
+    still_time[i] = 0.0
   }
 }
 
@@ -376,6 +392,7 @@ pub fn set_velocity(i : Int, x : Double, y : Double, angular : Double) -> Unit {
     vx[i] = x
     vy[i] = y
     av[i] = angular
+    still_time[i] = 0.0
   }
 }
 
@@ -500,6 +517,7 @@ fn add_contact(
   x : Double,
   y : Double,
   depth : Double,
+  feature : Int,
 ) -> Unit {
   c_a.push(a)
   c_b.push(b)
@@ -513,7 +531,9 @@ fn add_contact(
   c_target.push(0.0)
   c_jn.push(0.0)
   c_jt.push(0.0)
-  c_key.push(0L)
+  // Key by the geometric feature (which corner of which box), so a contact keeps its identity
+  // across substeps even if detection order changes; warm starting depends on it.
+  c_key.push((a.to_int64() * 1048576L + b.to_int64()) * 16L + feature.to_int64())
 }
 
 ///|
@@ -529,7 +549,7 @@ fn circle_circle(a : Int, b : Int) -> Bool {
   }
   let nx = if dist > 0.000001 { dx / dist } else { 0.0 }
   let ny = if dist > 0.000001 { dy / dist } else { 1.0 }
-  add_contact(a, b, nx, ny, ax + nx * radius[a], ay + ny * radius[a], depth)
+  add_contact(a, b, nx, ny, ax + nx * radius[a], ay + ny * radius[a], depth, 0)
   true
 }
 
@@ -582,9 +602,9 @@ fn circle_box(c : Int, q : Int, circle_first : Bool) -> Bool {
   let wx = qx + kx * cos - ky * sin
   let wy = qy + kx * sin + ky * cos
   if circle_first {
-    add_contact(c, q, -nx, -ny, wx, wy, depth)
+    add_contact(c, q, -nx, -ny, wx, wy, depth, 0)
   } else {
-    add_contact(q, c, nx, ny, wx, wy, depth)
+    add_contact(q, c, nx, ny, wx, wy, depth, 0)
   }
   true
 }
@@ -655,13 +675,13 @@ fn box_box(a : Int, b : Int) -> Bool {
       let inside = inside_box(other, x, y)
       if inside > -0.01 {
         // Each corner's own penetration, so a slightly tilted box is not pushed as if fully sunk.
-        add_contact(a, b, nx, ny, x, y, clamp(inside, 0.0, best))
+        add_contact(a, b, nx, ny, x, y, clamp(inside, 0.0, best), pass * 4 + k)
         found = found + 1
       }
     }
   }
   if found == 0 {
-    add_contact(a, b, nx, ny, shape_x(a) + dx * 0.5, shape_y(a) + dy * 0.5, best)
+    add_contact(a, b, nx, ny, shape_x(a) + dx * 0.5, shape_y(a) + dy * 0.5, best, 8)
   }
   true
 }
@@ -754,9 +774,6 @@ fn detect(record : Bool) -> Unit {
       }
       let before = c_a.length()
       if collide(a, b) {
-        for k = before; k < c_a.length(); k = k + 1 {
-          c_key[k] = (a.to_int64() * 1048576L + b.to_int64()) * 4L + (k - before).to_int64()
-        }
         if record {
           t_a.push(a)
           t_b.push(b)
@@ -987,6 +1004,21 @@ pub fn step(dt : Double, substeps : Int, iterations : Int) -> Unit {
     }
     store_warm_start()
     for i = 0; i < kind.length(); i = i + 1 {
+      if kind[i] == 1 {
+        // Sleeping: a body that stays nearly still after solving stops moving, which removes the
+        // slow creep of resting stacks. Its velocity is kept rather than zeroed, so anything that
+        // keeps accelerating it (a hit, a support moving away, a behavior setting velocity)
+        // builds past the threshold and wakes it.
+        let speed = (vx[i] * vx[i] + vy[i] * vy[i]).sqrt()
+        if speed < sleep_speed && av[i].abs() < sleep_spin {
+          still_time[i] = still_time[i] + h
+        } else {
+          still_time[i] = 0.0
+        }
+        if still_time[i] >= sleep_after {
+          continue
+        }
+      }
       if kind[i] == 1 || kind[i] == 2 {
         px[i] = px[i] + vx[i] * h
         py[i] = py[i] + vy[i] * h
