@@ -120,6 +120,19 @@ describe("moonstage CLI", () => {
     assert.equal(cli("plugin", "check", join(physics, "plugins", "arcade-physics.js"), "--json").code, 0);
   });
 
+  it("drives headless runs and renders with an input timeline", moon, () => {
+    const script = JSON.stringify([{ tick: 0, set: { thrust: 1 } }, { tick: 40, set: { thrust: 0 } }]);
+    const held = cli("run", example, "--headless", "--scene", "main", "--ticks", "60", "--input-script", script, "--json", "--no-build");
+    assert.equal(held.code, 0, held.stdout);
+    assert.equal(held.json.snapshot.entities.flame.active, false, "thrust released at tick 40");
+    const file = join(scratch, "timeline.json");
+    writeFileSync(file, JSON.stringify([{ tick: 0, set: { thrust: 1 } }]));
+    const render = cli("render", example, "--scene", "main", "--tick", "20", "--input-script", file, "--output", join(scratch, "t.svg"), "--json", "--no-build");
+    assert.equal(render.code, 0, render.stdout);
+    assert.match(readFileSync(join(scratch, "t.svg"), "utf8"), /data-entity="flame"/, "the flame shows while thrusting");
+    assert.equal(cli("run", example, "--headless", "--input-script", "[{]", "--json", "--no-build").code, 2);
+  });
+
   it("switches from the title scene and plays sounds headlessly", moon, () => {
     const r = cli("run", example, "--headless", "--ticks", "20", "--input", '{"thrust":1}', "--json", "--no-build");
     assert.equal(r.code, 0, r.stdout);

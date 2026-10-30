@@ -36,6 +36,8 @@ Create `tests/<name>.test.json` (the schema is `schemas/test.schema.json`):
   has a `data-entity` attribute, so you can search the file for entity ids. Sprites also carry `data-frame`.
   Images are embedded, so the file is self-contained; a magenta box with `data-missing-asset` marks an
   image that could not be read.
+- Drive the moment you want with an input timeline: `--input-script '[{"tick":0,"set":{"fire":1}}]'`
+  (also for `run --headless`).
 - `--output -` prints the SVG to stdout. `--json` reports `items`, `entities` and `camera`.
 - Render the important moments (start, after the key input, after an event) and check visibility,
   camera framing and HUD text (for example `Crystals: 1`).

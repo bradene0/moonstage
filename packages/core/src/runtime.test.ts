@@ -725,3 +725,15 @@ describe("saves and prefab checks (ABI 4)", () => {
     assert.equal(result.passed, true, JSON.stringify(result.diagnostics));
   });
 });
+
+describe("event totals", () => {
+  it("counts every event even past the 10,000-entry log", async () => {
+    const m = manifest({ behaviors: { chatty: { wasm: "c", events: ["ping"] } } });
+    const chatty = jsBehavior((h) => ({ ms_update: () => { for (let i = 0; i < 300; i++) h.emit(0, 1); } }));
+    const scene: SceneSource = { format: 1, entities: [{ id: "c", components: { behavior: { module: "chatty" } } }] };
+    const rt = await Runtime.create(project(scene, { manifest: m, behaviors: { chatty } }));
+    for (let i = 0; i < 50; i++) rt.step();
+    assert.equal(rt.events.length, 10_000, "the log is capped");
+    assert.equal(rt.eventTotals.get("ping"), 15_000, "totals are exact");
+  });
+});

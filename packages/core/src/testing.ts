@@ -43,7 +43,7 @@ export function checkAssertion(rt: Runtime, a: Assertion, index: number, file?: 
     diagnostic("MS5001", message, { file, path, ...(entity !== undefined && { entity }) });
 
   if ("event" in a) {
-    const count = rt.events.filter((e) => e.name === a.event).length;
+    const count = rt.eventTotals.get(a.event) ?? 0;
     return compare(count, a.count ?? { gte: 1 }).map((m) => fail(`event "${a.event}" count: ${m}`));
   }
   if ("scene" in a) {

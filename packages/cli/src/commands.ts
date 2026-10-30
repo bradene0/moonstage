@@ -77,13 +77,13 @@ export const COMMANDS: CommandSpec[] = [
   {
     name: "run",
     summary: "Play in the browser (local server) or simulate headlessly.",
-    usage: "moonstage run [dir] [--headless --ticks <n> --seed <n> --scene <id> --input <json>] [--port <n>] [--no-build] [--json]",
+    usage: "moonstage run [dir] [--headless --ticks <n> --seed <n> --scene <id> --input <json> --input-script <json|file>] [--port <n>] [--no-build] [--json]",
   },
   { name: "test", summary: "Run tests/*.test.json headlessly.", usage: "moonstage test [dir] [--filter <text>] [--no-build] [--json]" },
   {
     name: "render",
     summary: "Simulate to a tick and write that frame as SVG.",
-    usage: "moonstage render [dir] [--tick <n>] [--scene <id>] [--seed <n>] [--output <file|->] [--no-build] [--json]",
+    usage: "moonstage render [dir] [--tick <n>] [--scene <id>] [--seed <n>] [--input <json>] [--input-script <json|file>] [--output <file|->] [--no-build] [--json]",
   },
   {
     name: "guide",
@@ -824,15 +824,49 @@ function int(value: string | undefined, name: string, fallback: number): number 
   return n;
 }
 
-async function simulate(project: LoadedProject, opts: { scene?: string; seed?: string; ticks: number; input?: string }) {
-  const input = opts.input ? (JSON.parse(opts.input) as Record<string, number>) : {};
+/**
+ * Input for a simulation: --input holds values for the whole run; --input-script is a timeline in the
+ * same format as a test's `input` ([{ "tick": 0, "set": { "fire": 1 } }, ...]), inline JSON or a file path.
+ */
+function inputTimeline(opts: { input?: string; inputScript?: string }): { tick: number; set: Record<string, number> }[] {
+  const timeline: { tick: number; set: Record<string, number> }[] = [];
+  const parse = (text: string, flag: string): unknown => {
+    try {
+      return JSON.parse(text);
+    } catch (err) {
+      throw new MoonstageError([diagnostic("MS9001", `${flag} is not valid JSON: ${(err as Error).message}`)]);
+    }
+  };
+  if (opts.input) timeline.push({ tick: 0, set: parse(opts.input, "--input") as Record<string, number> });
+  if (opts.inputScript) {
+    const source = opts.inputScript.trim().startsWith("[") ? opts.inputScript : readFileSync(resolve(opts.inputScript), "utf8");
+    const steps = parse(source, "--input-script");
+    if (!Array.isArray(steps) || !steps.every((s) => typeof s?.tick === "number" && typeof s?.set === "object")) {
+      throw new MoonstageError([diagnostic("MS9001", `--input-script must be a list of { "tick": n, "set": { name: value } }`)]);
+    }
+    timeline.push(...(steps as { tick: number; set: Record<string, number> }[]));
+  }
+  return timeline.sort((a, b) => a.tick - b.tick);
+}
+
+async function simulate(
+  project: LoadedProject,
+  opts: { scene?: string; seed?: string; ticks: number; input?: string; inputScript?: string },
+) {
+  const timeline = inputTimeline(opts);
   const rt = await Runtime.create(project, {
     ...(opts.scene !== undefined && { scene: opts.scene }),
     ...(opts.seed !== undefined && { seed: int(opts.seed, "seed", 1) }),
   });
-  for (const [name, value] of Object.entries(input)) rt.input.set(name, value);
   rt.start();
-  for (let i = 0; i < opts.ticks; i++) rt.step();
+  let next = 0;
+  for (let i = 0; i < opts.ticks; i++) {
+    while (next < timeline.length && timeline[next]!.tick <= i) {
+      for (const [name, value] of Object.entries(timeline[next]!.set)) rt.input.set(name, value);
+      next += 1;
+    }
+    rt.step();
+  }
   return rt;
 }
 
@@ -843,6 +877,7 @@ export async function runCommand(opts: {
   seed?: string;
   scene?: string;
   input?: string;
+  inputScript?: string;
   port?: string;
   build?: boolean;
 }): Promise<CommandResult & { server?: import("node:http").Server }> {
@@ -856,8 +891,7 @@ export async function runCommand(opts: {
   if (p.project === undefined) return failed(p);
   const ticks = int(opts.ticks, "ticks", 600);
   const rt = await simulate(p.project, { ...opts, ticks });
-  const eventCounts: Record<string, number> = {};
-  for (const e of rt.events) eventCounts[e.name] = (eventCounts[e.name] ?? 0) + 1;
+  const eventCounts = Object.fromEntries(rt.eventTotals);
   const snapshot = rt.snapshot();
   rt.stop();
   rt.dispose();
@@ -938,6 +972,7 @@ export async function render(opts: {
   seed?: string;
   output?: string;
   input?: string;
+  inputScript?: string;
   build?: boolean;
 }): Promise<CommandResult & { svg?: string }> {
   const p = await prepare(opts.dir, opts.build !== false);

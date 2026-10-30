@@ -169,8 +169,10 @@ export class Runtime {
   readonly random: Random;
   /** Problems found while running (traps, logs). Grows over time. */
   readonly diagnostics: Diagnostic[] = [];
-  /** Every event dispatched, oldest first (capped). */
+  /** Every event dispatched, oldest first (capped at 10,000; see eventTotals for exact counts). */
   readonly events: EventRecord[] = [];
+  /** Exact number of dispatches per event name, never capped. */
+  readonly eventTotals = new Map<string, number>();
   /** Values passed to the behavior `log` host function. */
   readonly logs: { tick: number; entity: string; value: number }[] = [];
   /** Every sound requested, oldest first (capped). Platforms play them; tests count them. */
@@ -702,6 +704,7 @@ export class Runtime {
       this.pending = [];
       for (const event of batch) {
         if (this.events.length < MAX_LOGGED_EVENTS) this.events.push(event);
+        this.eventTotals.set(event.name, (this.eventTotals.get(event.name) ?? 0) + 1);
         const source = event.source === null ? -1 : this.world.handle(event.source);
         for (const { handle: h, binding: b, slot } of this.listenersOf(event.name)) {
           if (!this.exists(h) || !this.world.activeInHierarchy(h)) continue;

@@ -19,6 +19,7 @@ const sim = {
   seed: { type: "string" },
   scene: { type: "string" },
   input: { type: "string" },
+  "input-script": { type: "string" },
   "no-build": { type: "boolean" },
 } as const satisfies ParseArgsConfig["options"];
 
@@ -98,13 +99,23 @@ async function dispatch(name: string, values: Record<string, unknown>, dir: stri
         seed: s("seed"),
         scene: s("scene"),
         input: s("input"),
+        inputScript: s("input-script"),
         port: s("port"),
         build,
       });
     case "test":
       return commands.test({ dir, filter: s("filter"), build });
     case "render":
-      return commands.render({ dir, tick: s("tick") ?? s("ticks"), scene: s("scene"), seed: s("seed"), output: s("output"), input: s("input"), build });
+      return commands.render({
+        dir,
+        tick: s("tick") ?? s("ticks"),
+        scene: s("scene"),
+        seed: s("seed"),
+        output: s("output"),
+        input: s("input"),
+        inputScript: s("input-script"),
+        build,
+      });
     case "schemas":
       return commands.schemas({ write: Boolean(values.write), ...(s("out") && { out: s("out") }) });
     case "scene":

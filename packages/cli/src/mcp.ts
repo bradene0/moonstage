@@ -108,11 +108,17 @@ export const TOOLS: Tool[] = [
         seed: int("Random seed."),
         scene: str("Scene id."),
         input: { type: "object", additionalProperties: { type: "number" }, description: "Inputs held for the whole run." },
+        inputScript: {
+          type: "array",
+          items: { type: "object" },
+          description: 'Input timeline: [{ "tick": 0, "set": { "fire": 1 } }, { "tick": 30, "set": { "fire": 0 } }].',
+        },
       },
       required: ["dir"],
     },
     run: (a) =>
       commands.runCommand({
+        inputScript: a.inputScript === undefined ? undefined : JSON.stringify(a.inputScript),
         dir: s(a.dir),
         headless: true,
         ticks: n(a.ticks),
