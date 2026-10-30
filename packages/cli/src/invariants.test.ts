@@ -42,13 +42,22 @@ describe("repository invariants", () => {
     for (const file of sources("packages/player/src")) assert.doesNotMatch(read(file), /from "node:/, file);
   });
 
+  it("first-party plugins use only the public core API", () => {
+    for (const file of sources("plugins/rive/src")) {
+      assert.doesNotMatch(read(file), /from "@moonstage\/core\/|from "\.\.\/\.\.\/packages/, file);
+    }
+    assert.deepEqual(json("plugins/rive/package.json").peerDependencies, { "@moonstage/core": json("plugins/rive/package.json").peerDependencies["@moonstage/core"] });
+  });
+
   it("packages depend in one direction: core <- player <- cli", () => {
     assert.ok(!sources("packages/core/src").some((f) => /@moonstage\/(player|cli)|from "moonstage"/.test(read(f))));
     assert.ok(!sources("packages/player/src").some((f) => /from "moonstage"/.test(read(f))));
   });
 
   it("every package ships the root license", () => {
-    for (const pkg of ["core", "player", "cli"]) assert.equal(read(`packages/${pkg}/LICENSE`), read("LICENSE"), pkg);
+    for (const pkg of ["packages/core", "packages/player", "packages/cli", "plugins/rive"]) {
+      assert.equal(read(`${pkg}/LICENSE`), read("LICENSE"), pkg);
+    }
   });
 
   it("published schemas match the canonical schemas in core", () => {

@@ -1,8 +1,17 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/core" },
-    { "path": "packages/player" },
-    { "path": "packages/cli" }
+    {
+      "path": "packages/core"
+    },
+    {
+      "path": "packages/player"
+    },
+    {
+      "path": "packages/cli"
+    },
+    {
+      "path": "plugins/rive"
+    }
   ]
 }

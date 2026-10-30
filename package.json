@@ -7,7 +7,8 @@
   "workspaces": [
     "packages/core",
     "packages/player",
-    "packages/cli"
+    "packages/cli",
+    "plugins/rive"
   ],
   "engines": {
     "node": ">=22"
@@ -16,7 +17,7 @@
     "build": "tsc -b",
     "clean": "tsc -b --clean",
     "typecheck": "tsc -b",
-    "test": "npm run build && node --test \"packages/*/dist/**/*.test.js\"",
+    "test": "npm run build && node --test \"packages/*/dist/**/*.test.js\" \"plugins/*/dist/**/*.test.js\"",
     "check": "npm test",
     "size": "npm run build && node scripts/size-report.mjs",
     "schemas": "npm run build && node packages/cli/dist/main.js schemas --write",

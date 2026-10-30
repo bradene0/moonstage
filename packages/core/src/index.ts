@@ -76,6 +76,7 @@ export {
   type MoonstagePlugin,
   type PluginContext,
   type PluginInstance,
+  type PluginLoadContext,
 } from "./plugin.js";
 export { Runtime, type LoadedProject, type RuntimeOptions, type Snapshot, type SoundRequest } from "./runtime.js";
 export {

@@ -90,6 +90,14 @@ export interface PluginContext {
   };
 }
 
+/** API 4: what load() can do before the plugin is created. */
+export interface PluginLoadContext {
+  /** Bytes of a project file (project-relative path), or undefined when missing. */
+  readFile(path: string): Promise<Uint8Array | undefined>;
+  /** Read-only project settings and declarations. */
+  readonly project: Readonly<Pick<ProjectManifest, "name" | "assets" | "display" | "simulation" | "physics">>;
+}
+
 export interface PluginInstance {
   /**
    * API 4 (with `draws: true`): draw one item on a Canvas 2D context. The
@@ -127,9 +135,10 @@ export interface MoonstagePlugin<Config = Record<string, unknown>> {
   draws?: boolean;
   /**
    * API 3: asynchronous preparation (e.g. initializing a WebAssembly engine),
-   * awaited once per runtime before create().
+   * awaited once per runtime before create(). API 4 passes a context that can
+   * read project files (e.g. asset bytes declared under `assets`).
    */
-  load?(): Promise<void>;
+  load?(context: PluginLoadContext): Promise<void>;
   /** Validates the plugin's `config` in moonstage.json. */
   configSchema?: JsonSchema;
   /** Validates `extensions[<name>]` on entities. */

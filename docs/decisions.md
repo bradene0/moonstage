@@ -16,8 +16,8 @@ silently by implementation work.
 - **Accounts and cloud services.** There are none, and nothing should require them.
 - **Licensing beyond the current MIT license**, including any commercial arrangements.
 - **Branding** beyond the name "Moonstage".
-- **First-party integrations.** Rive is the expected single advanced reference plugin, after the plugin
-  contract has proven itself. No other first-party integrations are planned.
+- **First-party integrations.** `@moonstage/rive` is the single advanced reference plugin. No other
+  first-party integrations are planned.
 
 ## Technical questions to revisit with evidence
 

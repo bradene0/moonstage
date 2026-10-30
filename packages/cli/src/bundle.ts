@@ -10,7 +10,8 @@
  *     game/                 project files (manifest, scenes, behaviors, plugins)
  */
 
-import { createReadStream, existsSync } from "node:fs";
+import { createReadStream, existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { cp, mkdir, rm, stat, writeFile } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import { dirname, extname, join, normalize, resolve, sep } from "node:path";
@@ -21,14 +22,14 @@ function packageDist(specifier: string): string {
   return dirname(fileURLToPath(import.meta.resolve(specifier)));
 }
 
-const html = (title: string, width: number, height: number) => `<!doctype html>
+const html = (title: string, width: number, height: number, imports: Record<string, string>) => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${title.replace(/</g, "&lt;")}</title>
 <script type="importmap">
-{ "imports": { "@moonstage/core": "./runtime/core/index.js" } }
+${JSON.stringify({ imports }, null, 2)}
 </script>
 <style>
   html, body { margin: 0; height: 100%; background: #05070d; display: grid; place-items: center; }
@@ -53,8 +54,8 @@ export function runtimeFiles(manifest: ProjectManifest): string[] {
   return [...new Set(files)];
 }
 
-/** Copy compiled JS only (no tests, maps or declarations). */
-const runtimeFilter = (src: string) => !/\.test\.js$|\.map$|\.d\.ts$/.test(src);
+/** Copy compiled JS only (no tests, maps, TypeScript sources or build info). */
+const runtimeFilter = (src: string) => !/\.test\.js$|\.map$|\.ts$|\.tsbuildinfo$|tsconfig\.json$/.test(src);
 
 export async function writeBundle(root: string, manifest: ProjectManifest, outDir: string): Promise<{ files: string[] }> {
   await rm(outDir, { recursive: true, force: true });
@@ -70,9 +71,75 @@ export async function writeBundle(root: string, manifest: ProjectManifest, outDi
     await mkdir(dirname(to), { recursive: true });
     await cp(from, to);
   }
+  const imports: Record<string, string> = { "@moonstage/core": "./runtime/core/index.js" };
+  const packages = await copyPluginPackages(root, manifest, join(outDir, "runtime", "modules"), imports);
   const { width = 800, height = 600 } = manifest.display ?? {};
-  await writeFile(join(outDir, "index.html"), html(manifest.name, width, height));
-  return { files };
+  await writeFile(join(outDir, "index.html"), html(manifest.name, width, height, imports));
+  return { files: [...files, ...packages] };
+}
+
+/** Directory of the package that contains `file` (nearest package.json). */
+function packageRoot(file: string): string {
+  for (let dir = dirname(file); dir !== dirname(dir); dir = dirname(dir)) {
+    if (existsSync(join(dir, "package.json"))) return dir;
+  }
+  throw new Error(`no package.json above ${file}`);
+}
+
+/** The ES module entry of a package: exports["."] (import/default), then module, then main. */
+export function packageEntry(dir: string): string {
+  const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
+    exports?: unknown;
+    module?: string;
+    main?: string;
+  };
+  const pick = (value: unknown): string | undefined => {
+    if (typeof value === "string") return value;
+    if (value === null || typeof value !== "object") return undefined;
+    const v = value as Record<string, unknown>;
+    return pick(v["."]) ?? pick(v.import) ?? pick(v.browser) ?? pick(v.default);
+  };
+  return pick(pkg.exports) ?? pkg.module ?? pkg.main ?? "index.js";
+}
+
+/**
+ * Copy plugins given as package specifiers (e.g. "@moonstage/rive"), and their
+ * dependencies, into the bundle and map them in the import map. Packages
+ * resolve from the project directory, like Node would.
+ */
+async function copyPluginPackages(
+  root: string,
+  manifest: ProjectManifest,
+  outDir: string,
+  imports: Record<string, string>,
+): Promise<string[]> {
+  const copied: string[] = [];
+  const queue: { name: string; from: string }[] = Object.values(manifest.plugins ?? {})
+    .map((p) => p.module)
+    .filter((m) => !m.startsWith(".") && !m.startsWith("/"))
+    .map((name) => ({ name, from: join(root, "package.json") }));
+  while (queue.length > 0) {
+    const { name, from } = queue.shift()!;
+    if (name in imports || name === "@moonstage/player") continue;
+    let dir: string;
+    try {
+      dir = packageRoot(createRequire(from).resolve(`${name}/package.json`));
+    } catch {
+      dir = packageRoot(createRequire(from).resolve(name));
+    }
+    const target = join(outDir, name);
+    await cp(dir, target, { recursive: true, filter: (src) => !/[\\/]node_modules([\\/]|$)/.test(src.slice(dir.length)) && runtimeFilter(src) });
+    imports[name] = `./runtime/modules/${name}/${packageEntry(dir).replace(/^\.\//, "")}`;
+    copied.push(`runtime/modules/${name}`);
+    const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
+      dependencies?: Record<string, string>;
+      peerDependencies?: Record<string, string>;
+    };
+    for (const dep of Object.keys({ ...pkg.peerDependencies, ...pkg.dependencies })) {
+      queue.push({ name: dep, from: join(dir, "package.json") });
+    }
+  }
+  return copied;
 }
 
 const TYPES: Record<string, string> = {

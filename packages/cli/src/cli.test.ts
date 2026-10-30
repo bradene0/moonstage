@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { after, describe, it } from "node:test";
@@ -256,6 +256,31 @@ describe("moonstage CLI", () => {
     assert.equal(replies[5].result.isError, true);
     assert.equal(JSON.parse(replies[5].result.content[0].text).diagnostics[0].code, "MS9002");
     assert.equal(replies[6].error.code, -32601);
+  });
+
+  it("bundles npm plugin packages and their dependencies behind an import map", moon, () => {
+    const dir = join(scratch, "rive-bundle");
+    cli("new", dir);
+    const manifestPath = join(dir, "moonstage.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    manifest.assets = { hero: { path: "assets/hero.riv" } };
+    manifest.plugins = { "@moonstage/rive": { module: "@moonstage/rive" } };
+    writeFileSync(manifestPath, JSON.stringify(manifest));
+    mkdirSync(join(dir, "assets"));
+    writeFileSync(join(dir, "assets", "hero.riv"), Buffer.from("RIVE")); // never parsed headlessly
+    // Resolve @moonstage/rive from this repository's node_modules, as an installed project would.
+    writeFileSync(join(dir, "package.json"), JSON.stringify({ private: true }));
+    mkdirSync(join(dir, "node_modules", "@moonstage"), { recursive: true });
+    symlinkSync(realpathSync(join(repo, "node_modules", "@moonstage", "rive")), join(dir, "node_modules", "@moonstage", "rive"));
+    const r = cli("build", dir, "--json");
+    assert.equal(r.code, 0, r.stdout);
+    const html = readFileSync(join(dir, "dist", "index.html"), "utf8");
+    const imports = JSON.parse(/<script type="importmap">([\s\S]*?)<\/script>/.exec(html)![1]!).imports;
+    assert.equal(imports["@moonstage/rive"], "./runtime/modules/@moonstage/rive/dist/index.js");
+    assert.equal(imports["@rive-app/canvas-advanced"], "./runtime/modules/@rive-app/canvas-advanced/canvas_advanced.mjs");
+    readFileSync(join(dir, "dist", "runtime", "modules", "@rive-app", "canvas-advanced", "rive.wasm"));
+    assert.throws(() => readFileSync(join(dir, "dist", "runtime", "modules", "@moonstage", "rive", "src", "index.ts")), "sources stay out");
+    assert.equal(cli("validate", dir, "--json").code, 0, "the plugin loads headlessly");
   });
 
   it("packs a project into an .msp that runs, validates and unpacks like the source", moon, () => {

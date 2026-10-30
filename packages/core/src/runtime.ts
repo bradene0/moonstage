@@ -36,6 +36,7 @@ import {
   type MoonstagePlugin,
   type PluginContext,
   type PluginInstance,
+  type PluginLoadContext,
 } from "./plugin.js";
 import { behaviorsOf, type ProjectManifest, type SceneSource } from "./project.js";
 import { createRandom, type Random } from "./random.js";
@@ -49,6 +50,8 @@ export interface LoadedProject {
   scenes: Record<string, SceneSource>;
   behaviors: Record<string, BehaviorSource>;
   plugins: Record<string, MoonstagePlugin<any>>;
+  /** Reads project files for plugin load(); loaders provide it. */
+  readFile?: (path: string) => Promise<Uint8Array | undefined>;
 }
 
 export interface RuntimeOptions {
@@ -171,7 +174,17 @@ export class Runtime {
   static async create(project: LoadedProject, options: RuntimeOptions = {}): Promise<Runtime> {
     const rt = new Runtime(project, options);
     await rt.instantiateBehaviors(project, options.wasm);
-    for (const name of Object.keys(project.manifest.plugins ?? {})) await project.plugins[name]?.load?.();
+    const loadContext: PluginLoadContext = {
+      readFile: project.readFile ?? (async () => undefined),
+      project: Object.freeze({
+        name: project.manifest.name,
+        assets: project.manifest.assets,
+        display: project.manifest.display,
+        simulation: project.manifest.simulation,
+        physics: project.manifest.physics,
+      }),
+    };
+    for (const name of Object.keys(project.manifest.plugins ?? {})) await project.plugins[name]?.load?.(loadContext);
     rt.createPlugins(project);
     return rt;
   }

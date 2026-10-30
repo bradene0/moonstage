@@ -94,8 +94,16 @@ create(ctx) {
 }
 ```
 
-Without `drawSvg`, headless renders show a dashed placeholder (`data-missing-drawer`). The example is
-`examples/moon-hopper/plugins/radar.js`. The conformance suite calls both hooks every tick.
+Without `drawSvg`, headless renders show a dashed placeholder (`data-missing-drawer`). The small example is
+`examples/moon-hopper/plugins/radar.js`; the advanced one is [`@moonstage/rive`](../plugins/rive/README.md),
+which also uses `load(context)` to read `.riv` assets and initialize Rive's WebAssembly. The conformance
+suite calls both hooks every tick.
+
+`load(context)` (API 4) receives `context.readFile(path)` and `context.project` (name, assets, display,
+simulation, physics), so plugins can prepare asset data before `create()`.
+
+Plugins given as package names (`"module": "@moonstage/rive"`) resolve from the project directory, and
+`moonstage build` copies them and their dependencies into the web bundle behind an import map.
 
 ## Using a plugin in a project
 

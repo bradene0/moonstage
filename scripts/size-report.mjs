@@ -14,6 +14,7 @@ const BUDGETS = {
   "@moonstage/core": 40,
   "@moonstage/player": 8,
   "moonstage (cli)": 32,
+  "@moonstage/rive": 4,
 };
 
 const files = (dir, keep) =>
@@ -28,6 +29,7 @@ const groups = {
   "@moonstage/core": files("packages/core/dist", runtimeJs),
   "@moonstage/player": files("packages/player/dist", runtimeJs),
   "moonstage (cli)": files("packages/cli/dist", runtimeJs),
+  "@moonstage/rive": files("plugins/rive/dist", runtimeJs),
   "moon-hopper behaviors (wasm)": files("examples/moon-hopper/.moonstage/behaviors", (f) => f.endsWith(".wasm")),
 };
 

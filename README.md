@@ -92,6 +92,7 @@ dependency.
 | `packages/core` | `@moonstage/core` | Project model, schemas, validation, world, behavior host (WebAssembly ABI), plugin host, render frames, headless test runner. No dependencies, no DOM, no Node. |
 | `packages/player` | `@moonstage/player` | Browser player: Canvas 2D renderer, keyboard input, `<moonstage-player>`. |
 | `packages/cli` | `moonstage` | The `moonstage` command. |
+| `plugins/rive` | `@moonstage/rive` | Rive artboards and state machines as entities; the reference advanced plugin. |
 | `packages/moonbit-sdk` | `moonstage/sdk` (MoonBit) | MoonBit bindings for the behavior ABI. |
 | `schemas/` | | JSON Schemas for project, scene, test and operation files. |
 | `examples/moon-hopper` | | Reference project. It is also used as a conformance fixture. |

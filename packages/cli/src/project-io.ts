@@ -2,6 +2,7 @@
 
 import { existsSync, statSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { isAbsolute, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
@@ -36,9 +37,13 @@ export function fileIO(root: string): ProjectIO {
       }
     },
     async importModule(specifier) {
-      // Relative specifiers are project files; anything else resolves like a package.
-      const target = specifier.startsWith(".") || specifier.startsWith("/") ? pathToFileURL(abs(specifier)).href : specifier;
-      return import(target);
+      // Relative specifiers are project files; packages resolve from the project directory, like Node would.
+      if (specifier.startsWith(".") || specifier.startsWith("/")) return import(pathToFileURL(abs(specifier)).href);
+      try {
+        return await import(pathToFileURL(createRequire(join(root, "package.json")).resolve(specifier)).href);
+      } catch {
+        return import(specifier);
+      }
     },
   };
 }

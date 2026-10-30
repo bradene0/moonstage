@@ -10,6 +10,12 @@ versions so you can tell what moved.
 - **Plugin drawing (plugin API 4).** Plugins with `draws: true` render the entities that carry their
   extension, through `drawCanvas2d` (browser) and `drawSvg` (headless) hooks; core places the items. The
   conformance suite exercises the hooks. Moon Hopper adds a `radar` drawing plugin.
+- **`@moonstage/rive`**, the reference advanced plugin: Rive artboards as entities, state machine inputs
+  driven by entity state, triggers by Moonstage events, and Rive-reported events emitted back. It runs
+  headless as placeholders.
+- Plugin `load(context)` can read project files (`readFile`) and settings (API 4).
+- Plugins given as package names resolve from the project directory, and `moonstage build` bundles them
+  and their dependencies behind an import map.
 - `animation.offset` on sprites: a frame count, or `"auto"` for a stable per-entity offset.
 - `npm run bench` (runtime benchmarks at scale) and gzipped size budgets enforced in CI.
 

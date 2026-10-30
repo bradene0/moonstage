@@ -71,6 +71,7 @@ The project owner publishes releases; 0.1.0 is the first. For a new release:
    template's `moonstage/sdk@…` import.
 3. Add the release to `CHANGELOG.md`.
 4. `npm run smoke:pack`, then publish in dependency order: `npm publish -w packages/core`,
-   `-w packages/player`, `-w packages/cli`. Each publish asks for two-factor authentication.
+   `-w packages/player`, `-w plugins/rive`, `-w packages/cli`. Each publish asks for two-factor authentication.
+   `@moonstage/rive` has its own version; bump its `@moonstage/core` peer range when core's plugin API changes.
 
 The version policy and release automation are open decisions; see `docs/decisions.md`.

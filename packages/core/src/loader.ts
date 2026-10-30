@@ -155,5 +155,9 @@ export async function loadProject(io: ProjectIO, options: LoadOptions = {}): Pro
   }
 
   if (hasErrors(diagnostics)) return { manifest, scenes, diagnostics };
-  return { project: { manifest, scenes, behaviors, plugins }, manifest, scenes, diagnostics };
+  const readFile = async (path: string) => {
+    const bytes = await io.readBytes(path);
+    return bytes === undefined ? undefined : bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  };
+  return { project: { manifest, scenes, behaviors, plugins, readFile }, manifest, scenes, diagnostics };
 }
