@@ -132,6 +132,20 @@ describe("moonstage CLI", () => {
     assert.equal(render.code, 0, render.stdout);
     assert.match(readFileSync(join(scratch, "t.svg"), "utf8"), /data-entity="flame"/, "the flame shows while thrusting");
     assert.equal(cli("run", example, "--headless", "--input-script", "[{]", "--json", "--no-build").code, 2);
+
+    // A test file supplies its input to --input-script and its setup to --setup.
+    const testFile = join(scratch, "replay.test.json");
+    writeFileSync(testFile, JSON.stringify({
+      name: "replay",
+      ticks: 1,
+      setup: [{ operation: "set_property", target: "beacon", property: "transform.position.x", value: 123 }],
+      input: [{ tick: 0, set: { thrust: 1 } }],
+      expect: [],
+    }));
+    const replay = cli("run", example, "--headless", "--scene", "main", "--ticks", "20", "--input-script", testFile, "--setup", testFile, "--json", "--no-build");
+    assert.equal(replay.code, 0, replay.stdout);
+    assert.equal(replay.json.snapshot.entities.beacon.transform.x, 123);
+    assert.equal(replay.json.snapshot.entities.flame.active, true);
   });
 
   it("switches from the title scene and plays sounds headlessly", moon, () => {

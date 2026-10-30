@@ -52,6 +52,15 @@ versions so you can tell what moved.
   - `moonstage fmt` and `moonstage edit` write compact JSON (scenes about half as long).
   - Single-file games are about half the size (runtime modules gzipped; Moon Hopper 211 → 108 KB).
   - The MoonBit primer has a full `@sdk` table; `guide physics` documents solver settings and state names.
+- **From the second agent eval:**
+  - Behavior `time()` counts from the start of the current scene, as documented (it kept counting across
+    scene switches).
+  - Declared state that was never set reads as 0 in tests and `run` output, as it does in behaviors.
+  - `run --headless` and `render` take `--setup` (edit operations, like a test's), and both `--setup` and
+    `--input-script` accept a test file, so a test can be replayed with its full state shown.
+  - `MS2019` warns when physics bodies overlap at scene start.
+  - `build --out` is relative to the current directory, like `pack --out` and `render --output`.
+  - The MoonBit primer explains reading another entity's state.
 - `ctx.world.setTransform` accepts the scene-file shape (`position: [x, y]`, `scale`) and throws `MS5003` on
   unknown keys or non-finite numbers. Previously `{ position: [...] }` was silently ignored, which broke the
   first game an outside agent built from the repo alone.

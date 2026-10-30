@@ -45,6 +45,10 @@ very fast objects.
 **kinematic** bodies the provider writes them from the body's motion every tick, so do not keep your own data
 under those names there (validation warns with `MS2018`); move kinematic bodies with `@sdk.set_position`.
 
+Place bodies touching, not overlapping: the solver pushes overlapping bodies apart on the first ticks,
+which looks like an explosion. Validation warns with `MS2019` when unrotated boxes or circles overlap by
+more than a pixel at scene start.
+
 Behaviors therefore control bodies through state they already understand:
 
 ```moonbit

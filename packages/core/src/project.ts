@@ -448,6 +448,8 @@ export function validateProjectSemantics(
       }
     });
 
+    out.push(...checkOverlaps(scene, file));
+
     if (scene.camera !== undefined && byId.get(scene.camera)?.components?.camera === undefined) {
       out.push(
         diagnostic("MS2010", `camera "${scene.camera}" is not an entity with a camera component`, {
@@ -455,6 +457,67 @@ export function validateProjectSemantics(
           path: "camera",
         }),
       );
+    }
+  }
+  return out;
+}
+
+/**
+ * Warn about colliders that already overlap when a scene starts, where at least one is a dynamic body.
+ * The solver pushes them apart on the first ticks, which usually looks like an explosion. Only unrotated
+ * boxes and circles on top-level entities are checked; joined pairs are allowed to overlap.
+ */
+function checkOverlaps(scene: SceneSource, file: string | undefined): Diagnostic[] {
+  type Shape = { id: string; dynamic: boolean; circle: boolean; x: number; y: number; hw: number; hh: number };
+  const shapes: Shape[] = [];
+  const joined = new Set<string>();
+  for (const e of scene.entities) {
+    const c = e.components;
+    const collider = c?.collider;
+    if (c?.joint !== undefined) joined.add([e.id, c.joint.target].sort().join("|"));
+    if (collider === undefined || collider.sensor || e.parent != null) continue;
+    const t = c?.transform;
+    if ((t?.rotation ?? 0) !== 0 || (t?.scale !== undefined && (t.scale[0] !== 1 || t.scale[1] !== 1))) continue;
+    const [px, py] = t?.position ?? [0, 0];
+    const [ox, oy] = collider.offset ?? [0, 0];
+    const dynamic = c?.physicsBody !== undefined && (c.physicsBody.type ?? "dynamic") === "dynamic";
+    if (collider.shape === "circle" && typeof collider.radius === "number") {
+      shapes.push({ id: e.id, dynamic, circle: true, x: px + ox, y: py + oy, hw: collider.radius, hh: collider.radius });
+    } else if (collider.shape === "box" && collider.size !== undefined) {
+      shapes.push({ id: e.id, dynamic, circle: false, x: px + ox, y: py + oy, hw: collider.size[0] / 2, hh: collider.size[1] / 2 });
+    }
+  }
+  // Depth of overlap between two shapes (box-circle treats the circle by its nearest box point).
+  const depth = (a: Shape, b: Shape): number => {
+    if (a.circle && b.circle) return a.hw + b.hw - Math.hypot(a.x - b.x, a.y - b.y);
+    if (a.circle || b.circle) {
+      const [circle, box] = a.circle ? [a, b] : [b, a];
+      const nx = Math.max(box.x - box.hw, Math.min(circle.x, box.x + box.hw));
+      const ny = Math.max(box.y - box.hh, Math.min(circle.y, box.y + box.hh));
+      return circle.hw - Math.hypot(circle.x - nx, circle.y - ny);
+    }
+    return Math.min(a.hw + b.hw - Math.abs(a.x - b.x), a.hh + b.hh - Math.abs(a.y - b.y));
+  };
+  const out: Diagnostic[] = [];
+  shapes.sort((a, b) => a.x - a.hw - (b.x - b.hw));
+  for (let i = 0; i < shapes.length; i++) {
+    const a = shapes[i]!;
+    for (let j = i + 1; j < shapes.length && shapes[j]!.x - shapes[j]!.hw < a.x + a.hw; j++) {
+      const b = shapes[j]!;
+      if (!a.dynamic && !b.dynamic) continue;
+      if (joined.has([a.id, b.id].sort().join("|"))) continue;
+      const d = depth(a, b);
+      // Up to a pixel is resting contact; the solver tolerates that.
+      if (d > 1) {
+        out.push(
+          diagnostic("MS2019", `colliders of "${a.id}" and "${b.id}" overlap by ${d.toFixed(1)} px at scene start`, {
+            file,
+            entity: a.id,
+            component: "collider",
+            severity: "warning",
+          }),
+        );
+      }
     }
   }
   return out;

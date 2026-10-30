@@ -20,6 +20,7 @@ const sim = {
   scene: { type: "string" },
   input: { type: "string" },
   "input-script": { type: "string" },
+  setup: { type: "string" },
   "no-build": { type: "boolean" },
 } as const satisfies ParseArgsConfig["options"];
 
@@ -101,6 +102,7 @@ async function dispatch(name: string, values: Record<string, unknown>, dir: stri
         scene: s("scene"),
         input: s("input"),
         inputScript: s("input-script"),
+        setup: s("setup"),
         port: s("port"),
         build,
       });
@@ -115,6 +117,7 @@ async function dispatch(name: string, values: Record<string, unknown>, dir: stri
         output: s("output"),
         input: s("input"),
         inputScript: s("input-script"),
+        setup: s("setup"),
         build,
       });
     case "schemas":

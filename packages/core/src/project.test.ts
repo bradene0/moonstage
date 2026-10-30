@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { applyOperation, applyOperations } from "./operations.js";
-import { validateManifestShape, validateProjectSemantics, validateSceneShape, validateTestShape, type SceneSource } from "./project.js";
+import { validateManifestShape, validateProjectSemantics, validateSceneShape, validateTestShape, type ColliderComponent, type EntitySource, type SceneSource } from "./project.js";
 import { operationSchema } from "./schema/schemas.js";
 import { validateSchema } from "./schema/validate.js";
 import { manifest } from "./test-helpers.test.js";
@@ -145,6 +145,30 @@ describe("project validation", () => {
     };
     const found = validateProjectSemantics(m, { main: scene }).filter((d) => d.code === "MS2018").map((d) => d.entity);
     assert.deepEqual(found.sort(), ["lift", "rock"], "dynamic bodies use vx/vy on purpose; kinematic ones do not");
+  });
+
+  it("warns when physics bodies overlap at scene start", () => {
+    const body = (id: string, x: number, y: number, collider: ColliderComponent, extra: EntitySource["components"] = {}): EntitySource => ({
+      id,
+      components: { transform: { position: [x, y] as [number, number] }, physicsBody: {}, collider, ...extra },
+    });
+    const box: ColliderComponent = { shape: "box", size: [40, 40] };
+    const scene: SceneSource = {
+      format: 1,
+      entities: [
+        { id: "ground", components: { transform: { position: [0, 100] }, collider: { shape: "box", size: [400, 20] } } },
+        body("resting", 0, 70, box), // touches the ground exactly
+        body("sunk", 100, 75, box), // 5 px into the ground
+        body("ball", 110, 50, { shape: "circle", radius: 10 }), // 5 px into "sunk"
+        body("a", -100, 0, box),
+        body("b", -80, 0, box, { joint: { type: "weld", target: "a" } }), // joined, allowed
+        body("ghost", 0, 70, { ...box, sensor: true }),
+      ],
+    };
+    const found = validateProjectSemantics(manifest(), { main: scene }).filter((d) => d.code === "MS2019").map((d) => d.message);
+    assert.equal(found.length, 2, found.join("\n"));
+    assert.ok(found.some((msg) => msg.includes('"sunk"') && msg.includes('"ground"') && msg.includes("5.0 px")));
+    assert.ok(found.some((msg) => msg.includes('"ball"') && msg.includes('"sunk"')));
   });
 
   it("checks joint targets", () => {

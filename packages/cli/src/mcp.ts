@@ -113,12 +113,14 @@ export const TOOLS: Tool[] = [
           items: { type: "object" },
           description: 'Input timeline: [{ "tick": 0, "set": { "fire": 1 } }, { "tick": 30, "set": { "fire": 0 } }].',
         },
+        setup: { type: "array", items: { type: "object" }, description: "Edit operations applied to the scene before the run, like a test's setup." },
       },
       required: ["dir"],
     },
     run: (a) =>
       commands.runCommand({
         inputScript: a.inputScript === undefined ? undefined : JSON.stringify(a.inputScript),
+        setup: a.setup === undefined ? undefined : JSON.stringify(a.setup),
         dir: s(a.dir),
         headless: true,
         ticks: n(a.ticks),

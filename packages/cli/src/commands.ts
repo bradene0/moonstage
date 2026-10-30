@@ -78,13 +78,13 @@ export const COMMANDS: CommandSpec[] = [
   {
     name: "run",
     summary: "Play in the browser (local server) or simulate headlessly.",
-    usage: "moonstage run [dir] [--headless --ticks <n> --seed <n> --scene <id> --input <json> --input-script <json|file>] [--port <n>] [--no-build] [--json]",
+    usage: "moonstage run [dir] [--headless --ticks <n> --seed <n> --scene <id> --input <json> --input-script <json|file> --setup <json|file>] [--port <n>] [--no-build] [--json]",
   },
   { name: "test", summary: "Run tests/*.test.json headlessly.", usage: "moonstage test [dir] [--filter <text>] [--no-build] [--json]" },
   {
     name: "render",
     summary: "Simulate to a tick and write that frame as SVG.",
-    usage: "moonstage render [dir] [--tick <n>] [--scene <id>] [--seed <n>] [--input <json>] [--input-script <json|file>] [--output <file|->] [--no-build] [--json]",
+    usage: "moonstage render [dir] [--tick <n>] [--scene <id>] [--seed <n>] [--input <json>] [--input-script <json|file>] [--setup <json|file>] [--output <file|->] [--no-build] [--json]",
   },
   {
     name: "fmt",
@@ -750,7 +750,8 @@ export async function build(opts: { dir?: string; out?: string; bundle?: boolean
       });
     }
     const html = await singleFileHtml(manifest.name, manifest.display ?? {}, zip);
-    const output = resolve(p.root, opts.out ?? join("dist", `${manifest.name}.html`));
+    // --out is relative to where the command runs, like pack's; the default lives in the project.
+    const output = opts.out !== undefined ? resolve(opts.out) : resolve(p.root, "dist", `${manifest.name}.html`);
     await mkdir(dirname(output), { recursive: true });
     await writeFile(output, html);
     return result({
@@ -762,7 +763,7 @@ export async function build(opts: { dir?: string; out?: string; bundle?: boolean
   const data: Record<string, unknown> = { root: p.root, behaviors: p.behaviors };
   const lines = p.behaviors.map((b) => `compiled ${b.name} -> ${b.output} (${b.bytes} bytes)`);
   if (opts.bundle !== false) {
-    const out = resolve(p.root, opts.out ?? "dist");
+    const out = opts.out !== undefined ? resolve(opts.out) : resolve(p.root, "dist");
     await writeBundle(p.root, p.project.manifest, out);
     data.bundle = out;
     lines.push(`web bundle -> ${out}`);
@@ -872,22 +873,35 @@ function int(value: string | undefined, name: string, fallback: number): number 
 }
 
 /**
+ * A JSON flag given inline or as a file path. A test file (an object) supplies its `field` instead, so
+ * `--input-script tests/x.test.json` replays that test's input and `--setup` applies its setup.
+ */
+function jsonList(text: string, flag: string, field: string): unknown {
+  const source = /^\s*[[{]/.test(text) ? text : readFileSync(resolve(text), "utf8");
+  let value: unknown;
+  try {
+    value = JSON.parse(source);
+  } catch (err) {
+    throw new MoonstageError([diagnostic("MS9001", `${flag} is not valid JSON: ${(err as Error).message}`)]);
+  }
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? ((value as Record<string, unknown>)[field] ?? []) : value;
+}
+
+/**
  * Input for a simulation: --input holds values for the whole run; --input-script is a timeline in the
- * same format as a test's `input` ([{ "tick": 0, "set": { "fire": 1 } }, ...]), inline JSON or a file path.
+ * same format as a test's `input` ([{ "tick": 0, "set": { "fire": 1 } }, ...]).
  */
 function inputTimeline(opts: { input?: string; inputScript?: string }): { tick: number; set: Record<string, number> }[] {
   const timeline: { tick: number; set: Record<string, number> }[] = [];
-  const parse = (text: string, flag: string): unknown => {
+  if (opts.input) {
     try {
-      return JSON.parse(text);
+      timeline.push({ tick: 0, set: JSON.parse(opts.input) as Record<string, number> });
     } catch (err) {
-      throw new MoonstageError([diagnostic("MS9001", `${flag} is not valid JSON: ${(err as Error).message}`)]);
+      throw new MoonstageError([diagnostic("MS9001", `--input is not valid JSON: ${(err as Error).message}`)]);
     }
-  };
-  if (opts.input) timeline.push({ tick: 0, set: parse(opts.input, "--input") as Record<string, number> });
+  }
   if (opts.inputScript) {
-    const source = opts.inputScript.trim().startsWith("[") ? opts.inputScript : readFileSync(resolve(opts.inputScript), "utf8");
-    const steps = parse(source, "--input-script");
+    const steps = jsonList(opts.inputScript, "--input-script", "input");
     if (!Array.isArray(steps) || !steps.every((s) => typeof s?.tick === "number" && typeof s?.set === "object")) {
       throw new MoonstageError([diagnostic("MS9001", `--input-script must be a list of { "tick": n, "set": { name: value } }`)]);
     }
@@ -898,11 +912,19 @@ function inputTimeline(opts: { input?: string; inputScript?: string }): { tick: 
 
 async function simulate(
   project: LoadedProject,
-  opts: { scene?: string; seed?: string; ticks: number; input?: string; inputScript?: string },
+  opts: { scene?: string; seed?: string; ticks: number; input?: string; inputScript?: string; setup?: string },
 ) {
   const timeline = inputTimeline(opts);
+  let sceneSource: SceneSource | undefined;
+  if (opts.setup) {
+    const ops = jsonList(opts.setup, "--setup", "setup");
+    if (!Array.isArray(ops)) throw new MoonstageError([diagnostic("MS9001", "--setup must be a list of edit operations")]);
+    const scene = project.scenes[opts.scene ?? project.manifest.entryScene];
+    if (scene !== undefined) sceneSource = applyOperations(scene, ops as Operation[]);
+  }
   const rt = await Runtime.create(project, {
     ...(opts.scene !== undefined && { scene: opts.scene }),
+    ...(sceneSource !== undefined && { sceneSource }),
     ...(opts.seed !== undefined && { seed: int(opts.seed, "seed", 1) }),
   });
   rt.start();
@@ -925,6 +947,7 @@ export async function runCommand(opts: {
   scene?: string;
   input?: string;
   inputScript?: string;
+  setup?: string;
   port?: string;
   build?: boolean;
 }): Promise<CommandResult & { server?: import("node:http").Server }> {
@@ -1020,6 +1043,7 @@ export async function render(opts: {
   output?: string;
   input?: string;
   inputScript?: string;
+  setup?: string;
   build?: boolean;
 }): Promise<CommandResult & { svg?: string }> {
   const p = await prepare(opts.dir, opts.build !== false);

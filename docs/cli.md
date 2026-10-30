@@ -17,15 +17,20 @@
 | `build [--out dist] [--no-bundle]` | Compile MoonBit behaviors, then write a static web bundle |
 | `build --single-file [--out file.html]` | Write one self-contained `.html` that plays with no server or network (project-local plugins only) |
 | `run` | Build and serve on http://localhost:5173 (`--port`) |
-| `run --headless [--ticks 600] [--seed] [--scene] [--input '{"thrust":1}'] [--input-script <json\|file>]` | Simulate and report event counts, scenes, saves, logs and a state snapshot |
+| `run --headless [--ticks 600] [--seed] [--scene] [--input '{"thrust":1}'] [--input-script <json\|file>] [--setup <json\|file>]` | Simulate and report event counts, scenes, saves, logs and a state snapshot |
 | `test [--filter]` | Run `tests/*.test.json` |
-| `render [--tick 0] [--input …] [--input-script …] [--output file.svg \| -]` | Simulate to a tick and write that frame as SVG |
+| `render [--tick 0] [--input …] [--input-script …] [--setup …] [--output file.svg \| -]` | Simulate to a tick and write that frame as SVG |
 | `plugin new <dir> [--name]` | Create a plugin package from the template |
 | `plugin check <file-or-dir>` | Run the plugin conformance suite. Exit code 1 if any check fails. |
 | `schemas [--write] [--out dir]` | Print or write the JSON Schemas |
 
 `--input` holds values for the whole run. `--input-script` is a timeline in the same format as a test's
 `input`, inline or as a file: `[{"tick": 0, "set": {"fire": 1}}, {"tick": 30, "set": {"fire": 0}}]`.
+`--setup` applies edit operations to the scene first, like a test's `setup`. Both flags also take a test
+file and use its `input` or `setup`, so `run --headless --input-script tests/x.test.json --setup
+tests/x.test.json --ticks 120` replays a test and shows the full state, not just pass or fail.
+
+Relative `--out` and `--output` paths are relative to the current directory, not the project.
 
 `run`, `test` and `render` compile MoonBit behaviors first. Pass `--no-build` to skip this.
 

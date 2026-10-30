@@ -112,6 +112,11 @@ constants: `params: ["speed"]` → `param_speed`, `state: ["vx"]` → `state_vx`
 `event_`, `prefab_`, `scene_`, `sound_`, `save_`. camelCase becomes snake_case (`turnSpeed` → `param_turn_speed`).
 An unknown name is error 4021 — add it to `moonstage.json` and rebuild.
 
+State slots are names, not per-module storage. To read or write another entity's state, list that name
+in your own behavior's `state` too: if a `player` behavior declares `state: ["score"]` and a `hud`
+behavior also declares `state: ["score"]`, then `@sdk.state(@sdk.ref_entity(ref_player), state_score)` in
+`hud` reads the player's score. A state value nobody has set reads as 0.
+
 ## What to keep where
 
 - Per-entity data lives in **state** (`@sdk.state` / `@sdk.set_state`), not in MoonBit globals: one module
