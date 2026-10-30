@@ -68,7 +68,16 @@ export interface SpriteItem extends DrawBase {
   pixelated: boolean;
 }
 
-export type DrawItem = RectItem | CircleItem | PolygonItem | TextItem | SpriteItem;
+/** Drawn by a plugin (API 4, `draws: true`) for entities carrying its extension. */
+export interface CustomItem extends DrawBase {
+  kind: "custom";
+  /** Name of the plugin that draws it. */
+  plugin: string;
+  /** Optional local size hint (from the extension's `size`), used for placeholders. */
+  size: Vec2 | undefined;
+}
+
+export type DrawItem = RectItem | CircleItem | PolygonItem | TextItem | SpriteItem | CustomItem;
 
 export interface RenderFrame {
   width: number;
@@ -141,7 +150,8 @@ export function buildFrame(rt: Runtime, alpha: number): RenderFrame {
   const matrices = new Map<number, Matrix>();
   for (const e of world.entities) {
     const { shape, text, sprite } = e.components;
-    if ((shape === undefined && text === undefined && sprite === undefined) || !world.activeInHierarchy(e.handle)) continue;
+    const drawnBy = rt.drawingPlugins.filter((p) => e.extensions[p] !== undefined);
+    if ((shape === undefined && text === undefined && sprite === undefined && drawnBy.length === 0) || !world.activeInHierarchy(e.handle)) continue;
     const local = world.worldMatrix(e.handle, alpha, matrices);
     if (shape !== undefined) {
       const base = {
@@ -174,6 +184,19 @@ export function buildFrame(rt: Runtime, alpha: number): RenderFrame {
         source: f ? [(frame % columns) * f.width, Math.floor(frame / columns) * f.height, f.width, f.height] : undefined,
         frame,
         pixelated: asset?.pixelated ?? false,
+      });
+    }
+    for (const plugin of drawnBy) {
+      const ext = e.extensions[plugin]!;
+      const size = ext.size;
+      items.push({
+        entity: e.id,
+        kind: "custom",
+        plugin,
+        matrix: ext.space === "screen" ? local : multiply(view, local),
+        layer: typeof ext.layer === "number" ? ext.layer : 0,
+        opacity: typeof ext.opacity === "number" ? ext.opacity : 1,
+        size: Array.isArray(size) && size.length === 2 ? [Number(size[0]), Number(size[1])] : undefined,
       });
     }
     if (text !== undefined) {

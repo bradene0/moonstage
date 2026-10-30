@@ -610,3 +610,49 @@ describe("performance structures stay correct", () => {
     assert.equal(frameOf("x"), 0);
   });
 });
+
+describe("plugin drawing (API 4)", () => {
+  it("emits custom items for entities carrying a drawing plugin's extension", async () => {
+    const drawn: string[] = [];
+    const halo = definePlugin({
+      name: "halo",
+      version: "0",
+      pluginApi: 4,
+      draws: true,
+      capabilities: [],
+      create: () => ({ drawSvg: (item) => (drawn.push(item.entity), "<circle r='3'/>") }),
+    });
+    const scene: SceneSource = {
+      format: 1,
+      entities: [
+        { id: "a", components: { transform: { position: [5, 6] } }, extensions: { halo: { layer: 3, opacity: 0.5, size: [10, 12] } } },
+        { id: "b", parent: "a", components: { transform: { position: [1, 0] } }, extensions: { halo: { space: "screen" } } },
+        { id: "c", components: { shape: { kind: "circle" } } },
+        { id: "d", active: false, extensions: { halo: {} } },
+      ],
+    };
+    const m = manifest({ display: { width: 100, height: 100 }, plugins: { halo: { module: "./halo.js" } } });
+    const rt = await Runtime.create(project(scene, { manifest: m, plugins: { halo } }));
+    const custom = rt.frame().items.filter((i) => i.kind === "custom");
+    assert.deepEqual(custom.map((i) => [i.entity, i.layer, i.opacity, i.size]), [["b", 0, 1, undefined], ["a", 3, 0.5, [10, 12]]]);
+    assert.deepEqual(custom.find((i) => i.entity === "b")!.matrix.slice(4), [6, 6], "screen space skips the camera");
+    assert.deepEqual(rt.drawingPlugins, ["halo"]);
+    assert.equal(rt.plugin("halo")?.drawSvg?.(custom[0]! as never), "<circle r='3'/>");
+  });
+
+  it("conformance exercises drawing hooks", async () => {
+    const { checkPluginConformance } = await import("./conformance.js");
+    const broken = definePlugin({
+      name: "broken",
+      version: "0",
+      pluginApi: 4,
+      draws: true,
+      capabilities: [],
+      create: () => ({ drawCanvas2d: () => { throw new Error("cannot draw"); } }),
+    });
+    const report = await checkPluginConformance(broken);
+    assert.equal(report.checks.find((c) => c.name === "lifecycle")?.passed, false);
+    const ok = definePlugin({ ...broken, name: "ok", create: () => ({ drawCanvas2d: (c) => void (c as { fillRect(): void }).fillRect() }) });
+    assert.equal((await checkPluginConformance(ok)).passed, true);
+  });
+});

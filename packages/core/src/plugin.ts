@@ -1,5 +1,7 @@
 /**
- * Plugin contract, Plugin API level 3. Level 2 added spawning/removal and the
+ * Plugin contract, Plugin API level 4. Level 4 adds drawing: a plugin with
+ * `draws: true` renders entities carrying its extension through drawCanvas2d /
+ * drawSvg. Earlier history: level 3. Level 2 added spawning/removal and the
  * entityAdded/entityRemoved hooks; level 3 adds async load(), `provides`,
  * component/handle/parent reads and events with a source entity. Plugins
  * targeting levels 1 and 2 keep working unchanged.
@@ -14,6 +16,7 @@
 
 import { diagnostic, MoonstageError, type Diagnostic } from "./diagnostics.js";
 import type { ProjectManifest } from "./project.js";
+import type { CustomItem } from "./render.js";
 import type { JsonSchema } from "./schema/validate.js";
 import { MIN_PLUGIN_API, PLUGIN_API } from "./versions.js";
 import type { Transform } from "./world.js";
@@ -88,6 +91,14 @@ export interface PluginContext {
 }
 
 export interface PluginInstance {
+  /**
+   * API 4 (with `draws: true`): draw one item on a Canvas 2D context. The
+   * context is already transformed to the item's local space (pixels, origin at
+   * the entity) and its globalAlpha set; `context` is a CanvasRenderingContext2D.
+   */
+  drawCanvas2d?(context: unknown, item: CustomItem): void;
+  /** API 4: SVG markup for one item in the item's local space, for headless renders. */
+  drawSvg?(item: CustomItem): string | undefined;
   start?(): void;
   update?(dt: number): void;
   /** API 2: an entity was spawned (called at the end of the tick it was spawned in). */
@@ -108,6 +119,12 @@ export interface MoonstagePlugin<Config = Record<string, unknown>> {
   description?: string;
   /** API 3: services this plugin provides to projects, e.g. ["physics"] or ["renderer"]. */
   provides?: string[];
+  /**
+   * API 4: this plugin draws every entity that carries its extension data.
+   * Core emits a `custom` draw item for each one; the extension may set the
+   * common draw fields `layer`, `opacity`, `space` and `size`.
+   */
+  draws?: boolean;
   /**
    * API 3: asynchronous preparation (e.g. initializing a WebAssembly engine),
    * awaited once per runtime before create().

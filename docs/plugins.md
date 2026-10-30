@@ -1,10 +1,10 @@
-# Plugins (plugin API level 3)
+# Plugins (plugin API level 4)
 
 Plugins extend Moonstage without changing core. A plugin can be a runtime system, a renderer, an asset
 loader, a physics provider or an integration with an external media runtime. Plugin API level 3 is an early
-contract and may change. The runtime accepts plugins targeting levels 1 to 3: level 2 added spawning, removal
+contract and may change. The runtime accepts plugins targeting levels 1 to 4: level 2 added spawning, removal
 and entity lifecycle hooks; level 3 added `load()`, `provides`, component/handle/parent reads, project
-settings and events with a source entity.
+settings and events with a source entity; level 4 added drawing.
 
 ## Shape
 
@@ -67,6 +67,35 @@ every entity of the old scene, and then `start()` in the new one. Every hook is 
 `simulation`, `physics`; API 3) and `ctx.scene` (the current scene id; API 3) are always available. Use
 `ctx.random()` instead of `Math.random()` so runs stay reproducible. Calling a method whose capability was not declared
 throws `MS4003`.
+
+## Drawing (API 4)
+
+A plugin with `draws: true` owns the drawing of every entity that carries its extension data. Core still
+places those entities: for each one it emits a `custom` draw item with the resolved matrix (camera,
+hierarchy, interpolation), in layer order with everything else. The extension may set the common draw
+fields `layer`, `opacity`, `space` (`world` or `screen`) and `size` (a placeholder size).
+
+The plugin instance draws each item in local pixel space:
+
+```js
+create(ctx) {
+  return {
+    // Browser: `context` is a CanvasRenderingContext2D, already transformed to the
+    // entity's local space, with globalAlpha set. Its state is saved and restored around the call.
+    drawCanvas2d(context, item) {
+      context.fillStyle = "#fff";
+      context.fillRect(-5, -5, 10, 10);
+    },
+    // Headless (`moonstage render`): SVG markup in the same local space.
+    drawSvg(item) {
+      return `<rect x="-5" y="-5" width="10" height="10" fill="#fff"/>`;
+    },
+  };
+}
+```
+
+Without `drawSvg`, headless renders show a dashed placeholder (`data-missing-drawer`). The example is
+`examples/moon-hopper/plugins/radar.js`. The conformance suite calls both hooks every tick.
 
 ## Using a plugin in a project
 

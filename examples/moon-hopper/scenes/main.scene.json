@@ -412,7 +412,14 @@
         }
       },
       "extensions": {
-        "spin": {}
+        "spin": {},
+        "radar": {
+          "radius": 70,
+          "rings": 3,
+          "speed": 0.6,
+          "color": "#ff6b8b",
+          "layer": -1
+        }
       }
     },
     {

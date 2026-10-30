@@ -95,11 +95,36 @@ function fixtureProject(plugin: MoonstagePlugin, fixture: ConformanceFixture): L
   return { manifest, scenes: { main: scene }, behaviors: {}, plugins: { [HARNESS]: harness, [plugin.name]: plugin } };
 }
 
-/** One complete lifecycle: create, start, step, stop, dispose. Returns the final snapshot. */
-async function run(project: LoadedProject, ticks: number): Promise<Snapshot> {
+/** Accepts any property write and any method call, like a forgiving Canvas 2D context. */
+function permissiveContext(): unknown {
+  const handler: ProxyHandler<object> = {
+    get: (_t, key) => (key === Symbol.toPrimitive ? () => 0 : new Proxy(() => undefined, handler)),
+    set: () => true,
+    apply: () => undefined,
+  };
+  return new Proxy(() => undefined, handler);
+}
+
+/**
+ * One complete lifecycle: create, start, step, stop, dispose. Drawing
+ * plugins also draw every frame. Returns the final snapshot.
+ */
+async function run(project: LoadedProject, ticks: number, plugin: string): Promise<Snapshot> {
   const rt = await Runtime.create(project);
   rt.start();
-  for (let i = 0; i < ticks; i++) rt.step();
+  const draws = rt.drawingPlugins.includes(plugin);
+  const context = draws ? permissiveContext() : undefined;
+  for (let i = 0; i < ticks; i++) {
+    rt.step();
+    if (!draws) continue;
+    const instance = rt.plugin(plugin);
+    for (const item of rt.frame().items) {
+      if (item.kind !== "custom" || item.plugin !== plugin) continue;
+      instance?.drawCanvas2d?.(context, item);
+      const svg = instance?.drawSvg?.(item);
+      if (svg !== undefined && typeof svg !== "string") throw new Error("drawSvg must return a string or undefined");
+    }
+  }
   const snapshot = rt.snapshot();
   rt.stop();
   rt.dispose();
@@ -143,7 +168,7 @@ export async function checkPluginConformance(value: unknown, fixture: Conformanc
   let lifecycle: Diagnostic[] = [];
   if (schemaIssues.length === 0) {
     try {
-      first = await run(project, ticks);
+      first = await run(project, ticks, plugin.name);
     } catch (err) {
       lifecycle = asDiagnostics(err, "lifecycle");
     }
@@ -157,7 +182,7 @@ export async function checkPluginConformance(value: unknown, fixture: Conformanc
   );
   add(
     "lifecycle",
-    `create, start, update (${ticks} ticks, with an entity spawned and removed), stop and dispose run without errors.`,
+    `create, start, update (${ticks} ticks, with an entity spawned and removed), drawing (for plugins that draw), stop and dispose run without errors.`,
     lifecycle.filter((d) => d.code !== "MS4003"),
     schemaIssues.length > 0 || capabilityIssues.length > 0,
   );
@@ -166,7 +191,7 @@ export async function checkPluginConformance(value: unknown, fixture: Conformanc
   const blocked = first === undefined;
   if (!blocked) {
     try {
-      const second = await run(fixtureProject(plugin, fixture), ticks);
+      const second = await run(fixtureProject(plugin, fixture), ticks, plugin.name);
       if (JSON.stringify(second) !== JSON.stringify(first)) {
         reload.push(
           fail(

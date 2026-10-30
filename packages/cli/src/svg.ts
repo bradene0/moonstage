@@ -4,7 +4,10 @@
  * Images are embedded as data URIs so the SVG is a single self-contained file.
  */
 
-import type { DrawItem, RenderFrame, SpriteItem } from "@moonstage/core";
+import type { CustomItem, DrawItem, RenderFrame, SpriteItem } from "@moonstage/core";
+
+/** SVG markup for a plugin-owned item in its local space, or undefined when the plugin cannot draw it. */
+export type SvgCustomDraw = (item: CustomItem) => string | undefined;
 
 /** An image asset prepared for embedding. */
 export interface SvgImage {
@@ -42,7 +45,15 @@ function sprite(item: SpriteItem, attrs: string, images: ReadonlyMap<string, Svg
   );
 }
 
-function element(item: DrawItem, images: ReadonlyMap<string, SvgImage>): string {
+function custom(item: CustomItem, drawCustom: SvgCustomDraw): string {
+  const markup = drawCustom(item);
+  if (markup !== undefined) return markup;
+  // Placeholder so the item's position and size are still visible in headless renders.
+  const [w, h] = item.size ?? [16, 16];
+  return `<rect x="${num(-w / 2)}" y="${num(-h / 2)}" width="${num(w)}" height="${num(h)}" fill="none" stroke="#ff00ff" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" data-missing-drawer="true"/>`;
+}
+
+function element(item: DrawItem, images: ReadonlyMap<string, SvgImage>, drawCustom: SvgCustomDraw): string {
   const attrs = `opacity="${num(item.opacity)}" data-entity="${escape(item.entity)}"`;
   const transform = `transform="matrix(${item.matrix.map(num).join(" ")})"`;
   switch (item.kind) {
@@ -61,10 +72,16 @@ function element(item: DrawItem, images: ReadonlyMap<string, SvgImage>): string 
     case "sprite":
       // Nested <svg> elements ignore `transform`, so wrap them in a group.
       return `<g ${transform}>${sprite(item, `${attrs} data-frame="${item.frame}"`, images)}</g>`;
+    case "custom":
+      return `<g ${transform} ${attrs} data-plugin="${escape(item.plugin)}">${custom(item, drawCustom)}</g>`;
   }
 }
 
-export function renderSvg(frame: RenderFrame, images: ReadonlyMap<string, SvgImage> = new Map()): string {
+export function renderSvg(
+  frame: RenderFrame,
+  images: ReadonlyMap<string, SvgImage> = new Map(),
+  drawCustom: SvgCustomDraw = () => undefined,
+): string {
   const used = new Set(frame.items.flatMap((i) => (i.kind === "sprite" && images.has(i.asset) ? [i.asset] : [])));
   const defs = [...used].map((id) => {
     const image = images.get(id)!;
@@ -76,7 +93,7 @@ export function renderSvg(frame: RenderFrame, images: ReadonlyMap<string, SvgIma
     `<svg xmlns="http://www.w3.org/2000/svg" width="${frame.width}" height="${frame.height}" viewBox="0 0 ${frame.width} ${frame.height}" data-tick="${frame.tick}">`,
     ...(defs.length > 0 ? ["<defs>", ...defs, "</defs>"] : []),
     `<rect width="100%" height="100%" fill="${frame.background}"/>`,
-    ...frame.items.map((item) => element(item, images)),
+    ...frame.items.map((item) => element(item, images, drawCustom)),
     "</svg>",
     "",
   ].join("\n");

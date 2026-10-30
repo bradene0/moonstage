@@ -193,6 +193,9 @@
       "config": {
         "defaultSpeed": 0.5
       }
+    },
+    "radar": {
+      "module": "./plugins/radar.js"
     }
   }
 }

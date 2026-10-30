@@ -1,6 +1,9 @@
 /** Canvas 2D implementation of the core Renderer interface. */
 
-import type { DrawItem, RenderFrame, Renderer, SpriteItem } from "@moonstage/core";
+import type { CustomItem, DrawItem, RenderFrame, Renderer, SpriteItem } from "@moonstage/core";
+
+/** Draws a plugin-owned item; returns false when no plugin can draw it. */
+export type CustomDraw = (context: CanvasRenderingContext2D, item: CustomItem) => boolean;
 
 /** Loaded images by asset id. Anything drawImage accepts (HTMLImageElement, ImageBitmap, ...). */
 export type ImageMap = ReadonlyMap<string, CanvasImageSource & { width: number; height: number }>;
@@ -12,6 +15,7 @@ export class CanvasRenderer implements Renderer {
   constructor(
     readonly canvas: HTMLCanvasElement,
     private readonly images: ImageMap = new Map(),
+    private readonly drawCustom: CustomDraw = () => false,
   ) {
     const ctx = canvas.getContext("2d");
     if (ctx === null) throw new Error("Canvas 2D is not available");
@@ -50,6 +54,17 @@ export class CanvasRenderer implements Renderer {
     }
     if (item.kind === "sprite") {
       this.drawSprite(item);
+      return;
+    }
+    if (item.kind === "custom") {
+      // Plugins may change any context state; isolate them.
+      ctx.save();
+      const drawn = this.drawCustom(ctx, item);
+      ctx.restore();
+      if (!drawn && !this.warned.has(`plugin:${item.plugin}`)) {
+        this.warned.add(`plugin:${item.plugin}`);
+        console.warn(`moonstage: plugin "${item.plugin}" has no drawCanvas2d hook`);
+      }
       return;
     }
 

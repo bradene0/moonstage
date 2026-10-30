@@ -133,6 +133,7 @@ describe("moonstage CLI", () => {
     assert.match(svg, />Crystals: 0</);
     assert.match(svg, /<image id="asset-crystal" href="data:image\/png;base64,[A-Za-z0-9+/=]+" width="64" height="16"/);
     assert.match(svg, /data-entity="crystal-1" data-frame="\d"/);
+    assert.match(svg, /data-entity="beacon" data-plugin="radar"><circle /, "drawing plugins render headlessly");
     assert.doesNotMatch(svg, /data-entity="flame"/, "flame is inactive without thrust");
   });
 
@@ -185,6 +186,7 @@ describe("moonstage CLI", () => {
     assert.equal(ok.json.plugin, "bobber");
     assert.ok(ok.json.checks.every((c: { passed: boolean }) => c.passed));
     assert.equal(cli("plugin", "check", join(example, "plugins", "spin.js"), "--json").code, 0);
+    assert.equal(cli("plugin", "check", join(example, "plugins", "radar.js"), "--json").code, 0);
 
     // Using a capability without declaring it fails with a stable code.
     const indexPath = join(dir, "index.js");

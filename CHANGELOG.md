@@ -7,6 +7,9 @@ versions so you can tell what moved.
 
 ### Added
 
+- **Plugin drawing (plugin API 4).** Plugins with `draws: true` render the entities that carry their
+  extension, through `drawCanvas2d` (browser) and `drawSvg` (headless) hooks; core places the items. The
+  conformance suite exercises the hooks. Moon Hopper adds a `radar` drawing plugin.
 - `animation.offset` on sprites: a frame count, or `"auto"` for a stable per-entity offset.
 - `npm run bench` (runtime benchmarks at scale) and gzipped size budgets enforced in CI.
 

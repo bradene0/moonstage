@@ -145,6 +145,8 @@ export class Runtime {
   private readonly bindings = new Map<number, BehaviorBinding[]>();
   private readonly eventIndex = new Map<string, { handle: number; binding: BehaviorBinding; slot: number }[]>();
   private readonly plugins: { name: string; instance: PluginInstance }[] = [];
+  /** Names of plugins that draw entities carrying their extension (API 4), in manifest order. */
+  readonly drawingPlugins: string[] = [];
   private readonly listeners = new Map<string, Set<(e: EventRecord) => void>>();
   private readonly maxEventRounds: number;
 
@@ -361,6 +363,7 @@ export class Runtime {
       }
       const instance = plugin.create(this.pluginContext(name, new Set(plugin.capabilities)), config) ?? {};
       this.plugins.push({ name, instance });
+      if (plugin.draws === true) this.drawingPlugins.push(name);
     }
     if (hasErrors(problems)) throw new MoonstageError(problems);
   }
@@ -642,6 +645,11 @@ export class Runtime {
     this.listeners.clear();
     this.bindings.clear();
     this.eventIndex.clear();
+  }
+
+  /** A plugin's instance, for platforms that call its drawing hooks. */
+  plugin(name: string): PluginInstance | undefined {
+    return this.plugins.find((p) => p.name === name)?.instance;
   }
 
   /** Render description for the current state, interpolated by alpha (0..1). */

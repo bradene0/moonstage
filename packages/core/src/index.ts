@@ -89,6 +89,7 @@ export {
   type PolygonItem,
   type TextItem,
   type SpriteItem,
+  type CustomItem,
 } from "./render.js";
 export {
   loadProject,

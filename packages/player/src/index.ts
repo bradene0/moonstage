@@ -22,17 +22,17 @@ import {
   type Renderer,
 } from "@moonstage/core";
 import { SoundPlayer } from "./audio.js";
-import { CanvasRenderer, type ImageMap } from "./canvas-renderer.js";
+import { CanvasRenderer, type CustomDraw, type ImageMap } from "./canvas-renderer.js";
 
 export { SoundPlayer } from "./audio.js";
 
-export { CanvasRenderer, type ImageMap } from "./canvas-renderer.js";
+export { CanvasRenderer, type CustomDraw, type ImageMap } from "./canvas-renderer.js";
 
 export interface PlayOptions {
   scene?: string;
   seed?: number;
   /** Replace the default Canvas 2D renderer (e.g. with a WebGL renderer plugin). */
-  renderer?: (canvas: HTMLCanvasElement, images: ImageMap) => Renderer;
+  renderer?: (canvas: HTMLCanvasElement, images: ImageMap, drawCustom: CustomDraw) => Renderer;
   /** Focus the player so keyboard input works immediately. */
   autofocus?: boolean;
 }
@@ -187,7 +187,13 @@ export async function play(target: string | HTMLElement, src: string | URL, opti
   canvas.tabIndex = 0;
   canvas.setAttribute("aria-label", loaded.project.manifest.name);
   host.replaceChildren(canvas);
-  const renderer: Renderer = options.renderer?.(canvas, images) ?? new CanvasRenderer(canvas, images);
+  const drawCustom: CustomDraw = (context, item) => {
+    const hook = runtime.plugin(item.plugin)?.drawCanvas2d;
+    if (hook === undefined) return false;
+    hook(context, item);
+    return true;
+  };
+  const renderer: Renderer = options.renderer?.(canvas, images, drawCustom) ?? new CanvasRenderer(canvas, images, drawCustom);
 
   const keys = new KeyBindings(loaded.project.manifest, runtime.input);
   const onKeyDown = (e: KeyboardEvent) => {

@@ -821,7 +821,7 @@ export async function render(opts: {
       // Drawn as a magenta placeholder; `moonstage validate` reports the missing file.
     }
   }
-  const svg = renderSvg(frame, images);
+  const svg = renderSvg(frame, images, (item) => rt.plugin(item.plugin)?.drawSvg?.(item));
   rt.dispose();
   const data: Record<string, unknown> = {
     root: p.root,

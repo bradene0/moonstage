@@ -23,6 +23,7 @@ What it exercises:
 - **Events**: crystals emit `collected`, and both `score` and `camera` receive it.
 - **Camera and screen space**: the world is 1600×1200 and the view follows the lander. The HUD is drawn in screen space.
 - **Text binding**: `Crystals: {score.points}`.
-- **Plugin**: `plugins/spin.js` rotates every entity with `extensions.spin`.
+- **Plugins**: `plugins/spin.js` rotates every entity with `extensions.spin`; `plugins/radar.js` is a drawing
+  plugin (API 4) that renders pulsing rings around the beacon.
 - **Tests**: gravity and landing, thrust, crystal collection (using a `set_property` setup operation), and
   sparkles cleaning themselves up.

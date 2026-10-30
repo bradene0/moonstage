@@ -91,6 +91,10 @@ Schemas that core checks before the plugin is created. `checkPluginConformance` 
 `moonstage plugin check`) runs a plugin through a synthetic project to verify the contract. See
 [docs/plugins.md](docs/plugins.md).
 
+Plugins can draw too (API 4, `draws: true`): core emits `custom` items for entities that carry the
+plugin's extension, and renderers hand each one to the plugin's `drawCanvas2d` or `drawSvg` hook with the
+transform already applied. This is the extension point for specialist renderers such as Rive.
+
 Renderers follow the same separation. Core produces a `RenderFrame` in which every item already has a resolved
 screen-space matrix. A renderer never reads the world. The Canvas 2D renderer (player) and the SVG
 renderer (CLI) are about 100 lines each. A WebGL, WebGPU or Rive renderer would implement the same
