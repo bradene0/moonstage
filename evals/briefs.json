@@ -1,0 +1,21 @@
+{
+  "briefs": [
+    {
+      "id": "dodger",
+      "title": "Asteroid dodger",
+      "brief": "A small arcade game: the player steers a ship left and right along the bottom of the screen while asteroids fall from the top at increasing speed. Score goes up with survival time. Hitting an asteroid ends the game on a game-over screen showing the score; a key restarts. Keep the best score across page reloads.",
+      "followUp": "Add a shield power-up that occasionally falls from the top. Catching it makes the next asteroid hit harmless (show that the shield is active)."
+    },
+    {
+      "id": "tower",
+      "title": "Cannon vs tower",
+      "brief": "A physics game: a cannon on the left fires heavy balls (aim with up/down, fire with space) at a tower of stacked wooden blocks standing on a platform on the right. Blocks must fall and tumble realistically. You win when every block has fallen off the platform; show the number of shots used.",
+      "followUp": "Add a second level with a taller, wider tower that loads after you win the first."
+    }
+  ],
+  "conditions": {
+    "moonstage": "Build it with Moonstage, a browser game runtime with a CLI. The CLI is `{cli}` (equivalent to `npx moonstage`). Work in `{dir}`. You know nothing else about Moonstage; find out what you need from the CLI.",
+    "freestyle": "Build it as a single self-contained HTML file (inline JavaScript and CSS, no external libraries or network requests) at `{dir}/index.html`."
+  },
+  "protocol": "First build the game and make sure it works. Then copy the finished version to `{dir}-v1` (a sibling directory) so it can be compared. Then apply the follow-up request in `{dir}` and make sure it still works. Do not ask questions; make reasonable choices. Finish with a short report: what you built, how you verified it, anything that did not work."
+}
