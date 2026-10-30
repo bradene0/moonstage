@@ -12,10 +12,10 @@
 export const PROJECT_FORMAT = 1;
 
 /**
- * Plugin API level implemented by this runtime's plugin host. Plugins targeting
+ * Plugin API level implemented by this runtime's plugin host (3 since 0.3.0). Plugins targeting
  * any level from MIN_PLUGIN_API up to this one are accepted.
  */
-export const PLUGIN_API = 2;
+export const PLUGIN_API = 3;
 export const MIN_PLUGIN_API = 1;
 
 /**

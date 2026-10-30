@@ -1,0 +1,10 @@
+{
+  "$schema": "../../../schemas/test.schema.json",
+  "format": 1,
+  "name": "the dropper keeps spawning balls that stay inside the world",
+  "ticks": 300,
+  "expect": [
+    { "prefab": "ball", "count": { "gte": 6 } },
+    { "event": "collision", "count": { "gte": 6 } }
+  ]
+}

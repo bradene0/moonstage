@@ -8,6 +8,7 @@ import type { BehaviorBinary } from "./behavior.js";
 import { diagnostic, hasErrors, type Diagnostic } from "./diagnostics.js";
 import { checkPlugin, type MoonstagePlugin } from "./plugin.js";
 import {
+  PHYSICS_COMPONENTS,
   validateManifestShape,
   validateProjectSemantics,
   validateSceneShape,
@@ -134,6 +135,22 @@ export async function loadProject(io: ProjectIO, options: LoadOptions = {}): Pro
           }),
         );
       }
+    }
+  }
+
+  if (pluginsMode === "load") {
+    const usesPhysics = [...Object.values(scenes).flatMap((s) => s.entities), ...Object.values(manifest.prefabs ?? {})].some((e) =>
+      PHYSICS_COMPONENTS.some((c) => e.components?.[c] !== undefined),
+    );
+    if (usesPhysics && !Object.values(plugins).some((p) => p.provides?.includes("physics"))) {
+      diagnostics.push(
+        diagnostic("MS2016", "the project uses physics components but no plugin provides \"physics\"", {
+          severity: "warning",
+          file: "moonstage.json",
+          path: "plugins",
+          hint: "Add a physics provider plugin; without one, physicsBody/collider/joint have no effect.",
+        }),
+      );
     }
   }
 

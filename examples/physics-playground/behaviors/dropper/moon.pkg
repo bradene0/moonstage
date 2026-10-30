@@ -1,0 +1,11 @@
+import {
+  "moonstage/sdk",
+}
+
+options(
+  link: {
+    "wasm": {
+      "exports": [ "ms_abi_version", "ms_start", "ms_update", "ms_event" ],
+    },
+  },
+)

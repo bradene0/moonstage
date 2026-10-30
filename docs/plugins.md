@@ -1,8 +1,10 @@
-# Plugins (plugin API level 2)
+# Plugins (plugin API level 3)
 
 Plugins extend Moonstage without changing core. A plugin can be a runtime system, a renderer, an asset
-loader or an integration with an external media runtime. Plugin API level 2 is an early contract and may change.
-The runtime accepts plugins targeting level 1 or 2; level 2 added spawning, removal and entity lifecycle hooks.
+loader, a physics provider or an integration with an external media runtime. Plugin API level 3 is an early
+contract and may change. The runtime accepts plugins targeting levels 1 to 3: level 2 added spawning, removal
+and entity lifecycle hooks; level 3 added `load()`, `provides`, component/handle/parent reads, project
+settings and events with a source entity.
 
 ## Shape
 
@@ -13,7 +15,7 @@ A plugin is a plain object, usually the default export of an ES module:
 export default {
   name: "spin",                 // also the extension namespace
   version: "0.0.0",
-  pluginApi: 2,                 // the API level this plugin targets
+  pluginApi: 3,                 // the API level this plugin targets
   capabilities: ["world.read", "world.write"],
   configSchema: { type: "object", properties: { defaultSpeed: { type: "number" } } },
   extensionSchema: { type: "object", properties: { speed: { type: "number" } } },
@@ -41,6 +43,10 @@ The full working example is `examples/moon-hopper/plugins/spin.js`. To start a n
 
 ## Lifecycle
 
+With API 3, an optional async `load()` is awaited once per runtime before `create()`, for example to
+initialize a WebAssembly engine. A plugin can also declare `provides` (e.g. `["physics"]`) so validation
+knows which services the project has. Physics providers follow [physics.md](physics.md).
+
 `create(ctx, config)` runs when a runtime is created. Then `start()` runs once, `update(dt)` runs on every
 fixed tick after behaviors, `stop()` runs when play stops, and `dispose()` releases resources. With API 2,
 `entityAdded(id)` runs for each spawned entity at the end of its spawn tick, and `entityRemoved(id)` runs for
@@ -50,12 +56,13 @@ each removed entity, descendants included. Every hook is optional.
 
 | Capability | Grants |
 | --- | --- |
-| `world.read` | `ctx.world.entities()`, `withExtension()`, `extension(id)`, `transform(id)`, `state(id, name)`, `active(id)` |
+| `world.read` | `ctx.world.entities()`, `withExtension()`, `extension(id)`, `transform(id)`, `state(id, name)`, `active(id)`, and with API 3 `component(id, name)`, `handle(id)`, `parent(id)` |
 | `world.write` | `ctx.world.setTransform(id, patch)`, `setState(id, name, value)`, `setActive(id, bool)`, `spawn(prefab)` (returns the id), `remove(id)` |
-| `events` | `ctx.events.on(name, listener)` (returns an unsubscribe function), `ctx.events.emit(name, value)` |
+| `events` | `ctx.events.on(name, listener)` (returns an unsubscribe function), `ctx.events.emit(name, value, source?)` (API 3: `source` is an entity id) |
 | `input.read` | `ctx.input.get(name)` |
 
-`ctx.time` (`tick`, `elapsed`, `dt`) and `ctx.random()` (seeded, API 2) are always available. Use
+`ctx.time` (`tick`, `elapsed`, `dt`), `ctx.random()` (seeded, API 2) and `ctx.project` (`name`, `display`,
+`simulation`, `physics`; API 3) are always available. Use
 `ctx.random()` instead of `Math.random()` so runs stay reproducible. Calling a method whose capability was not declared
 throws `MS4003`.
 

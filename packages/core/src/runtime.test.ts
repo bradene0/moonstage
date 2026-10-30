@@ -455,3 +455,47 @@ describe("sprites", () => {
     assert.equal(held?.kind === "sprite" && held.frame, 4, "loop: false holds the last frame");
   });
 });
+
+describe("plugin API 3", () => {
+  it("awaits load(), exposes components, handles, parents, project settings and sourced events", async () => {
+    const seen: string[] = [];
+    let loaded = false;
+    const probe = definePlugin({
+      name: "probe",
+      version: "0.0.0",
+      pluginApi: 3,
+      provides: ["physics"],
+      capabilities: ["world.read", "events"],
+      async load() {
+        await Promise.resolve();
+        loaded = true;
+      },
+      create(ctx) {
+        seen.push(`loaded:${loaded}`);
+        seen.push(`gravity:${ctx.project.physics?.gravity?.join(",")}`);
+        seen.push(`body:${JSON.stringify(ctx.world.component("box", "physicsBody"))}`);
+        seen.push(`handle:${ctx.world.handle("box")}:${ctx.world.handle("nope")}`);
+        seen.push(`parent:${ctx.world.parent("lid")}:${ctx.world.parent("box")}`);
+        return { update: () => ctx.time.tick === 1 && ctx.events.emit("hit", ctx.world.handle("lid"), "box") };
+      },
+    });
+    const listener = jsBehavior((h) => ({ ms_event: (_self, _event, source, value) => h.log(source * 100 + value) }));
+    const m = manifest({
+      physics: { gravity: [0, 500] },
+      plugins: { probe: { module: "./probe.js" } },
+      behaviors: { listen: { wasm: "l.wasm", events: ["hit"] } },
+    });
+    const scene: SceneSource = {
+      format: 1,
+      entities: [
+        { id: "box", components: { physicsBody: { type: "dynamic", mass: 2 }, collider: { shape: "box", size: [4, 4] } } },
+        { id: "lid", parent: "box", components: { behavior: { module: "listen" } } },
+      ],
+    };
+    const rt = await Runtime.create(project(scene, { manifest: m, plugins: { probe }, behaviors: { listen: listener } }));
+    rt.step();
+    assert.deepEqual(seen, ["loaded:true", "gravity:0,500", 'body:{"type":"dynamic","mass":2}', "handle:0:-1", "parent:box:null"]);
+    assert.deepEqual(rt.events.map((e) => [e.name, e.source, e.value]), [["hit", "box", 1]]);
+    assert.equal(rt.logs[0]!.value, 0 * 100 + 1, "behaviors receive the source entity's handle");
+  });
+});

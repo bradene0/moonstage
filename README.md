@@ -94,6 +94,7 @@ dependency.
 | `packages/moonbit-sdk` | `moonstage/sdk` (MoonBit) | MoonBit bindings for the behavior ABI. |
 | `schemas/` | | JSON Schemas for project, scene, test and operation files. |
 | `examples/moon-hopper` | | Reference project. It is also used as a conformance fixture. |
+| `examples/physics-playground` | | Physics through the provider contract, with a reference provider plugin. |
 
 ## Documentation
 
@@ -102,6 +103,7 @@ dependency.
 - [docs/project-format.md](docs/project-format.md): `moonstage.json`, scenes, components and tests.
 - [docs/behavior-abi.md](docs/behavior-abi.md): the WebAssembly behavior contract.
 - [docs/plugins.md](docs/plugins.md): writing plugins.
+- [docs/physics.md](docs/physics.md): physics components and the provider contract.
 - [docs/cli.md](docs/cli.md): commands, JSON output, exit codes and diagnostics.
 - [docs/decisions.md](docs/decisions.md): open project decisions.
 - [skills/](skills/): task procedures for agents (create a project, build a game, write a plugin, debug, test and render).

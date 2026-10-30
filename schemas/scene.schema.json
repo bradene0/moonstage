@@ -358,6 +358,210 @@
             }
           }
         },
+        "physicsBody": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Rigid body simulated by the project's physics provider plugin. Velocity is exchanged through state vx, vy, av.",
+          "properties": {
+            "type": {
+              "enum": [
+                "dynamic",
+                "static",
+                "kinematic"
+              ],
+              "description": "Default 'dynamic'."
+            },
+            "mass": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Default: derived from collider area and density."
+            },
+            "velocity": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "Initial velocity in pixels per second."
+            },
+            "angularVelocity": {
+              "type": "number",
+              "description": "Initial angular velocity in radians per second."
+            },
+            "gravityScale": {
+              "type": "number",
+              "description": "Default 1."
+            },
+            "linearDamping": {
+              "type": "number",
+              "minimum": 0
+            },
+            "angularDamping": {
+              "type": "number",
+              "minimum": 0
+            },
+            "fixedRotation": {
+              "type": "boolean"
+            }
+          }
+        },
+        "collider": {
+          "type": "object",
+          "required": [
+            "shape"
+          ],
+          "additionalProperties": false,
+          "description": "Collision shape, centered on the entity origin plus offset. Without a physicsBody the collider is static.",
+          "properties": {
+            "shape": {
+              "enum": [
+                "circle",
+                "box",
+                "polygon"
+              ]
+            },
+            "radius": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "size": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "[x, y]"
+            },
+            "points": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "[x, y]"
+              },
+              "minItems": 3
+            },
+            "offset": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "[x, y]"
+            },
+            "density": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Default 1."
+            },
+            "friction": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Default 0.3."
+            },
+            "restitution": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Bounciness, default 0."
+            },
+            "sensor": {
+              "type": "boolean",
+              "description": "Reports overlaps without a physical response."
+            }
+          }
+        },
+        "joint": {
+          "type": "object",
+          "required": [
+            "type",
+            "target"
+          ],
+          "additionalProperties": false,
+          "description": "Connects this entity's body to another entity's body.",
+          "properties": {
+            "type": {
+              "enum": [
+                "distance",
+                "revolute",
+                "weld"
+              ]
+            },
+            "target": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Entity id of the other body."
+            },
+            "anchor": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "Local point on this body (default origin)."
+            },
+            "targetAnchor": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "Local point on the target body (default origin)."
+            },
+            "length": {
+              "type": "number",
+              "minimum": 0,
+              "description": "distance: rest length (default: initial distance)."
+            },
+            "motorSpeed": {
+              "type": "number",
+              "description": "revolute: target angular speed in radians per second."
+            },
+            "maxMotorTorque": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
         "camera": {
           "type": "object",
           "additionalProperties": false,

@@ -1,0 +1,25 @@
+{
+  "$schema": "../../../schemas/test.schema.json",
+  "format": 1,
+  "name": "a ball dropped on the ground comes to rest on it",
+  "ticks": 240,
+  "setup": [
+    { "operation": "remove_entity", "target": "dropper" },
+    {
+      "operation": "add_entity",
+      "entity": {
+        "id": "probe",
+        "components": {
+          "transform": { "position": [50, 100] },
+          "physicsBody": { "type": "dynamic" },
+          "collider": { "shape": "circle", "radius": 10, "restitution": 0.5 }
+        }
+      }
+    }
+  ],
+  "expect": [
+    { "target": "probe", "property": "transform.position.y", "approx": 550, "tolerance": 1 },
+    { "target": "probe", "property": "state.vy", "approx": 0, "tolerance": 1 },
+    { "event": "collision", "count": { "gte": 2 } }
+  ]
+}

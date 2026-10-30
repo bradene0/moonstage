@@ -28,6 +28,7 @@ export interface ProjectManifest {
   };
   assets?: Record<string, AssetDecl>;
   behaviors?: Record<string, BehaviorModuleDecl>;
+  physics?: { gravity?: Vec2 };
   prefabs?: Record<string, PrefabSource>;
   plugins?: Record<string, { module: string; config?: Record<string, unknown> }>;
 }
@@ -113,6 +114,42 @@ export interface SpriteComponent {
   space?: "world" | "screen";
 }
 
+export interface PhysicsBodyComponent {
+  type?: "dynamic" | "static" | "kinematic";
+  mass?: number;
+  velocity?: Vec2;
+  angularVelocity?: number;
+  gravityScale?: number;
+  linearDamping?: number;
+  angularDamping?: number;
+  fixedRotation?: boolean;
+}
+
+export interface ColliderComponent {
+  shape: "circle" | "box" | "polygon";
+  radius?: number;
+  size?: Vec2;
+  points?: Vec2[];
+  offset?: Vec2;
+  density?: number;
+  friction?: number;
+  restitution?: number;
+  sensor?: boolean;
+}
+
+export interface JointComponent {
+  type: "distance" | "revolute" | "weld";
+  target: string;
+  anchor?: Vec2;
+  targetAnchor?: Vec2;
+  length?: number;
+  motorSpeed?: number;
+  maxMotorTorque?: number;
+}
+
+/** Components that need a plugin that `provides: ["physics"]`. */
+export const PHYSICS_COMPONENTS = ["physicsBody", "collider", "joint"] as const;
+
 export interface CameraComponent {
   zoom?: number;
 }
@@ -122,6 +159,9 @@ export interface Components {
   shape?: ShapeComponent;
   text?: TextComponent;
   sprite?: SpriteComponent;
+  physicsBody?: PhysicsBodyComponent;
+  collider?: ColliderComponent;
+  joint?: JointComponent;
   /** One behavior, or several that run in order. */
   behavior?: BehaviorComponent | BehaviorComponent[];
   camera?: CameraComponent;
@@ -338,6 +378,16 @@ export function validateProjectSemantics(
       }
 
       out.push(...checkSprite(entity, manifest, at(".components.sprite"), where));
+      const joint = entity.components?.joint;
+      if (joint !== undefined && (!byId.has(joint.target) || joint.target === entity.id)) {
+        out.push(
+          diagnostic("MS2016", `joint target "${joint.target}" is not another entity in this scene`, {
+            ...where,
+            component: "joint",
+            path: at(".components.joint.target"),
+          }),
+        );
+      }
 
       const text = entity.components?.text;
       if (text !== undefined) {

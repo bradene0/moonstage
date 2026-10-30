@@ -96,6 +96,14 @@ describe("moonstage CLI", () => {
     assert.equal(r.json.passed, 4);
   });
 
+  it("runs the physics example through its reference provider", moon, () => {
+    const physics = join(repo, "examples", "physics-playground");
+    const t = cli("test", physics, "--json");
+    assert.equal(t.code, 0, t.stdout);
+    assert.equal(t.json.passed, 4);
+    assert.equal(cli("plugin", "check", join(physics, "plugins", "arcade-physics.js"), "--json").code, 0);
+  });
+
   it("simulates headlessly and deterministically", moon, () => {
     const args = ["run", example, "--headless", "--ticks", "240", "--seed", "3", "--input", '{"thrust":1}', "--json"];
     const a = cli(...args);

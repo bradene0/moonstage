@@ -108,6 +108,7 @@ too.
 
 - Built-in renderables are shapes, text and image sprites (with sprite sheets). There is no tinting,
   nine-slice or texture atlas packing yet.
-- No physics, audio or scene switching.
+- Physics is a provider plugin boundary ([docs/physics.md](docs/physics.md)). The only provider shipped is a
+  small reference one in `examples/physics-playground`.
 - Plugins in the browser bundle must be project-local files. Bare package specifiers need an import map.
 - `.msp` packages (`moonstage pack`) are not implemented. `dist/` is a plain static folder.

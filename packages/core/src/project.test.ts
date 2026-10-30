@@ -116,6 +116,19 @@ describe("project validation", () => {
     assert.deepEqual(found.sort(), ["MS2012:noState", "MS2015:missing", "MS2015:notImage", "MS2015:tooFar"]);
   });
 
+  it("checks joint targets", () => {
+    const scene: SceneSource = {
+      format: 1,
+      entities: [
+        { id: "a", components: { joint: { type: "distance", target: "b" } } },
+        { id: "b", components: { joint: { type: "revolute", target: "b" } } },
+        { id: "c", components: { joint: { type: "weld", target: "ghost" } } },
+      ],
+    };
+    const found = validateProjectSemantics(manifest(), { main: scene }).map((d) => `${d.code}:${d.entity}`);
+    assert.deepEqual(found, ["MS2016:b", "MS2016:c"]);
+  });
+
   it("requires exactly one of source or wasm for behaviors", () => {
     const both = manifest({ behaviors: { x: { source: "a", wasm: "b.wasm" } } });
     assert.ok(codes(validateProjectSemantics(both, {})).includes("MS1001"));
@@ -168,5 +181,24 @@ describe("operations", () => {
     assert.equal(next.entities[0]!.parent, null);
     assert.throws(() => applyOperation(scene, { operation: "remove_entity", target: "zzz" }), /MS5003/);
     assert.throws(() => applyOperation(scene, { operation: "add_entity", entity: { id: "a" } }), /MS2001/);
+  });
+});
+
+describe("physics provider check", () => {
+  it("warns when physics components are used without a provider plugin", async () => {
+    const { loadProject } = await import("./loader.js");
+    const files: Record<string, string> = {
+      "moonstage.json": JSON.stringify(manifest({ plugins: { other: { module: "./other.js" } } })),
+      "scenes/main.scene.json": JSON.stringify({ format: 1, entities: [{ id: "a", components: { collider: { shape: "circle", radius: 1 } } }] }),
+    };
+    const io = (provides?: string[]) => ({
+      readText: async (p: string) => files[p],
+      readBytes: async () => undefined,
+      importModule: async () => ({ default: { name: "other", version: "0", pluginApi: 3, capabilities: [], ...(provides && { provides }), create: () => {} } }),
+    });
+    const without = await loadProject(io(), { behaviors: "skip" });
+    assert.deepEqual(without.diagnostics.map((d) => [d.code, d.severity]), [["MS2016", "warning"]]);
+    const withProvider = await loadProject(io(["physics"]), { behaviors: "skip" });
+    assert.deepEqual(withProvider.diagnostics, []);
   });
 });

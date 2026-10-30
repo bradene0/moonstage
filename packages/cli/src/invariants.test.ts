@@ -68,6 +68,9 @@ describe("repository invariants", () => {
     check(SCHEMAS.project, "examples/moon-hopper/moonstage.json");
     check(SCHEMAS.scene, "examples/moon-hopper/scenes/main.scene.json");
     for (const t of readdirSync(join(repo, "examples/moon-hopper/tests"))) check(SCHEMAS.test, `examples/moon-hopper/tests/${t}`);
+    check(SCHEMAS.project, "examples/physics-playground/moonstage.json");
+    check(SCHEMAS.scene, "examples/physics-playground/scenes/main.scene.json");
+    for (const t of readdirSync(join(repo, "examples/physics-playground/tests"))) check(SCHEMAS.test, `examples/physics-playground/tests/${t}`);
     check(SCHEMAS.project, "packages/cli/templates/minimal/moonstage.json");
     check(SCHEMAS.scene, "packages/cli/templates/minimal/scenes/main.scene.json");
   });

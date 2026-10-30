@@ -139,6 +139,7 @@ export class Runtime {
   static async create(project: LoadedProject, options: RuntimeOptions = {}): Promise<Runtime> {
     const rt = new Runtime(project, options);
     await rt.instantiateBehaviors(project, options.wasm);
+    for (const name of Object.keys(project.manifest.plugins ?? {})) await project.plugins[name]?.load?.();
     rt.createPlugins(project);
     return rt;
   }
@@ -320,6 +321,12 @@ export class Runtime {
       transform: (id: string) => ({ ...entity(id).transform }),
       state: (id: string, key: string) => entity(id).state.get(key) ?? 0,
       active: (id: string) => entity(id).active,
+      component: (id: string, component: string) => {
+        const value = (entity(id).components as Record<string, unknown>)[component];
+        return value === undefined ? undefined : (JSON.parse(JSON.stringify(value)) as Record<string, unknown>);
+      },
+      handle: (id: string) => this.world.handle(id),
+      parent: (id: string) => this.world.get(entity(id).parent)?.id ?? null,
     });
     const write = gate(name, granted, "world.write", {
       setTransform: (id: string, patch: Partial<Transform>) => void Object.assign(entity(id).transform, patch),
@@ -344,7 +351,7 @@ export class Runtime {
           this.listeners.set(event, set);
           return () => void set.delete(listener);
         },
-        emit: (event: string, value = 0) => this.queueEvent(event, null, value),
+        emit: (event: string, value = 0, source?: string) => this.queueEvent(event, source ?? null, value),
       }),
       input: gate(name, granted, "input.read", { get: (input: string) => this.input.get(input) }),
       time: {
@@ -357,6 +364,12 @@ export class Runtime {
         dt: this.dt,
       },
       random: () => this.random.next(),
+      project: Object.freeze({
+        name: this.manifest.name,
+        display: this.manifest.display,
+        simulation: this.manifest.simulation,
+        physics: this.manifest.physics,
+      }),
     };
   }
 

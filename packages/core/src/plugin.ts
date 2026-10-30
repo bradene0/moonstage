@@ -1,6 +1,8 @@
 /**
- * Plugin contract, Plugin API level 2. Level 2 adds spawning/removal and the
- * entityAdded/entityRemoved hooks; level 1 plugins keep working unchanged.
+ * Plugin contract, Plugin API level 3. Level 2 added spawning/removal and the
+ * entityAdded/entityRemoved hooks; level 3 adds async load(), `provides`,
+ * component/handle/parent reads and events with a source entity. Plugins
+ * targeting levels 1 and 2 keep working unchanged.
  *
  * A plugin is a plain object (usually an ES module's default export) that
  * declares metadata and capabilities and creates an instance per runtime.
@@ -11,6 +13,7 @@
  */
 
 import { diagnostic, MoonstageError, type Diagnostic } from "./diagnostics.js";
+import type { ProjectManifest } from "./project.js";
 import type { JsonSchema } from "./schema/validate.js";
 import { MIN_PLUGIN_API, PLUGIN_API } from "./versions.js";
 import type { Transform } from "./world.js";
@@ -48,6 +51,12 @@ export interface PluginContext {
     setState(id: string, name: string, value: number): void;
     active(id: string): boolean;
     setActive(id: string, active: boolean): void;
+    /** API 3: a read-only copy of one of the entity's source components (e.g. "physicsBody"). */
+    component(id: string, name: string): Readonly<Record<string, unknown>> | undefined;
+    /** API 3: the entity's handle, as behaviors see it (for event values). -1 if unknown. */
+    handle(id: string): number;
+    /** API 3: the entity's parent id, or null. */
+    parent(id: string): string | null;
     /** API 2: spawn a prefab; returns the new entity id. Needs world.write. */
     spawn(prefab: string): string;
     /** API 2: remove an entity and its descendants at the end of the tick. Needs world.write. */
@@ -55,12 +64,20 @@ export interface PluginContext {
   };
   readonly events: {
     on(name: string, listener: (event: EventRecord) => void): () => void;
-    emit(name: string, value?: number): void;
+    /** API 3: `source` (an entity id) lets behaviors tell which entity an event is about. */
+    emit(name: string, value?: number, source?: string): void;
   };
   readonly input: { get(name: string): number };
   readonly time: { readonly tick: number; readonly elapsed: number; readonly dt: number };
   /** API 2: seeded random number in [0, 1), shared with behaviors. Use it instead of Math.random(). */
   random(): number;
+  /** API 3: read-only project settings. */
+  readonly project: {
+    readonly name: string;
+    readonly display: Readonly<ProjectManifest["display"]>;
+    readonly simulation: Readonly<ProjectManifest["simulation"]>;
+    readonly physics: Readonly<ProjectManifest["physics"]>;
+  };
 }
 
 export interface PluginInstance {
@@ -82,6 +99,13 @@ export interface MoonstagePlugin<Config = Record<string, unknown>> {
   pluginApi: number;
   capabilities: Capability[];
   description?: string;
+  /** API 3: services this plugin provides to projects, e.g. ["physics"] or ["renderer"]. */
+  provides?: string[];
+  /**
+   * API 3: asynchronous preparation (e.g. initializing a WebAssembly engine),
+   * awaited once per runtime before create().
+   */
+  load?(): Promise<void>;
   /** Validates the plugin's `config` in moonstage.json. */
   configSchema?: JsonSchema;
   /** Validates `extensions[<name>]` on entities. */
@@ -121,6 +145,9 @@ export function checkPlugin(value: unknown, registeredAs: string): Diagnostic[] 
         where,
       ),
     );
+  }
+  if (p.provides !== undefined && (!Array.isArray(p.provides) || p.provides.some((x) => typeof x !== "string"))) {
+    out.push(diagnostic("MS4005", `plugin "${p.name}" has an invalid "provides" list`, where));
   }
   for (const cap of p.capabilities) {
     if (!(cap in CAPABILITIES)) {
