@@ -188,6 +188,8 @@ export class Runtime {
   private switchesThisTick = 0;
 
   tick = 0;
+  /** Tick on which the current scene started; behavior time() counts from here. */
+  private sceneTick = 0;
   elapsed = 0;
   private started = false;
   private accumulator = 0;
@@ -345,7 +347,7 @@ export class Runtime {
       emit: (event, value) =>
         this.queueEvent(this.slotName(iface.events, event, "event"), this.world.get(this.current)?.id ?? null, value),
       random: () => this.random.next(),
-      time: () => this.elapsed,
+      time: () => (this.tick - this.sceneTick) * this.dt,
       entity_active: (entity) => (this.entityAt(entity).active ? 1 : 0),
       entity_set_active: (entity, active) => {
         this.entityAt(entity).active = active !== 0;
@@ -668,6 +670,7 @@ export class Runtime {
     this.spawned = [];
     this.pending = [];
     this.sceneId = sceneId;
+    this.sceneTick = this.tick;
     this.scene = this.project.scenes[sceneId]!;
     this.world = new World(this.scene);
     for (const e of this.world.entities) {
@@ -781,7 +784,11 @@ export class Runtime {
     const keys = parsePropertyPath(property);
     const [head, a, b] = keys;
     if (head === "active" && keys.length === 1) return e.active;
-    if (head === "state" && typeof a === "string" && keys.length === 2) return e.state.get(a);
+    if (head === "state" && typeof a === "string" && keys.length === 2) {
+      // Behaviors read unset state as 0, so a name their module declares reads as 0 here too.
+      const declared = behaviorsOf(e.components).some((b) => this.project.manifest.behaviors?.[b.module]?.state?.includes(a));
+      return e.state.get(a) ?? (declared ? 0 : undefined);
+    }
     if (head === "transform") {
       if (a === "rotation" && keys.length === 2) return e.transform.rotation;
       if (a === "position" && (b === 0 || b === 1)) return b === 0 ? e.transform.x : e.transform.y;

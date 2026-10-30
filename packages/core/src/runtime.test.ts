@@ -329,7 +329,7 @@ describe("spawning and removal", () => {
     rt.step();
     assert.equal(rt.countSpawned("spark"), 1);
     assert.equal(rt.read("spark-1", "state.started"), 1, "ms_start ran at end of the spawn tick");
-    assert.equal(rt.read("spark-1", "state.age"), undefined, "not updated in the tick it was spawned");
+    assert.equal(rt.read("spark-1", "state.age"), 0, "not updated in the tick it was spawned");
     assert.equal(rt.read("spark-1", "transform.position.x"), 50);
     const spawned = rt.world.byStableId("spark-1")!;
     assert.deepEqual(spawned.previous, spawned.transform, "no interpolation from the prefab origin");
@@ -524,7 +524,13 @@ describe("scene switching and sounds (ABI 3)", () => {
       }
     },
   }));
-  const count = jsBehavior((h) => ({ ms_start: (self) => h.state_set(self, 0, 100), ms_update: (self) => h.state_set(self, 0, h.state_get(self, 0) + 1) }));
+  const count = jsBehavior((h) => ({
+    ms_start: (self) => h.state_set(self, 0, 100),
+    ms_update: (self) => {
+      h.state_set(self, 0, h.state_get(self, 0) + 1);
+      h.log(Math.round(h.time() * 60));
+    },
+  }));
 
   it("switches at the end of the tick, restarts behaviors and plugins, and records sounds", async () => {
     const log: string[] = [];
@@ -541,6 +547,8 @@ describe("scene switching and sounds (ABI 3)", () => {
       }),
     });
     const rt = await Runtime.create({ manifest: m, scenes: { a, b }, behaviors: { go, count }, plugins: { watch } });
+    assert.equal(rt.read("switcher", "state.n"), 0, "declared but unset state reads as 0, as in behaviors");
+    assert.equal(rt.read("switcher", "state.other"), undefined);
     for (let i = 0; i < 3; i++) rt.step();
     assert.equal(rt.sceneId, "b");
     assert.equal(rt.read("counter", "state.n"), 100, "new scene started, not yet updated");
@@ -549,6 +557,7 @@ describe("scene switching and sounds (ABI 3)", () => {
     assert.equal(rt.read("counter", "state.n"), 101);
     assert.equal(rt.world.byStableId("counter")!.born, 3);
     rt.step();
+    assert.deepEqual(rt.logs.map((l) => l.value), [1, 2], "time() counts from the scene's start");
     assert.deepEqual(log, ["start:a:switcher", "stop:a", "removed:switcher", "start:b:counter"]);
     assert.deepEqual(rt.sceneHistory, [{ tick: 0, scene: "a" }, { tick: 3, scene: "b" }]);
     assert.deepEqual(rt.sounds.map((s) => [s.tick, s.asset, s.volume, s.source]), [[3, "beep", 1, "switcher"], [5, "beep", 0.5, null]]);
