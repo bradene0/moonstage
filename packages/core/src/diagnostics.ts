@@ -52,6 +52,7 @@ export const DIAGNOSTIC_CODES = {
   MS2011: { title: "Extension without plugin", hint: "Add the plugin to `plugins` in moonstage.json, or remove the extension data." },
   MS2012: { title: "Unknown text binding", hint: "Text placeholders use {entityId.stateName}; check both names." },
   MS2013: { title: "Slot name collision", hint: "Behavior names must stay distinct after conversion to snake_case; rename one." },
+  MS2014: { title: "Unknown prefab", hint: "Declare the prefab under `prefabs` in moonstage.json." },
   MS3001: { title: "Behavior not built", hint: "Run `moonstage build` to compile behaviors." },
   MS3002: { title: "Behavior ABI mismatch", hint: "Rebuild the behavior against a compatible Moonstage SDK." },
   MS3003: { title: "Behavior export missing", hint: "Behaviors must export ms_abi_version, ms_start, ms_update and ms_event." },

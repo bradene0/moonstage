@@ -402,6 +402,13 @@
           ],
           "fill": "#ff6b8b",
           "layer": 0
+        },
+        "behavior": {
+          "module": "pulse",
+          "params": {
+            "speed": 3,
+            "amount": 0.25
+          }
         }
       },
       "extensions": {
@@ -526,20 +533,30 @@
           "strokeWidth": 1,
           "layer": 3
         },
-        "behavior": {
-          "module": "crystal",
-          "params": {
-            "pickupRadius": 26,
-            "value": 1,
-            "minX": 80,
-            "maxX": 1520,
-            "minY": 120,
-            "maxY": 1000
+        "behavior": [
+          {
+            "module": "pulse",
+            "params": {
+              "speed": 4,
+              "amount": 0.15
+            }
           },
-          "refs": {
-            "lander": "lander"
+          {
+            "module": "crystal",
+            "params": {
+              "pickupRadius": 26,
+              "value": 1,
+              "burst": 8,
+              "minX": 80,
+              "maxX": 1520,
+              "minY": 120,
+              "maxY": 1000
+            },
+            "refs": {
+              "lander": "lander"
+            }
           }
-        }
+        ]
       }
     },
     {
@@ -576,20 +593,30 @@
           "strokeWidth": 1,
           "layer": 3
         },
-        "behavior": {
-          "module": "crystal",
-          "params": {
-            "pickupRadius": 26,
-            "value": 1,
-            "minX": 80,
-            "maxX": 1520,
-            "minY": 120,
-            "maxY": 1000
+        "behavior": [
+          {
+            "module": "pulse",
+            "params": {
+              "speed": 4,
+              "amount": 0.15
+            }
           },
-          "refs": {
-            "lander": "lander"
+          {
+            "module": "crystal",
+            "params": {
+              "pickupRadius": 26,
+              "value": 1,
+              "burst": 8,
+              "minX": 80,
+              "maxX": 1520,
+              "minY": 120,
+              "maxY": 1000
+            },
+            "refs": {
+              "lander": "lander"
+            }
           }
-        }
+        ]
       }
     },
     {
@@ -626,20 +653,30 @@
           "strokeWidth": 1,
           "layer": 3
         },
-        "behavior": {
-          "module": "crystal",
-          "params": {
-            "pickupRadius": 26,
-            "value": 1,
-            "minX": 80,
-            "maxX": 1520,
-            "minY": 120,
-            "maxY": 1000
+        "behavior": [
+          {
+            "module": "pulse",
+            "params": {
+              "speed": 4,
+              "amount": 0.15
+            }
           },
-          "refs": {
-            "lander": "lander"
+          {
+            "module": "crystal",
+            "params": {
+              "pickupRadius": 26,
+              "value": 1,
+              "burst": 8,
+              "minX": 80,
+              "maxX": 1520,
+              "minY": 120,
+              "maxY": 1000
+            },
+            "refs": {
+              "lander": "lander"
+            }
           }
-        }
+        ]
       }
     },
     {
@@ -676,20 +713,30 @@
           "strokeWidth": 1,
           "layer": 3
         },
-        "behavior": {
-          "module": "crystal",
-          "params": {
-            "pickupRadius": 26,
-            "value": 1,
-            "minX": 80,
-            "maxX": 1520,
-            "minY": 120,
-            "maxY": 1000
+        "behavior": [
+          {
+            "module": "pulse",
+            "params": {
+              "speed": 4,
+              "amount": 0.15
+            }
           },
-          "refs": {
-            "lander": "lander"
+          {
+            "module": "crystal",
+            "params": {
+              "pickupRadius": 26,
+              "value": 1,
+              "burst": 8,
+              "minX": 80,
+              "maxX": 1520,
+              "minY": 120,
+              "maxY": 1000
+            },
+            "refs": {
+              "lander": "lander"
+            }
           }
-        }
+        ]
       }
     },
     {
@@ -726,20 +773,30 @@
           "strokeWidth": 1,
           "layer": 3
         },
-        "behavior": {
-          "module": "crystal",
-          "params": {
-            "pickupRadius": 26,
-            "value": 1,
-            "minX": 80,
-            "maxX": 1520,
-            "minY": 120,
-            "maxY": 1000
+        "behavior": [
+          {
+            "module": "pulse",
+            "params": {
+              "speed": 4,
+              "amount": 0.15
+            }
           },
-          "refs": {
-            "lander": "lander"
+          {
+            "module": "crystal",
+            "params": {
+              "pickupRadius": 26,
+              "value": 1,
+              "burst": 8,
+              "minX": 80,
+              "maxX": 1520,
+              "minY": 120,
+              "maxY": 1000
+            },
+            "refs": {
+              "lander": "lander"
+            }
           }
-        }
+        ]
       }
     },
     {

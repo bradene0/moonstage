@@ -1,6 +1,5 @@
 import {
   "moonstage/sdk",
-  "moonbitlang/core/math",
 }
 
 options(

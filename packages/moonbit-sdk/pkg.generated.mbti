@@ -10,6 +10,8 @@ pub fn distance(Int32, Int32) -> Double
 
 pub fn emit(Int32, Double) -> Unit
 
+pub fn exists(Int32) -> Bool
+
 pub fn input(Int32) -> Double
 
 pub fn is_active(Int32) -> Bool
@@ -25,6 +27,8 @@ pub fn random() -> Double
 pub fn random_range(Double, Double) -> Double
 
 pub fn ref_entity(Int32) -> Int32
+
+pub fn remove(Int32) -> Unit
 
 pub fn rotation(Int32) -> Double
 
@@ -45,6 +49,10 @@ pub fn set_state(Int32, Int32, Double) -> Unit
 pub fn set_x(Int32, Double) -> Unit
 
 pub fn set_y(Int32, Double) -> Unit
+
+pub fn spawn(Int32) -> Int32
+
+pub fn spawn_at(Int32, Double, Double) -> Int32
 
 pub fn state(Int32, Int32) -> Double
 

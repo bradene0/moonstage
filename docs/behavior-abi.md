@@ -1,11 +1,13 @@
-# Behavior ABI (version 1)
+# Behavior ABI (version 2)
 
 A behavior is a WebAssembly module. It controls entities through host functions and sees nothing of the
 engine's internals. Only `i32` and `f64` values cross the boundary, so any language that compiles to
 WebAssembly can implement a behavior. MoonBit is the first-party language and has an SDK in
 `packages/moonbit-sdk`.
 
-ABI version 1 is an early contract and may change. A breaking change increments `BEHAVIOR_ABI`.
+ABI 2 is an early contract and may change. The runtime accepts modules that report ABI 1 or 2:
+ABI 2 only added imports (`spawn`, `remove`, `entity_exists`). A breaking change increments `BEHAVIOR_ABI`
+and raises the minimum accepted version.
 
 ## Declaring a module
 
@@ -17,7 +19,8 @@ ABI version 1 is an early contract and may change. A breaking change increments 
     "state": ["phase"],
     "refs": ["lander"],
     "inputs": [],
-    "events": ["collected"]
+    "events": ["collected"],
+    "prefabs": ["sparkle"]
   }
 }
 ```
@@ -37,8 +40,8 @@ slot 1, and `collected` is event slot 0. MoonBit behaviors never write these num
 
 | Export | Signature | Called |
 | --- | --- | --- |
-| `ms_abi_version` | `() -> i32` | Once, at load. It must return `1`. |
-| `ms_start` | `(entity: i32) -> ()` | Once per entity, before the first tick. |
+| `ms_abi_version` | `() -> i32` | Once, at load. It must return `1` or `2`. |
+| `ms_start` | `(entity: i32) -> ()` | Once per entity: before the first tick, or at the end of the tick it was spawned in. |
 | `ms_update` | `(entity: i32, dt: f64) -> ()` | Every tick, for each active entity. `dt` is in seconds. |
 | `ms_event` | `(entity: i32, event: i32, source: i32, value: f64) -> ()` | For each event that the module declares. `event` is the module's slot. `source` is the emitting entity, or `-1`. |
 
@@ -59,9 +62,27 @@ slot 1, and `collected` is event slot 0. MoonBit behaviors never write these num
 | `entity_active` | `(entity: i32) -> i32` | 1 if the entity's own `active` flag is set. |
 | `entity_set_active` | `(entity: i32, active: i32)` | Inactive entities, and their descendants, are neither updated nor rendered. |
 | `log` | `(value: f64)` | Append a value to the runtime log (`moonstage run --json` → `logs`). |
+| `spawn` | `(prefab: i32) -> i32` | ABI 2. Spawn prefab `slot` (from this module's `prefabs` list) at the root and return its handle. |
+| `remove` | `(entity: i32)` | ABI 2. Remove an entity and its descendants at the end of the tick. |
+| `entity_exists` | `(entity: i32) -> i32` | ABI 2. 1 for a live entity; 0 for removed handles and entities marked for removal. |
 
 An invalid handle, field or slot makes the host function throw. The runtime reports the throw as `MS3004`
 and disables that entity's behavior.
+
+## Spawning and removal
+
+Spawned entities get generated ids (`<prefab>-1`, `<prefab>-2`, …). They exist as soon as `spawn` returns,
+so you can position them right away (`@sdk.spawn_at`). Their behaviors run `ms_start` at the end of the
+tick and `ms_update` from the next tick on. `remove` takes effect at the end of the tick.
+
+Handles are never reused. A handle kept in state after its entity was removed stays invalid:
+`entity_exists` returns 0, and other host functions trap.
+
+## Several behaviors on one entity
+
+`"behavior"` may be a list. The behaviors run in list order and share the entity's state; each keeps its own
+params and refs. Use this to compose small reusable behaviors, such as `pulse` plus `crystal` in the
+reference project.
 
 ## Rules
 
@@ -103,6 +124,7 @@ pub let param_pickup_radius : Int32 = 0
 pub let state_phase : Int32 = 0
 pub let ref_lander : Int32 = 0
 pub let event_collected : Int32 = 0
+pub let prefab_sparkle : Int32 = 0
 ```
 
 Use these names in behaviors, as in `@sdk.param(param_pickup_radius)`. Reordering or renaming entries in
@@ -112,6 +134,6 @@ warns with `MS3008` when the file is stale. Names that collide after conversion 
 are rejected with `MS2013`.
 
 The SDK wraps each import (`@sdk.x`, `@sdk.set_position`, `@sdk.state`, `@sdk.param`, `@sdk.ref_entity`,
-`@sdk.input`, `@sdk.emit`, `@sdk.random_range`, …). See `packages/moonbit-sdk/sdk.mbt`.
+`@sdk.input`, `@sdk.emit`, `@sdk.random_range`, `@sdk.spawn_at`, `@sdk.remove`, `@sdk.exists`, …). See `packages/moonbit-sdk/sdk.mbt`.
 
 Note that `self` is reserved in MoonBit, so name the first parameter `entity`.

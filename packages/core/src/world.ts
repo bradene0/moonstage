@@ -3,11 +3,13 @@
  * hierarchical transforms and named numeric state.
  *
  * Handles are what crosses the behavior ABI; ids are what authors, tests and
- * tools use. Handles are only valid for the lifetime of one runtime.
+ * tools use. Handles are only valid for the lifetime of one runtime and are
+ * never reused: a removed entity's handle stays invalid, so a behavior holding
+ * a stale handle can never touch a different entity by accident.
  */
 
 import { compose, lerp, multiply, type Matrix } from "./math.js";
-import type { Components, EntitySource, SceneSource } from "./project.js";
+import { behaviorsOf, type Components, type EntitySource, type PrefabSource, type SceneSource } from "./project.js";
 
 export interface Transform {
   x: number;
@@ -34,9 +36,11 @@ export interface Entity {
   /** Source components (read-only view used by renderers and plugins). */
   readonly components: Readonly<Components>;
   readonly extensions: Readonly<Record<string, Record<string, unknown>>>;
+  /** Name of the prefab this entity was spawned from, if any. */
+  readonly prefab: string | undefined;
 }
 
-function transformFrom(source: EntitySource): Transform {
+function transformFrom(source: PrefabSource): Transform {
   const t = source.components?.transform ?? {};
   return {
     x: t.position?.[0] ?? 0,
@@ -47,29 +51,80 @@ function transformFrom(source: EntitySource): Transform {
   };
 }
 
+/** Initial state: every behavior entry's `state`, merged in order. */
+function initialState(source: PrefabSource): Map<string, number> {
+  return new Map(behaviorsOf(source.components).flatMap((b) => Object.entries(b.state ?? {})));
+}
+
 export class World {
-  readonly entities: Entity[] = [];
+  /** Live entities: scene entities in scene order, then spawned entities in spawn order. */
+  entities: Entity[] = [];
+  private readonly slots: (Entity | undefined)[] = [];
   private readonly byId = new Map<string, number>();
+  private readonly spawnCounters = new Map<string, number>();
 
   constructor(scene: SceneSource) {
     scene.entities.forEach((source, handle) => this.byId.set(source.id, handle));
-    scene.entities.forEach((source, handle) => {
-      const transform = transformFrom(source);
-      this.entities.push({
-        handle,
-        id: source.id,
-        name: source.name,
-        parent: source.parent != null ? (this.byId.get(source.parent) ?? -1) : -1,
-        children: [],
-        active: source.active ?? true,
-        transform,
-        previous: { ...transform },
-        state: new Map(Object.entries(source.components?.behavior?.state ?? {})),
-        components: source.components ?? {},
-        extensions: source.extensions ?? {},
-      });
-    });
-    for (const e of this.entities) if (e.parent >= 0) this.entities[e.parent]!.children.push(e.handle);
+    for (const source of scene.entities) {
+      this.insert(source, source.id, source.parent != null ? (this.byId.get(source.parent) ?? -1) : -1, undefined);
+    }
+  }
+
+  private insert(source: PrefabSource, id: string, parent: number, prefab: string | undefined): Entity {
+    const transform = transformFrom(source);
+    const entity: Entity = {
+      handle: this.slots.length,
+      id,
+      name: source.name,
+      parent,
+      children: [],
+      active: source.active ?? true,
+      transform,
+      previous: { ...transform },
+      state: initialState(source),
+      components: source.components ?? {},
+      extensions: source.extensions ?? {},
+      prefab,
+    };
+    this.slots.push(entity);
+    this.entities.push(entity);
+    this.byId.set(id, entity.handle);
+    if (parent >= 0) this.slots[parent]?.children.push(entity.handle);
+    return entity;
+  }
+
+  /** Create an entity from a prefab with a generated id "<prefab>-<n>", at the root. */
+  spawn(prefabName: string, prefab: PrefabSource): Entity {
+    let n = this.spawnCounters.get(prefabName) ?? 0;
+    let id: string;
+    do {
+      n += 1;
+      id = `${prefabName}-${n}`;
+    } while (this.byId.has(id));
+    this.spawnCounters.set(prefabName, n);
+    return this.insert(prefab, id, -1, prefabName);
+  }
+
+  /** Remove entities and all their descendants. Returns the removed entities, parents first. */
+  remove(handles: Iterable<number>): Entity[] {
+    const removed: Entity[] = [];
+    const visit = (handle: number) => {
+      const e = this.slots[handle];
+      if (e === undefined) return;
+      this.slots[handle] = undefined;
+      this.byId.delete(e.id);
+      removed.push(e);
+      for (const child of e.children) visit(child);
+    };
+    for (const handle of handles) visit(handle);
+    if (removed.length === 0) return removed;
+    const gone = new Set(removed.map((e) => e.handle));
+    for (const e of removed) {
+      const parent = this.slots[e.parent];
+      if (parent !== undefined) parent.children.splice(parent.children.indexOf(e.handle), 1);
+    }
+    this.entities = this.entities.filter((e) => !gone.has(e.handle));
+    return removed;
   }
 
   /** Handle for an id, or -1. */
@@ -78,16 +133,16 @@ export class World {
   }
 
   get(handle: number): Entity | undefined {
-    return this.entities[handle];
+    return this.slots[handle];
   }
 
   byStableId(id: string): Entity | undefined {
-    return this.entities[this.handle(id)];
+    return this.slots[this.handle(id)];
   }
 
   /** Active itself and every ancestor active. */
   activeInHierarchy(handle: number): boolean {
-    for (let e = this.entities[handle]; e !== undefined; e = this.entities[e.parent]) {
+    for (let e = this.slots[handle]; e !== undefined; e = this.slots[e.parent]) {
       if (!e.active) return false;
     }
     return true;
@@ -100,7 +155,7 @@ export class World {
 
   /** World matrix, interpolated between the previous and current tick by alpha. */
   worldMatrix(handle: number, alpha = 1): Matrix {
-    const e = this.entities[handle]!;
+    const e = this.slots[handle]!;
     const p = e.previous;
     const c = e.transform;
     const local = compose(
@@ -110,6 +165,6 @@ export class World {
       lerp(p.scaleX, c.scaleX, alpha),
       lerp(p.scaleY, c.scaleY, alpha),
     );
-    return e.parent >= 0 ? multiply(this.worldMatrix(e.parent, alpha), local) : local;
+    return e.parent >= 0 && this.slots[e.parent] !== undefined ? multiply(this.worldMatrix(e.parent, alpha), local) : local;
   }
 }

@@ -24,12 +24,15 @@ Work in small verified steps. Never hand off a project that you have not validat
    - Export `ms_abi_version`, `ms_start`, `ms_update` and `ms_event`. Name the first parameter `entity`
      (`self` is reserved).
    - Keep per-entity data in `state`. Communicate between entities with `refs` and `events`.
+   - Compose: `"behavior"` can be a list of small behaviors that share state.
+   - Spawn bullets, particles and enemies from `prefabs` with `@sdk.spawn_at(prefab_x, x, y)`, and clean up
+     with `@sdk.remove`. Check `@sdk.exists(handle)` before using a handle kept in state.
    - Use only `@sdk.random()` for randomness.
    - Reference: `docs/behavior-abi.md` and `examples/moon-hopper/behaviors/`.
 5. **Validate**: run `moonstage validate --json` and fix every error. Each diagnostic has `file`, `path`
    and `hint`.
 6. **Test**: add `tests/<feature>.test.json` for each mechanic, using scripted `input`, `setup`
-   operations and assertions on `state.*`, `transform.*`, `active` and events. Run `moonstage test --json`.
+   operations and assertions on `state.*`, `transform.*`, `active`, events and prefab counts. Run `moonstage test --json`.
 7. **Run headless**: `moonstage run --headless --ticks 600 --input '{"thrust":1}' --json`. Check
    `eventCounts`, `snapshot` and `diagnostics` (any `MS3004` is a trap).
 8. **Render**: `moonstage render --tick 120 --output frame.svg`. Look at the frame to check layout,

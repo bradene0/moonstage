@@ -46,6 +46,10 @@ export function checkAssertion(rt: Runtime, a: Assertion, index: number, file?: 
     const count = rt.events.filter((e) => e.name === a.event).length;
     return compare(count, a.count ?? { gte: 1 }).map((m) => fail(`event "${a.event}" count: ${m}`));
   }
+  if ("prefab" in a) {
+    const count = rt.countSpawned(a.prefab);
+    return compare(count, a.count ?? { gte: 1 }).map((m) => fail(`live "${a.prefab}" entities: ${m}`));
+  }
   if ("exists" in a) {
     const exists = rt.world.handle(a.target) >= 0;
     return exists === a.exists ? [] : [fail(`expected "${a.target}" to ${a.exists ? "exist" : "not exist"}`, a.target)];

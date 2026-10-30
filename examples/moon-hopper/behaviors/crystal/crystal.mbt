@@ -1,5 +1,6 @@
-// Crystal: pulses, and when the lander gets close emits `collected`
-// and respawns at a random (seeded) position.
+// Crystal: when the lander gets close, emits `collected`, bursts into
+// sparkles and respawns at a random (seeded) position. Its pulsing comes from
+// the separate `pulse` behavior listed on the same entity.
 
 ///|
 pub fn ms_abi_version() -> Int32 {
@@ -7,27 +8,29 @@ pub fn ms_abi_version() -> Int32 {
 }
 
 ///|
-pub fn ms_start(entity : Int32) -> Unit {
-  // Desynchronize the pulse of each crystal.
-  @sdk.set_state(entity, state_phase, @sdk.random() * 6.283)
+pub fn ms_start(_entity : Int32) -> Unit {
+  ()
 }
 
 ///|
-pub fn ms_update(entity : Int32, dt : Double) -> Unit {
-  let phase = @sdk.state(entity, state_phase) + dt * 4.0
-  @sdk.set_state(entity, state_phase, phase)
-  let pulse = 1.0 + 0.15 * @math.sin(phase)
-  @sdk.set_scale(entity, pulse, pulse)
+pub fn ms_update(entity : Int32, _dt : Double) -> Unit {
   let lander = @sdk.ref_entity(ref_lander)
-  if lander != @sdk.no_entity &&
-    @sdk.distance(entity, lander) < @sdk.param(param_pickup_radius) {
-    @sdk.emit(event_collected, @sdk.param(param_value))
-    @sdk.set_position(
-      entity,
-      @sdk.random_range(@sdk.param(param_min_x), @sdk.param(param_max_x)),
-      @sdk.random_range(@sdk.param(param_min_y), @sdk.param(param_max_y)),
-    )
+  if !@sdk.exists(lander) ||
+    @sdk.distance(entity, lander) >= @sdk.param(param_pickup_radius) {
+    return
   }
+  @sdk.emit(event_collected, @sdk.param(param_value))
+  let x = @sdk.x(entity)
+  let y = @sdk.y(entity)
+  let burst = @sdk.param(param_burst).to_int()
+  for i = 0; i < burst; i = i + 1 {
+    @sdk.spawn_at(prefab_sparkle, x, y) |> ignore
+  }
+  @sdk.set_position(
+    entity,
+    @sdk.random_range(@sdk.param(param_min_x), @sdk.param(param_max_x)),
+    @sdk.random_range(@sdk.param(param_min_y), @sdk.param(param_max_y)),
+  )
 }
 
 ///|

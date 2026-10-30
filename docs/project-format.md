@@ -18,12 +18,15 @@ A project is a folder. All paths are relative to the project root. The canonical
     "buttons": { "thrust": ["ArrowUp", "Space"] }
   },
   "behaviors": { "lander": { "source": "behaviors/lander", "params": ["thrust"], "state": ["vx", "vy"], "inputs": ["turn", "thrust"] } },
+  "prefabs": { "sparkle": { "components": { "shape": { "kind": "circle", "radius": 3 }, "behavior": { "module": "sparkle" } } } },
   "plugins": { "spin": { "module": "./plugins/spin.js" } }
 }
 ```
 
 - `input` maps named inputs to `KeyboardEvent.code` values. Behaviors and plugins read inputs only by name.
 - `behaviors` declares each module's interface. See [behavior-abi.md](behavior-abi.md).
+- `prefabs` are entity templates (an entity without `id` or `parent`). Behaviors that list a prefab in their
+  `prefabs` can spawn it, and plugins with `world.write` can too. Spawned copies get ids `<prefab>-<n>`.
 - `plugins` lists plugins to load. See [plugins.md](plugins.md).
 - `assets` is reserved for the asset registry and is not used by the built-in renderers yet.
 
@@ -56,7 +59,7 @@ Entities update and draw in scene order, unless `layer` says otherwise.
 | `transform` | `position` [x, y] in pixels (y grows downward), `rotation` in radians (clockwise), `scale` [sx, sy] |
 | `shape` | `kind` (`rect` \| `circle` \| `polygon`), `size` (rect), `radius` (circle), `points` (polygon), `fill`, `stroke`, `strokeWidth`, `opacity`, `layer`, `space` (`world` \| `screen`) |
 | `text` | `value`, `size`, `fill`, `align`, `opacity`, `layer`, `space`. `{entityId.stateName}` in `value` is replaced with live state. |
-| `behavior` | `module`, `params` {name: number}, `refs` {name: entityId}, `state` {name: initial number} |
+| `behavior` | `module`, `params` {name: number}, `refs` {name: entityId}, `state` {name: initial number}. Can also be a list of these; they run in order and share state. |
 | `camera` | `zoom`. The scene's `camera` entity is centered in the view. |
 
 `extensions.<plugin>` holds plugin-owned data. The plugin validates it.
@@ -76,13 +79,15 @@ Entities update and draw in scene order, unless `layer` says otherwise.
     { "target": "score", "property": "state.points", "gte": 1 },
     { "target": "lander", "property": "transform.position.y", "approx": 900, "tolerance": 2 },
     { "target": "flame", "property": "active", "equals": true },
-    { "target": "camera", "exists": true }
+    { "target": "camera", "exists": true },
+    { "prefab": "sparkle", "count": { "equals": 8 } }
   ]
 }
 ```
 
 - `setup` is a list of scene operations applied before loading.
 - `input` changes start at the given tick and are held until changed.
+- `{ "prefab": … }` counts live entities spawned from that prefab.
 - `property` accepts these paths: `transform.position.x` / `.y`, `transform.rotation`, `transform.scale.x` / `.y`,
   `state.<name>` and `active`.
 - Comparisons: `equals`, `approx` with `tolerance`, `gt`, `gte`, `lt` and `lte`.

@@ -61,12 +61,17 @@ function check(schema: JsonSchema, value: unknown, path: string, root: JsonSchem
 
   if (Array.isArray(schema.anyOf)) {
     const branches = schema.anyOf as JsonSchema[];
-    const ok = branches.some((branch) => {
+    const results = branches.map((branch) => {
       const branchIssues: SchemaIssue[] = [];
       check(branch, value, path, root, branchIssues);
-      return branchIssues.length === 0;
+      return branchIssues;
     });
-    if (!ok) issues.push({ path: here, message: describeAnyOf(branches, root) });
+    if (!results.some((r) => r.length === 0)) {
+      // When exactly one branch accepts the value's type, its issues are the useful ones.
+      const typed = results.filter((r) => !r.some((i) => i.path === here && i.message.startsWith("expected ")));
+      if (typed.length === 1) issues.push(...typed[0]!);
+      else issues.push({ path: here, message: describeAnyOf(branches, root) });
+    }
   }
 
   const actual = typeOf(value);

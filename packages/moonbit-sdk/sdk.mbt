@@ -1,19 +1,20 @@
-// MoonBit bindings for Moonstage Behavior ABI 1.
+// MoonBit bindings for Moonstage Behavior ABI 2.
 //
 // A behavior package imports this SDK and exports four functions:
 //
-//   pub fn ms_abi_version() -> Int { @sdk.abi_version }
-//   pub fn ms_start(entity : Int) -> Unit { ... }
-//   pub fn ms_update(entity : Int, dt : Double) -> Unit { ... }
-//   pub fn ms_event(entity : Int, event : Int, source : Int, value : Double) -> Unit { ... }
+//   pub fn ms_abi_version() -> Int32 { @sdk.abi_version }
+//   pub fn ms_start(entity : Int32) -> Unit { ... }
+//   pub fn ms_update(entity : Int32, dt : Double) -> Unit { ... }
+//   pub fn ms_event(entity : Int32, event : Int32, source : Int32, value : Double) -> Unit { ... }
 //
-// Entities are integer handles. Params, state, refs, inputs and events are
-// addressed by "slot": the index of the name in the behavior's declaration
-// in moonstage.json. The full contract is in docs/behavior-abi.md.
+// Entities are integer handles. Params, state, refs, inputs, events and
+// prefabs are addressed by "slot": the index of the name in the behavior's
+// declaration in moonstage.json. `moonstage build` generates named constants
+// for them (slots.generated.mbt). The full contract is in docs/behavior-abi.md.
 
 ///|
 /// ABI version implemented by this SDK. Return it from `ms_abi_version`.
-pub let abi_version : Int32 = 1
+pub let abi_version : Int32 = 2
 
 ///|
 /// Handle value meaning "no entity" (e.g. an unset ref).
@@ -57,6 +58,15 @@ fn host_entity_set_active(entity : Int32, active : Int32) -> Unit = "moonstage" 
 
 ///|
 fn host_log(value : Double) -> Unit = "moonstage" "log"
+
+///|
+fn host_spawn(prefab : Int32) -> Int32 = "moonstage" "spawn"
+
+///|
+fn host_remove(entity : Int32) -> Unit = "moonstage" "remove"
+
+///|
+fn host_entity_exists(entity : Int32) -> Int32 = "moonstage" "entity_exists"
 
 // Transform fields, in ABI order: x, y, rotation, scale_x, scale_y.
 // Positions are pixels (y grows downward), rotation is radians (clockwise),
@@ -181,6 +191,34 @@ pub fn set_active(entity : Int32, active : Bool) -> Unit {
 /// Record a number in the runtime log (visible in `moonstage run --json`).
 pub fn log(value : Double) -> Unit {
   host_log(value)
+}
+
+///|
+/// Spawn prefab `slot` (index in the module's `prefabs` list) at the root.
+/// The new entity can be positioned right away; its behaviors start at the end
+/// of this tick and first update on the next one.
+pub fn spawn(prefab : Int32) -> Int32 {
+  host_spawn(prefab)
+}
+
+///|
+/// Spawn a prefab at a position.
+pub fn spawn_at(prefab : Int32, x : Double, y : Double) -> Int32 {
+  let entity = host_spawn(prefab)
+  set_position(entity, x, y)
+  entity
+}
+
+///|
+/// Remove an entity and its descendants at the end of this tick.
+pub fn remove(entity : Int32) -> Unit {
+  host_remove(entity)
+}
+
+///|
+/// False for removed handles, entities marked for removal, and `no_entity`.
+pub fn exists(entity : Int32) -> Bool {
+  entity >= 0 && host_entity_exists(entity) != 0
 }
 
 ///|

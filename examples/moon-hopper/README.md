@@ -10,11 +10,15 @@ node packages/cli/dist/main.js test examples/moon-hopper     # headless tests
 
 What it exercises:
 
-- **Four MoonBit behaviors**: `lander` (input, gravity, bounce), `crystal` (pulse animation, proximity check,
-  seeded respawn), `score` (event handling) and `camera` (smooth follow, shake on events).
+- **Six MoonBit behaviors**: `lander` (input, gravity, bounce), `crystal` (proximity check, seeded respawn),
+  `pulse` (reusable scale animation), `sparkle` (particle), `score` (event handling) and `camera` (smooth
+  follow, shake on events).
+- **Composition**: each crystal lists two behaviors, `pulse` and `crystal`. The beacon reuses `pulse`.
+- **Spawning**: crystals burst into `sparkle` prefabs that fly out, shrink and remove themselves.
 - **Hierarchy**: `flame` is a child of `lander`, and the lander turns it on and off through a ref.
 - **Events**: crystals emit `collected`, and both `score` and `camera` receive it.
 - **Camera and screen space**: the world is 1600×1200 and the view follows the lander. The HUD is drawn in screen space.
 - **Text binding**: `Crystals: {score.points}`.
 - **Plugin**: `plugins/spin.js` rotates every entity with `extensions.spin`.
-- **Tests**: gravity and landing, thrust, and crystal collection, the last using a `set_property` setup operation.
+- **Tests**: gravity and landing, thrust, crystal collection (using a `set_property` setup operation), and
+  sparkles cleaning themselves up.

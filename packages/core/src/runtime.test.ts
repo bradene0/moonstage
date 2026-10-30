@@ -94,9 +94,11 @@ describe("runtime", () => {
     rt.step();
     assert.equal(rt.diagnostics.length, 0);
     await assert.rejects(
-      Runtime.create(project(moverScene, { manifest: moverManifest, behaviors: { mover: minimalWasm(2) } })),
+      Runtime.create(project(moverScene, { manifest: moverManifest, behaviors: { mover: minimalWasm(3) } })),
       (err: MoonstageError) => err.diagnostics[0]!.code === "MS3002",
     );
+    // ABI 1 modules keep working: ABI 2 only added imports.
+    await Runtime.create(project(moverScene, { manifest: moverManifest, behaviors: { mover: minimalWasm(1) } }));
     await assert.rejects(
       Runtime.create(project(moverScene, { manifest: moverManifest, behaviors: { mover: new Uint8Array([1, 2, 3]) } })),
       (err: MoonstageError) => err.diagnostics[0]!.code === "MS3007",
@@ -247,5 +249,152 @@ describe("headless tests", () => {
     });
     assert.equal(failing.passed, false);
     assert.deepEqual(failing.diagnostics.map((d) => d.code), ["MS5001", "MS5001"]);
+  });
+});
+
+describe("multiple behaviors per entity", () => {
+  it("runs each behavior in list order with its own params, sharing entity state", async () => {
+    const m = manifest({
+      behaviors: {
+        add: { wasm: "add.wasm", params: ["amount"], state: ["value"] },
+        double: { wasm: "double.wasm", state: ["value"] },
+      },
+    });
+    const add = jsBehavior((h) => ({ ms_update: (self) => h.state_set(self, 0, h.state_get(self, 0) + h.param(0)) }));
+    const double = jsBehavior((h) => ({ ms_update: (self) => h.state_set(self, 0, h.state_get(self, 0) * 2) }));
+    const scene: SceneSource = {
+      format: 1,
+      entities: [
+        {
+          id: "e",
+          components: { behavior: [{ module: "add", params: { amount: 3 }, state: { value: 1 } }, { module: "double" }] },
+        },
+      ],
+    };
+    const rt = await Runtime.create(project(scene, { manifest: m, behaviors: { add, double } }));
+    rt.step();
+    assert.equal(rt.read("e", "state.value"), (1 + 3) * 2);
+  });
+
+  it("isolates a trap to the behavior that trapped", async () => {
+    const m = manifest({ behaviors: { bad: { wasm: "b.wasm" }, good: { wasm: "g.wasm", state: ["n"] } } });
+    const bad = jsBehavior(() => ({ ms_update: () => { throw new Error("boom"); } }));
+    const good = jsBehavior((h) => ({ ms_update: (self) => h.state_set(self, 0, h.state_get(self, 0) + 1) }));
+    const scene: SceneSource = { format: 1, entities: [{ id: "e", components: { behavior: [{ module: "bad" }, { module: "good" }] } }] };
+    const rt = await Runtime.create(project(scene, { manifest: m, behaviors: { bad, good } }));
+    rt.step();
+    rt.step();
+    assert.equal(rt.diagnostics.length, 1);
+    assert.equal(rt.read("e", "state.n"), 2);
+  });
+});
+
+describe("spawning and removal", () => {
+  const m = manifest({
+    prefabs: {
+      spark: {
+        components: { transform: { position: [0, 0] }, shape: { kind: "circle", radius: 1 }, behavior: { module: "spark", params: { life: 3 } } },
+        extensions: { tracker: {} },
+      },
+    },
+    behaviors: {
+      emitter: { wasm: "e.wasm", prefabs: ["spark"], state: ["last"] },
+      spark: { wasm: "s.wasm", params: ["life"], state: ["age", "started"] },
+    },
+  });
+  const scene: SceneSource = { format: 1, entities: [{ id: "emitter", components: { transform: { position: [50, 60] }, behavior: { module: "emitter" } } }] };
+
+  // Spawns one spark per tick at its own position and remembers the handle.
+  const emitter = jsBehavior((h) => ({
+    ms_update(self) {
+      const spark = h.spawn(0);
+      h.transform_set(spark, 0, h.transform_get(self, 0));
+      h.transform_set(spark, 1, h.transform_get(self, 1));
+      h.state_set(self, 0, spark);
+    },
+  }));
+  // Counts its age and removes itself after `life` updates.
+  const spark = jsBehavior((h) => ({
+    ms_start: (self) => h.state_set(self, 1, 1),
+    ms_update(self) {
+      const age = h.state_get(self, 0) + 1;
+      h.state_set(self, 0, age);
+      if (age >= h.param(0)) h.remove(self);
+    },
+  }));
+  const behaviors = { emitter, spark };
+
+  it("spawns with generated ids, starts at end of tick, and removes later", async () => {
+    const rt = await Runtime.create(project(scene, { manifest: m, behaviors }));
+    rt.step();
+    assert.equal(rt.countSpawned("spark"), 1);
+    assert.equal(rt.read("spark-1", "state.started"), 1, "ms_start ran at end of the spawn tick");
+    assert.equal(rt.read("spark-1", "state.age"), undefined, "not updated in the tick it was spawned");
+    assert.equal(rt.read("spark-1", "transform.position.x"), 50);
+    const spawned = rt.world.byStableId("spark-1")!;
+    assert.deepEqual(spawned.previous, spawned.transform, "no interpolation from the prefab origin");
+
+    for (let i = 0; i < 10; i++) rt.step();
+    // A spark spawned at tick t is updated at t+1..t+3 and removed at the end of t+3,
+    // so after any tick exactly the sparks from the last 3 ticks are alive.
+    assert.equal(rt.countSpawned("spark"), 3);
+    assert.equal(rt.read("spark-1", "active"), undefined, "removed entities are gone");
+    assert.equal(rt.diagnostics.length, 0);
+  });
+
+  it("never reuses handles, and reports stale handles as not existing", async () => {
+    const probe = jsBehavior((h) => ({
+      ms_update(self) {
+        const last = h.state_get(self, 0);
+        // spark-1 (handle 1) is spawned at tick 1 and removed at the end of tick 4.
+        if (h.time() > 4.5 / 60) h.log(h.entity_exists(1));
+        if (last === 0) h.state_set(self, 0, h.spawn(0));
+      },
+    }));
+    const rt = await Runtime.create(project(scene, { manifest: m, behaviors: { emitter: probe, spark } }));
+    for (let i = 0; i < 6; i++) rt.step();
+    assert.equal(rt.world.get(1), undefined);
+    assert.ok(rt.logs.length > 0 && rt.logs.every((l) => l.value === 0));
+    assert.throws(() => rt.world.get(1)!.id);
+  });
+
+  it("removes descendants with their parent", async () => {
+    const remover = jsBehavior((h) => ({ ms_update: (self) => h.remove(self) }));
+    const nested: SceneSource = {
+      format: 1,
+      entities: [
+        { id: "root", components: { behavior: { module: "emitter" } } },
+        { id: "child", parent: "root" },
+        { id: "grandchild", parent: "child" },
+        { id: "other" },
+      ],
+    };
+    const rt = await Runtime.create(project(nested, { manifest: m, behaviors: { emitter: remover, spark } }));
+    rt.step();
+    assert.deepEqual(rt.world.entities.map((e) => e.id), ["other"]);
+  });
+
+  it("gives plugins spawn/remove and lifecycle hooks", async () => {
+    const seen: string[] = [];
+    const tracker = definePlugin({
+      name: "tracker",
+      version: "0.0.0",
+      pluginApi: 2,
+      capabilities: ["world.read", "world.write"],
+      create: (ctx) => ({
+        start: () => seen.push(`spawned:${ctx.world.spawn("spark")}`),
+        entityAdded: (id) => seen.push(`added:${id}`),
+        entityRemoved: (id) => seen.push(`removed:${id}`),
+        update: () => {
+          if (ctx.time.tick === 2) ctx.world.remove("spark-1");
+        },
+      }),
+    });
+    const quiet = jsBehavior(() => ({}));
+    const pm = { ...m, plugins: { tracker: { module: "./tracker.js" } } };
+    const rt = await Runtime.create(project(scene, { manifest: pm, behaviors: { emitter: quiet, spark: quiet }, plugins: { tracker } }));
+    rt.step();
+    rt.step();
+    assert.deepEqual(seen, ["spawned:spark-1", "added:spark-1", "removed:spark-1"]);
   });
 });

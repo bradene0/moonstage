@@ -7,49 +7,163 @@
   "scenes": {
     "main": "scenes/main.scene.json"
   },
-  "display": { "width": 800, "height": 600, "background": "#0b1020" },
-  "simulation": { "tickRate": 60, "seed": 7 },
+  "display": {
+    "width": 800,
+    "height": 600,
+    "background": "#0b1020"
+  },
+  "simulation": {
+    "tickRate": 60,
+    "seed": 7
+  },
   "input": {
     "axes": {
-      "turn": { "negative": ["ArrowLeft", "KeyA"], "positive": ["ArrowRight", "KeyD"] }
+      "turn": {
+        "negative": [
+          "ArrowLeft",
+          "KeyA"
+        ],
+        "positive": [
+          "ArrowRight",
+          "KeyD"
+        ]
+      }
     },
     "buttons": {
-      "thrust": ["ArrowUp", "KeyW", "Space"]
+      "thrust": [
+        "ArrowUp",
+        "KeyW",
+        "Space"
+      ]
     }
   },
   "behaviors": {
     "lander": {
       "description": "Player ship: turn, thrust, gravity, bounce off the world bounds.",
       "source": "behaviors/lander",
-      "params": ["thrust", "gravity", "turnSpeed", "bounce", "minX", "maxX", "minY", "maxY"],
-      "state": ["vx", "vy"],
-      "refs": ["flame"],
-      "inputs": ["turn", "thrust"]
+      "params": [
+        "thrust",
+        "gravity",
+        "turnSpeed",
+        "bounce",
+        "minX",
+        "maxX",
+        "minY",
+        "maxY"
+      ],
+      "state": [
+        "vx",
+        "vy"
+      ],
+      "refs": [
+        "flame"
+      ],
+      "inputs": [
+        "turn",
+        "thrust"
+      ]
     },
     "crystal": {
-      "description": "Pulses; emits `collected` when the lander touches it, then respawns.",
+      "description": "Emits `collected` when the lander touches it, bursts into sparkles, then respawns.",
       "source": "behaviors/crystal",
-      "params": ["pickupRadius", "value", "minX", "maxX", "minY", "maxY"],
-      "state": ["phase"],
-      "refs": ["lander"],
-      "events": ["collected"]
+      "params": [
+        "pickupRadius",
+        "value",
+        "burst",
+        "minX",
+        "maxX",
+        "minY",
+        "maxY"
+      ],
+      "refs": [
+        "lander"
+      ],
+      "events": [
+        "collected"
+      ],
+      "prefabs": [
+        "sparkle"
+      ]
+    },
+    "pulse": {
+      "description": "Reusable scale animation.",
+      "source": "behaviors/pulse",
+      "params": [
+        "speed",
+        "amount"
+      ],
+      "state": [
+        "phase"
+      ]
+    },
+    "sparkle": {
+      "description": "Short-lived particle: flies outward, shrinks, removes itself.",
+      "source": "behaviors/sparkle",
+      "params": [
+        "life",
+        "speed"
+      ],
+      "state": [
+        "vx",
+        "vy",
+        "age"
+      ]
     },
     "score": {
       "description": "Adds each `collected` payload to `points`.",
       "source": "behaviors/score",
-      "state": ["points"],
-      "events": ["collected"]
+      "state": [
+        "points"
+      ],
+      "events": [
+        "collected"
+      ]
     },
     "camera": {
       "description": "Follows its target smoothly and shakes on `collected`.",
       "source": "behaviors/camera",
-      "params": ["follow", "shake"],
-      "state": ["shake", "cx", "cy"],
-      "refs": ["target"],
-      "events": ["collected"]
+      "params": [
+        "follow",
+        "shake"
+      ],
+      "state": [
+        "shake",
+        "cx",
+        "cy"
+      ],
+      "refs": [
+        "target"
+      ],
+      "events": [
+        "collected"
+      ]
+    }
+  },
+  "prefabs": {
+    "sparkle": {
+      "components": {
+        "shape": {
+          "kind": "circle",
+          "radius": 3,
+          "fill": "#e0ffff",
+          "layer": 6
+        },
+        "behavior": {
+          "module": "sparkle",
+          "params": {
+            "life": 0.6,
+            "speed": 160
+          }
+        }
+      }
     }
   },
   "plugins": {
-    "spin": { "module": "./plugins/spin.js", "config": { "defaultSpeed": 0.5 } }
+    "spin": {
+      "module": "./plugins/spin.js",
+      "config": {
+        "defaultSpeed": 0.5
+      }
+    }
   }
 }

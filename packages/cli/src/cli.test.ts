@@ -79,7 +79,7 @@ describe("moonstage CLI", () => {
     const out = join(scratch, "bundle");
     const r = cli("build", example, "--out", out, "--json");
     assert.equal(r.code, 0, r.stdout);
-    assert.deepEqual(r.json.behaviors.map((b: { name: string }) => b.name).sort(), ["camera", "crystal", "lander", "score"]);
+    assert.deepEqual(r.json.behaviors.map((b: { name: string }) => b.name).sort(), ["camera", "crystal", "lander", "pulse", "score", "sparkle"]);
     const html = readFileSync(join(out, "index.html"), "utf8");
     assert.match(html, /<moonstage-player src="\.\/game\/"/);
     readFileSync(join(out, "game", ".moonstage", "behaviors", "lander.wasm"));
@@ -91,7 +91,7 @@ describe("moonstage CLI", () => {
     const r = cli("test", example, "--json");
     assert.equal(r.code, 0, r.stdout);
     assert.equal(r.json.failed, 0);
-    assert.equal(r.json.passed, 3);
+    assert.equal(r.json.passed, 4);
   });
 
   it("simulates headlessly and deterministically", moon, () => {

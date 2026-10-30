@@ -240,6 +240,52 @@
           }
         },
         {
+          "title": "prefab count assertion",
+          "type": "object",
+          "required": [
+            "prefab"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "prefab": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Counts live entities spawned from this prefab."
+            },
+            "count": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "equals": {
+                  "type": [
+                    "number",
+                    "boolean"
+                  ]
+                },
+                "approx": {
+                  "type": "number"
+                },
+                "tolerance": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "gt": {
+                  "type": "number"
+                },
+                "gte": {
+                  "type": "number"
+                },
+                "lt": {
+                  "type": "number"
+                },
+                "lte": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
+        {
           "title": "existence assertion",
           "type": "object",
           "required": [

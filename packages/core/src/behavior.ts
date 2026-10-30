@@ -1,5 +1,6 @@
 /**
- * Behavior host: implements Moonstage Behavior ABI 1.
+ * Behavior host: implements Moonstage Behavior ABI 2 (and accepts ABI 1 modules;
+ * ABI 2 only adds imports).
  *
  * A behavior is a WebAssembly module that imports functions from the
  * "moonstage" namespace and exports four lifecycle functions. Only numbers
@@ -13,7 +14,7 @@
 
 import { diagnostic, MoonstageError } from "./diagnostics.js";
 import type { BehaviorModuleDecl } from "./project.js";
-import { BEHAVIOR_ABI } from "./versions.js";
+import { BEHAVIOR_ABI, MIN_BEHAVIOR_ABI } from "./versions.js";
 
 export interface BehaviorExports {
   ms_abi_version(): number;
@@ -39,6 +40,12 @@ export interface HostFunctions {
   entity_active(entity: number): number;
   entity_set_active(entity: number, active: number): void;
   log(value: number): void;
+  /** ABI 2: spawn prefab `slot`; returns the new entity's handle. */
+  spawn(prefab: number): number;
+  /** ABI 2: remove an entity and its descendants at the end of the tick. */
+  remove(entity: number): void;
+  /** ABI 2: 1 if the handle refers to a live entity (not removed or marked for removal). */
+  entity_exists(entity: number): number;
 }
 
 export const HOST_FUNCTIONS = [
@@ -55,6 +62,9 @@ export const HOST_FUNCTIONS = [
   "entity_active",
   "entity_set_active",
   "log",
+  "spawn",
+  "remove",
+  "entity_exists",
 ] as const satisfies readonly (keyof HostFunctions)[];
 
 export interface BehaviorImports {
@@ -107,9 +117,12 @@ export async function instantiateBehavior(
   }
   const typed = exports as unknown as BehaviorExports;
   const abi = typed.ms_abi_version();
-  if (abi !== BEHAVIOR_ABI) {
+  if (!Number.isInteger(abi) || abi < MIN_BEHAVIOR_ABI || abi > BEHAVIOR_ABI) {
     throw new MoonstageError([
-      diagnostic("MS3002", `behavior "${name}" targets ABI ${abi}; this runtime implements ABI ${BEHAVIOR_ABI}`),
+      diagnostic(
+        "MS3002",
+        `behavior "${name}" targets ABI ${abi}; this runtime supports ABI ${MIN_BEHAVIOR_ABI} to ${BEHAVIOR_ABI}`,
+      ),
     ]);
   }
   return typed;
@@ -122,6 +135,7 @@ export interface BehaviorInterface {
   refs: string[];
   inputs: string[];
   events: string[];
+  prefabs: string[];
 }
 
 export function behaviorInterface(decl: BehaviorModuleDecl): BehaviorInterface {
@@ -131,5 +145,6 @@ export function behaviorInterface(decl: BehaviorModuleDecl): BehaviorInterface {
     refs: decl.refs ?? [],
     inputs: decl.inputs ?? [],
     events: decl.events ?? [],
+    prefabs: decl.prefabs ?? [],
   };
 }

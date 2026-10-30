@@ -3,7 +3,7 @@
  * packages, plugins and tools may rely on. Anything not exported is internal.
  */
 
-export { PROJECT_FORMAT, PLUGIN_API, BEHAVIOR_ABI } from "./versions.js";
+export { PROJECT_FORMAT, PLUGIN_API, MIN_PLUGIN_API, BEHAVIOR_ABI, MIN_BEHAVIOR_ABI } from "./versions.js";
 export {
   DIAGNOSTIC_CODES,
   diagnostic,
@@ -22,11 +22,13 @@ export {
   validateTestShape,
   validateProjectSemantics,
   inputNames,
+  behaviorsOf,
   TEXT_BINDING,
   type ProjectManifest,
   type BehaviorModuleDecl,
   type SceneSource,
   type EntitySource,
+  type PrefabSource,
   type Components,
   type TransformComponent,
   type ShapeComponent,

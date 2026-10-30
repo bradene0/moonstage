@@ -75,6 +75,27 @@ describe("project validation", () => {
     }
   });
 
+  it("validates behavior lists and prefabs", () => {
+    const m = manifest({
+      behaviors: { a: { source: "a", params: ["x"], prefabs: ["ghost", "spark"] }, b: { source: "b" } },
+      prefabs: { spark: { components: { behavior: { module: "a", params: { y: 1 } } } } },
+    });
+    const scene: SceneSource = {
+      format: 1,
+      entities: [{ id: "e", components: { behavior: [{ module: "a", params: { x: 1 } }, { module: "b", params: { z: 2 } }] } }],
+    };
+    const found = validateProjectSemantics(m, { main: scene });
+    const byCode = Object.fromEntries(found.map((d) => [`${d.code}:${d.path}`, d]));
+    assert.ok(byCode["MS2014:behaviors.a.prefabs"]);
+    assert.ok(byCode["MS2006:prefabs.spark.components.behavior.params.y"]);
+    assert.ok(byCode["MS2006:entities[0].components.behavior[1].params.z"]);
+    assert.equal(found.length, 3);
+    assert.deepEqual(validateSceneShape(scene), []);
+    // Schema errors inside a list entry point at the entry, not at the anyOf.
+    const bad = validateSceneShape({ format: 1, entities: [{ id: "e", components: { behavior: [{ module: "a", oops: 1 }] } }] });
+    assert.equal(bad[0]!.path, "entities[0].components.behavior[0].oops");
+  });
+
   it("requires exactly one of source or wasm for behaviors", () => {
     const both = manifest({ behaviors: { x: { source: "a", wasm: "b.wasm" } } });
     assert.ok(codes(validateProjectSemantics(both, {})).includes("MS1001"));

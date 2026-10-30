@@ -47,6 +47,12 @@ in order:
 3. Call `update(dt)` for every plugin, in manifest order.
 4. Dispatch queued events: first to behaviors whose module declares the event, then to plugin listeners.
    Events raised during dispatch go to the next round, up to 8 rounds per tick.
+5. Settle the lifecycle: run `ms_start` and plugin `entityAdded` for entities spawned during the tick, then
+   remove entities marked for removal (plugin `entityRemoved`).
+
+Spawned entities exist immediately, so the spawner can position them, but they are only started at step 5
+and first updated on the next tick. Entity handles are never reused, so a stale handle can never reach a
+different entity.
 
 `advance(seconds)` runs as many whole ticks as fit into the elapsed time, at most 5 per call, and returns
 the interpolation factor. Simulation time (`tick × dt`) is separate from wall-clock time. All
@@ -97,8 +103,7 @@ server and `moonstage edit` should use the same operations instead of rewriting 
 
 ## Known limits (deliberate, for now)
 
-- One behavior per entity.
 - Shapes and text only. There are no images or sprites yet; the asset registry is declared but unused.
-- No physics, audio, scene switching or entity spawning from behaviors.
+- No physics, audio or scene switching.
 - Plugins in the browser bundle must be project-local files. Bare package specifiers need an import map.
 - `.msp` packages (`moonstage pack`) are not implemented. `dist/` is a plain static folder.

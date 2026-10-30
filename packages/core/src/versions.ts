@@ -11,8 +11,16 @@
 /** Project and scene source format understood by this runtime. */
 export const PROJECT_FORMAT = 1;
 
-/** Plugin API level implemented by this runtime's plugin host. */
-export const PLUGIN_API = 1;
+/**
+ * Plugin API level implemented by this runtime's plugin host. Plugins targeting
+ * any level from MIN_PLUGIN_API up to this one are accepted.
+ */
+export const PLUGIN_API = 2;
+export const MIN_PLUGIN_API = 1;
 
-/** WebAssembly behavior ABI implemented by this runtime's behavior host. */
-export const BEHAVIOR_ABI = 1;
+/**
+ * WebAssembly behavior ABI implemented by this runtime's behavior host.
+ * Modules reporting any version from MIN_BEHAVIOR_ABI up to this one are accepted.
+ */
+export const BEHAVIOR_ABI = 2;
+export const MIN_BEHAVIOR_ABI = 1;

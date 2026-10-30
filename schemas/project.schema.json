@@ -140,6 +140,13 @@
         "$ref": "#/$defs/behaviorModule"
       }
     },
+    "prefabs": {
+      "type": "object",
+      "description": "Prefab name -> entity template that behaviors and plugins can spawn at runtime.",
+      "additionalProperties": {
+        "$ref": "#/$defs/prefab"
+      }
+    },
     "plugins": {
       "type": "object",
       "description": "Plugin name -> how to load and configure it.",
@@ -233,6 +240,273 @@
             "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
           },
           "description": "Events this module emits or receives."
+        },
+        "prefabs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+            "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+          },
+          "description": "Prefabs this module can spawn, with spawn(slot)."
+        }
+      }
+    },
+    "prefab": {
+      "title": "prefab",
+      "type": "object",
+      "additionalProperties": false,
+      "description": "An entity template. Spawned copies get generated ids (<prefab>-<n>) and start at the root.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "components": {
+          "$ref": "#/$defs/components"
+        },
+        "extensions": {
+          "type": "object",
+          "description": "Plugin-owned data keyed by plugin name. Validated by the plugin.",
+          "additionalProperties": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "transform": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Position in pixels (y down), rotation in radians (clockwise), scale. Relative to the parent.",
+          "properties": {
+            "position": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "[x, y]"
+            },
+            "rotation": {
+              "type": "number"
+            },
+            "scale": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "[x, y]"
+            }
+          }
+        },
+        "shape": {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "description": "Basic vector renderable, centered on the entity origin.",
+          "properties": {
+            "kind": {
+              "enum": [
+                "rect",
+                "circle",
+                "polygon"
+              ]
+            },
+            "size": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "rect: [width, height]"
+            },
+            "radius": {
+              "type": "number",
+              "minimum": 0,
+              "description": "circle radius"
+            },
+            "points": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "[x, y]"
+              },
+              "minItems": 3,
+              "description": "polygon points, local space"
+            },
+            "fill": {
+              "type": "string",
+              "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$",
+              "description": "Hex color: #rgb, #rrggbb or #rrggbbaa."
+            },
+            "stroke": {
+              "type": "string",
+              "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$",
+              "description": "Hex color: #rgb, #rrggbb or #rrggbbaa."
+            },
+            "strokeWidth": {
+              "type": "number",
+              "minimum": 0
+            },
+            "opacity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "layer": {
+              "type": "integer",
+              "description": "Draw order; higher draws on top (default 0)."
+            },
+            "space": {
+              "enum": [
+                "world",
+                "screen"
+              ],
+              "description": "'world' (default) is transformed by the camera; 'screen' is fixed to the viewport."
+            }
+          }
+        },
+        "text": {
+          "type": "object",
+          "required": [
+            "value"
+          ],
+          "additionalProperties": false,
+          "description": "Text renderable. {entityId.stateName} placeholders are replaced with live state values.",
+          "properties": {
+            "value": {
+              "type": "string"
+            },
+            "size": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "fill": {
+              "type": "string",
+              "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$",
+              "description": "Hex color: #rgb, #rrggbb or #rrggbbaa."
+            },
+            "align": {
+              "enum": [
+                "left",
+                "center",
+                "right"
+              ]
+            },
+            "opacity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "layer": {
+              "type": "integer"
+            },
+            "space": {
+              "enum": [
+                "world",
+                "screen"
+              ],
+              "description": "'world' (default) is transformed by the camera; 'screen' is fixed to the viewport."
+            }
+          }
+        },
+        "behavior": {
+          "description": "One behavior, or a list of behaviors that run in order. Modules are declared in moonstage.json.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/behaviorEntry"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/behaviorEntry"
+              }
+            }
+          ]
+        },
+        "camera": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "The view is centered on this entity's world position.",
+          "properties": {
+            "zoom": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        }
+      }
+    },
+    "behaviorEntry": {
+      "title": "behavior",
+      "type": "object",
+      "required": [
+        "module"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "module": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+          "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "refs": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+            "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+          }
+        },
+        "state": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
         }
       }
     }

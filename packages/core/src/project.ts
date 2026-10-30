@@ -28,8 +28,12 @@ export interface ProjectManifest {
   };
   assets?: Record<string, { path: string; type?: string }>;
   behaviors?: Record<string, BehaviorModuleDecl>;
+  prefabs?: Record<string, PrefabSource>;
   plugins?: Record<string, { module: string; config?: Record<string, unknown> }>;
 }
+
+/** An entity template that can be spawned at runtime. */
+export type PrefabSource = Omit<EntitySource, "id" | "parent">;
 
 export interface BehaviorModuleDecl {
   description?: string;
@@ -41,6 +45,7 @@ export interface BehaviorModuleDecl {
   refs?: string[];
   inputs?: string[];
   events?: string[];
+  prefabs?: string[];
 }
 
 export interface TransformComponent {
@@ -87,8 +92,15 @@ export interface Components {
   transform?: TransformComponent;
   shape?: ShapeComponent;
   text?: TextComponent;
-  behavior?: BehaviorComponent;
+  /** One behavior, or several that run in order. */
+  behavior?: BehaviorComponent | BehaviorComponent[];
   camera?: CameraComponent;
+}
+
+/** The behaviors attached to an entity, always as a list. */
+export function behaviorsOf(components: Components | undefined): BehaviorComponent[] {
+  const b = components?.behavior;
+  return b === undefined ? [] : Array.isArray(b) ? b : [b];
 }
 
 export interface EntitySource {
@@ -119,6 +131,7 @@ export type Comparison = {
 
 export type Assertion =
   | { event: string; count?: Comparison }
+  | { prefab: string; count?: Comparison }
   | ({ target: string; property: string } & Comparison)
   | { target: string; exists: boolean };
 
@@ -218,6 +231,36 @@ export function validateProjectSemantics(
     }
   }
 
+  const prefabs = manifest.prefabs ?? {};
+  for (const [name, decl] of Object.entries(behaviors)) {
+    for (const prefab of decl.prefabs ?? []) {
+      if (!(prefab in prefabs)) {
+        out.push(
+          diagnostic("MS2014", `behaviors.${name}.prefabs: "${prefab}" is not declared in prefabs`, {
+            file: "moonstage.json",
+            path: `behaviors.${name}.prefabs`,
+          }),
+        );
+      }
+    }
+  }
+  for (const [name, prefab] of Object.entries(prefabs)) {
+    const where = { file: "moonstage.json", entity: name };
+    // Prefab refs resolve against whichever scene spawns them, so only names are checked here.
+    out.push(...checkBehaviors(prefab, manifest, `prefabs.${name}.components.behavior`, where, undefined));
+    for (const namespace of Object.keys(prefab.extensions ?? {})) {
+      if (!(namespace in plugins)) {
+        out.push(
+          diagnostic("MS2011", `extension "${namespace}" has no matching plugin in moonstage.json`, {
+            ...where,
+            severity: "warning",
+            path: `prefabs.${name}.extensions.${namespace}`,
+          }),
+        );
+      }
+    }
+  }
+
   for (const [sceneId, scene] of Object.entries(scenes)) {
     const file = sceneFiles[sceneId];
     const byId = new Map<string, EntitySource>();
@@ -249,61 +292,7 @@ export function validateProjectSemantics(
         cursor = byId.get(cursor)?.parent;
       }
 
-      const behavior = entity.components?.behavior;
-      if (behavior !== undefined) {
-        const decl = behaviors[behavior.module];
-        const bpath = at(".components.behavior");
-        const bwhere = { ...where, component: "behavior" };
-        if (decl === undefined) {
-          out.push(
-            diagnostic("MS2005", `behavior module "${behavior.module}" is not declared in moonstage.json`, {
-              ...bwhere,
-              path: `${bpath}.module`,
-            }),
-          );
-        } else {
-          const params = new Set(decl.params ?? []);
-          for (const key of Object.keys(behavior.params ?? {})) {
-            if (!params.has(key)) {
-              out.push(
-                diagnostic("MS2006", `param "${key}" is not declared by behavior "${behavior.module}"`, {
-                  ...bwhere,
-                  path: `${bpath}.params.${key}`,
-                }),
-              );
-            }
-          }
-          const refs = new Set(decl.refs ?? []);
-          for (const [key, target] of Object.entries(behavior.refs ?? {})) {
-            if (!refs.has(key)) {
-              out.push(
-                diagnostic("MS2007", `ref "${key}" is not declared by behavior "${behavior.module}"`, {
-                  ...bwhere,
-                  path: `${bpath}.refs.${key}`,
-                }),
-              );
-            } else if (!byId.has(target)) {
-              out.push(
-                diagnostic("MS2007", `ref "${key}" points to missing entity "${target}"`, {
-                  ...bwhere,
-                  path: `${bpath}.refs.${key}`,
-                }),
-              );
-            }
-          }
-          const state = new Set(decl.state ?? []);
-          for (const key of Object.keys(behavior.state ?? {})) {
-            if (!state.has(key)) {
-              out.push(
-                diagnostic("MS2008", `state "${key}" is not declared by behavior "${behavior.module}"`, {
-                  ...bwhere,
-                  path: `${bpath}.state.${key}`,
-                }),
-              );
-            }
-          }
-        }
-      }
+      out.push(...checkBehaviors(entity, manifest, at(".components.behavior"), { file, entity: entity.id }, byId));
 
       for (const namespace of Object.keys(entity.extensions ?? {})) {
         if (!(namespace in plugins)) {
@@ -322,9 +311,7 @@ export function validateProjectSemantics(
         for (const match of text.value.matchAll(TEXT_BINDING)) {
           const [, targetId, stateName] = match;
           const target = byId.get(targetId!);
-          const declared = target?.components?.behavior
-            ? behaviors[target.components.behavior.module]?.state ?? []
-            : [];
+          const declared = behaviorsOf(target?.components).flatMap((b) => behaviors[b.module]?.state ?? []);
           if (!declared.includes(stateName!)) {
             out.push(
               diagnostic("MS2012", `text binding {${targetId}.${stateName}} does not match any entity state`, {
@@ -348,5 +335,73 @@ export function validateProjectSemantics(
       );
     }
   }
+  return out;
+}
+
+/** Check an entity's (or prefab's) behavior entries against their module declarations. */
+function checkBehaviors(
+  entity: PrefabSource,
+  manifest: ProjectManifest,
+  basePath: string,
+  where: { file: string | undefined; entity: string },
+  byId: Map<string, EntitySource> | undefined,
+): Diagnostic[] {
+  const out: Diagnostic[] = [];
+  const list = behaviorsOf(entity.components);
+  const many = Array.isArray(entity.components?.behavior);
+  list.forEach((behavior, i) => {
+    const bpath = many ? `${basePath}[${i}]` : basePath;
+    const bwhere = { ...where, component: "behavior" };
+    const decl = manifest.behaviors?.[behavior.module];
+    if (decl === undefined) {
+      out.push(
+        diagnostic("MS2005", `behavior module "${behavior.module}" is not declared in moonstage.json`, {
+          ...bwhere,
+          path: `${bpath}.module`,
+        }),
+      );
+      return;
+    }
+    const params = new Set(decl.params ?? []);
+    for (const key of Object.keys(behavior.params ?? {})) {
+      if (!params.has(key)) {
+        out.push(
+          diagnostic("MS2006", `param "${key}" is not declared by behavior "${behavior.module}"`, {
+            ...bwhere,
+            path: `${bpath}.params.${key}`,
+          }),
+        );
+      }
+    }
+    const refs = new Set(decl.refs ?? []);
+    for (const [key, target] of Object.entries(behavior.refs ?? {})) {
+      if (!refs.has(key)) {
+        out.push(
+          diagnostic("MS2007", `ref "${key}" is not declared by behavior "${behavior.module}"`, {
+            ...bwhere,
+            path: `${bpath}.refs.${key}`,
+          }),
+        );
+      } else if (byId !== undefined && !byId.has(target)) {
+        out.push(
+          diagnostic("MS2007", `ref "${key}" points to missing entity "${target}"`, {
+            ...bwhere,
+            path: `${bpath}.refs.${key}`,
+          }),
+        );
+      }
+    }
+    const state = new Set(decl.state ?? []);
+    for (const key of Object.keys(behavior.state ?? {})) {
+      if (!state.has(key)) {
+        out.push(
+          diagnostic("MS2008", `state "${key}" is not declared by behavior "${behavior.module}"`, {
+            ...bwhere,
+            path: `${bpath}.state.${key}`,
+          }),
+        );
+      }
+    }
+  });
   return out;
 }

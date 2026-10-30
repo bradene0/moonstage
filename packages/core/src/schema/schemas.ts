@@ -30,6 +30,85 @@ const space = {
   description: "'world' (default) is transformed by the camera; 'screen' is fixed to the viewport.",
 };
 
+const extensions = {
+  type: "object",
+  description: "Plugin-owned data keyed by plugin name. Validated by the plugin.",
+  additionalProperties: { type: "object" },
+};
+
+const behaviorEntry = {
+  title: "behavior",
+  type: "object",
+  required: ["module"],
+  additionalProperties: false,
+  properties: {
+    module: id,
+    params: { type: "object", additionalProperties: { type: "number" } },
+    refs: { type: "object", additionalProperties: id },
+    state: { type: "object", additionalProperties: { type: "number" } },
+  },
+};
+
+/** Component vocabulary, shared by scene entities and prefabs. */
+const components = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    transform: {
+      type: "object",
+      additionalProperties: false,
+      description: "Position in pixels (y down), rotation in radians (clockwise), scale. Relative to the parent.",
+      properties: { position: vec2, rotation: { type: "number" }, scale: vec2 },
+    },
+    shape: {
+      type: "object",
+      required: ["kind"],
+      additionalProperties: false,
+      description: "Basic vector renderable, centered on the entity origin.",
+      properties: {
+        kind: { enum: ["rect", "circle", "polygon"] },
+        size: { ...vec2, description: "rect: [width, height]" },
+        radius: { type: "number", minimum: 0, description: "circle radius" },
+        points: { type: "array", items: vec2, minItems: 3, description: "polygon points, local space" },
+        fill: color,
+        stroke: color,
+        strokeWidth: { type: "number", minimum: 0 },
+        opacity: { type: "number", minimum: 0, maximum: 1 },
+        layer: { type: "integer", description: "Draw order; higher draws on top (default 0)." },
+        space,
+      },
+    },
+    text: {
+      type: "object",
+      required: ["value"],
+      additionalProperties: false,
+      description: "Text renderable. {entityId.stateName} placeholders are replaced with live state values.",
+      properties: {
+        value: { type: "string" },
+        size: { type: "number", exclusiveMinimum: 0 },
+        fill: color,
+        align: { enum: ["left", "center", "right"] },
+        opacity: { type: "number", minimum: 0, maximum: 1 },
+        layer: { type: "integer" },
+        space,
+      },
+    },
+    behavior: {
+      description: "One behavior, or a list of behaviors that run in order. Modules are declared in moonstage.json.",
+      anyOf: [
+        { $ref: "#/$defs/behaviorEntry" },
+        { type: "array", minItems: 1, items: { $ref: "#/$defs/behaviorEntry" } },
+      ],
+    },
+    camera: {
+      type: "object",
+      additionalProperties: false,
+      description: "The view is centered on this entity's world position.",
+      properties: { zoom: { type: "number", exclusiveMinimum: 0 } },
+    },
+  },
+};
+
 export const projectSchema: JsonSchema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   title: "Moonstage project manifest (moonstage.json)",
@@ -102,6 +181,11 @@ export const projectSchema: JsonSchema = {
       description: "Behavior module id -> module interface.",
       additionalProperties: { $ref: "#/$defs/behaviorModule" },
     },
+    prefabs: {
+      type: "object",
+      description: "Prefab name -> entity template that behaviors and plugins can spawn at runtime.",
+      additionalProperties: { $ref: "#/$defs/prefab" },
+    },
     plugins: {
       type: "object",
       description: "Plugin name -> how to load and configure it.",
@@ -133,8 +217,23 @@ export const projectSchema: JsonSchema = {
         refs: { ...nameList, description: "Entity references, resolved with ref(slot)." },
         inputs: { ...nameList, description: "Input axes/buttons, read with input(slot)." },
         events: { ...nameList, description: "Events this module emits or receives." },
+        prefabs: { ...nameList, description: "Prefabs this module can spawn, with spawn(slot)." },
       },
     },
+    prefab: {
+      title: "prefab",
+      type: "object",
+      additionalProperties: false,
+      description: "An entity template. Spawned copies get generated ids (<prefab>-<n>) and start at the root.",
+      properties: {
+        name: { type: "string" },
+        active: { type: "boolean" },
+        components: { $ref: "#/$defs/components" },
+        extensions,
+      },
+    },
+    components,
+    behaviorEntry,
   },
 };
 
@@ -162,76 +261,11 @@ export const sceneSchema: JsonSchema = {
         parent: { anyOf: [id, { type: "null" }] },
         active: { type: "boolean", description: "Inactive entities are not updated or rendered (default true)." },
         components: { $ref: "#/$defs/components" },
-        extensions: {
-          type: "object",
-          description: "Plugin-owned data keyed by plugin name. Validated by the plugin.",
-          additionalProperties: { type: "object" },
-        },
+        extensions,
       },
     },
-    components: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        transform: {
-          type: "object",
-          additionalProperties: false,
-          description: "Position in pixels (y down), rotation in radians (clockwise), scale. Relative to the parent.",
-          properties: { position: vec2, rotation: { type: "number" }, scale: vec2 },
-        },
-        shape: {
-          type: "object",
-          required: ["kind"],
-          additionalProperties: false,
-          description: "Basic vector renderable, centered on the entity origin.",
-          properties: {
-            kind: { enum: ["rect", "circle", "polygon"] },
-            size: { ...vec2, description: "rect: [width, height]" },
-            radius: { type: "number", minimum: 0, description: "circle radius" },
-            points: { type: "array", items: vec2, minItems: 3, description: "polygon points, local space" },
-            fill: color,
-            stroke: color,
-            strokeWidth: { type: "number", minimum: 0 },
-            opacity: { type: "number", minimum: 0, maximum: 1 },
-            layer: { type: "integer", description: "Draw order; higher draws on top (default 0)." },
-            space,
-          },
-        },
-        text: {
-          type: "object",
-          required: ["value"],
-          additionalProperties: false,
-          description: "Text renderable. {entityId.stateName} placeholders are replaced with live state values.",
-          properties: {
-            value: { type: "string" },
-            size: { type: "number", exclusiveMinimum: 0 },
-            fill: color,
-            align: { enum: ["left", "center", "right"] },
-            opacity: { type: "number", minimum: 0, maximum: 1 },
-            layer: { type: "integer" },
-            space,
-          },
-        },
-        behavior: {
-          type: "object",
-          required: ["module"],
-          additionalProperties: false,
-          description: "Attaches a behavior module declared in moonstage.json.",
-          properties: {
-            module: id,
-            params: { type: "object", additionalProperties: { type: "number" } },
-            refs: { type: "object", additionalProperties: id },
-            state: { type: "object", additionalProperties: { type: "number" } },
-          },
-        },
-        camera: {
-          type: "object",
-          additionalProperties: false,
-          description: "The view is centered on this entity's world position.",
-          properties: { zoom: { type: "number", exclusiveMinimum: 0 } },
-        },
-      },
-    },
+    components,
+    behaviorEntry,
   },
 };
 
@@ -331,6 +365,16 @@ export const testSchema: JsonSchema = {
             target: id,
             property: { type: "string", description: "transform.position.x, transform.rotation, state.<name>, active" },
             ...comparison,
+          },
+        },
+        {
+          title: "prefab count assertion",
+          type: "object",
+          required: ["prefab"],
+          additionalProperties: false,
+          properties: {
+            prefab: { ...id, description: "Counts live entities spawned from this prefab." },
+            count: { type: "object", additionalProperties: false, properties: comparison },
           },
         },
         {

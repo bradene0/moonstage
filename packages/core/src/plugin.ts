@@ -1,5 +1,6 @@
 /**
- * Plugin contract, Plugin API level 1.
+ * Plugin contract, Plugin API level 2. Level 2 adds spawning/removal and the
+ * entityAdded/entityRemoved hooks; level 1 plugins keep working unchanged.
  *
  * A plugin is a plain object (usually an ES module's default export) that
  * declares metadata and capabilities and creates an instance per runtime.
@@ -11,7 +12,7 @@
 
 import { diagnostic, MoonstageError, type Diagnostic } from "./diagnostics.js";
 import type { JsonSchema } from "./schema/validate.js";
-import { PLUGIN_API } from "./versions.js";
+import { MIN_PLUGIN_API, PLUGIN_API } from "./versions.js";
 import type { Transform } from "./world.js";
 
 export const CAPABILITIES = {
@@ -47,6 +48,10 @@ export interface PluginContext {
     setState(id: string, name: string, value: number): void;
     active(id: string): boolean;
     setActive(id: string, active: boolean): void;
+    /** API 2: spawn a prefab; returns the new entity id. Needs world.write. */
+    spawn(prefab: string): string;
+    /** API 2: remove an entity and its descendants at the end of the tick. Needs world.write. */
+    remove(id: string): void;
   };
   readonly events: {
     on(name: string, listener: (event: EventRecord) => void): () => void;
@@ -59,6 +64,10 @@ export interface PluginContext {
 export interface PluginInstance {
   start?(): void;
   update?(dt: number): void;
+  /** API 2: an entity was spawned (called at the end of the tick it was spawned in). */
+  entityAdded?(id: string): void;
+  /** API 2: an entity was removed (called once per removed entity, descendants included). */
+  entityRemoved?(id: string): void;
   stop?(): void;
   dispose?(): void;
 }
@@ -102,9 +111,13 @@ export function checkPlugin(value: unknown, registeredAs: string): Diagnostic[] 
   if (p.name !== registeredAs) {
     out.push(diagnostic("MS4005", `plugin is named "${p.name}" but registered as "${registeredAs}"`, where));
   }
-  if (p.pluginApi !== PLUGIN_API) {
+  if (!Number.isInteger(p.pluginApi) || p.pluginApi < MIN_PLUGIN_API || p.pluginApi > PLUGIN_API) {
     out.push(
-      diagnostic("MS4002", `plugin "${p.name}" targets plugin API ${p.pluginApi}; this runtime implements ${PLUGIN_API}`, where),
+      diagnostic(
+        "MS4002",
+        `plugin "${p.name}" targets plugin API ${p.pluginApi}; this runtime supports ${MIN_PLUGIN_API} to ${PLUGIN_API}`,
+        where,
+      ),
     );
   }
   for (const cap of p.capabilities) {

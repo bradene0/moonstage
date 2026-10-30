@@ -1,7 +1,8 @@
-# Plugins (plugin API level 1)
+# Plugins (plugin API level 2)
 
 Plugins extend Moonstage without changing core. A plugin can be a runtime system, a renderer, an asset
-loader or an integration with an external media runtime. Plugin API level 1 is an early contract and may change.
+loader or an integration with an external media runtime. Plugin API level 2 is an early contract and may change.
+The runtime accepts plugins targeting level 1 or 2; level 2 added spawning, removal and entity lifecycle hooks.
 
 ## Shape
 
@@ -12,7 +13,7 @@ A plugin is a plain object, usually the default export of an ES module:
 export default {
   name: "spin",                 // also the extension namespace
   version: "0.0.0",
-  pluginApi: 1,                 // the API level this plugin targets
+  pluginApi: 2,                 // the API level this plugin targets
   capabilities: ["world.read", "world.write"],
   configSchema: { type: "object", properties: { defaultSpeed: { type: "number" } } },
   extensionSchema: { type: "object", properties: { speed: { type: "number" } } },
@@ -40,15 +41,16 @@ The full working example is `examples/moon-hopper/plugins/spin.js`.
 ## Lifecycle
 
 `create(ctx, config)` runs when a runtime is created. Then `start()` runs once, `update(dt)` runs on every
-fixed tick after behaviors, `stop()` runs when play stops, and `dispose()` releases resources. Every hook
-is optional.
+fixed tick after behaviors, `stop()` runs when play stops, and `dispose()` releases resources. With API 2,
+`entityAdded(id)` runs for each spawned entity at the end of its spawn tick, and `entityRemoved(id)` runs for
+each removed entity, descendants included. Every hook is optional.
 
 ## Capabilities
 
 | Capability | Grants |
 | --- | --- |
 | `world.read` | `ctx.world.entities()`, `withExtension()`, `extension(id)`, `transform(id)`, `state(id, name)`, `active(id)` |
-| `world.write` | `ctx.world.setTransform(id, patch)`, `setState(id, name, value)`, `setActive(id, bool)` |
+| `world.write` | `ctx.world.setTransform(id, patch)`, `setState(id, name, value)`, `setActive(id, bool)`, `spawn(prefab)` (returns the id), `remove(id)` |
 | `events` | `ctx.events.on(name, listener)` (returns an unsubscribe function), `ctx.events.emit(name, value)` |
 | `input.read` | `ctx.input.get(name)` |
 

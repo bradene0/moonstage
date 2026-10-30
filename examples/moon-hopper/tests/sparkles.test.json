@@ -1,0 +1,31 @@
+{
+  "$schema": "../../../schemas/test.schema.json",
+  "format": 1,
+  "name": "sparkles fade out and remove themselves",
+  "ticks": 60,
+  "setup": [
+    {
+      "operation": "set_property",
+      "target": "crystal-1",
+      "property": "transform.position",
+      "value": [
+        800,
+        905
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "event": "collected",
+      "count": {
+        "equals": 1
+      }
+    },
+    {
+      "prefab": "sparkle",
+      "count": {
+        "equals": 0
+      }
+    }
+  ]
+}
