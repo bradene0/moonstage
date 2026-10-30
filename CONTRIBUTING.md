@@ -59,7 +59,8 @@ The project owner publishes releases; 0.1.0 is the first. For a new release:
 2. Set the versions in all three `package.json` files, including `@moonstage/core` / `@moonstage/player`
    dependency ranges. Keep the MoonBit SDK version in `packages/moonbit-sdk/moon.mod` in sync with the
    template's `moonstage/sdk@…` import.
-3. `npm run smoke:pack`, then publish in dependency order: `npm publish -w packages/core`,
+3. Add the release to `CHANGELOG.md`.
+4. `npm run smoke:pack`, then publish in dependency order: `npm publish -w packages/core`,
    `-w packages/player`, `-w packages/cli`. Each publish asks for two-factor authentication.
 
 The version policy and release automation are open decisions; see `docs/decisions.md`.

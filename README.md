@@ -105,6 +105,7 @@ dependency.
 - [docs/cli.md](docs/cli.md): commands, JSON output, exit codes and diagnostics.
 - [docs/decisions.md](docs/decisions.md): open project decisions.
 - [skills/](skills/): task procedures for agents (create a project, build a game, write a plugin, debug, test and render).
+- [CHANGELOG.md](CHANGELOG.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License

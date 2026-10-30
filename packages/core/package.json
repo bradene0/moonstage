@@ -1,6 +1,6 @@
 {
   "name": "@moonstage/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Moonstage core runtime: project model, validation, scenes, entities, behaviors (WebAssembly), plugins. No DOM, no Node, no dependencies.",
   "license": "MIT",
   "repository": {
