@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { gunzipSync } from "node:zlib";
 import { dirname, join, resolve } from "node:path";
 import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -320,13 +321,14 @@ describe("moonstage CLI", () => {
     assert.equal(r.code, 0, r.stdout);
     const html = readFileSync(output, "utf8");
     assert.doesNotMatch(html, /<script[^>]+src=|<link[^>]+href=/, "no external scripts or styles");
-    const modules = JSON.parse(/<script type="application\/json" id="moonstage-modules">([\s\S]*?)<\/script>/.exec(html)![1]!);
+    const packed = /<script type="application\/octet-stream" id="moonstage-modules">([^<]+)<\/script>/.exec(html)![1]!;
+    const modules = JSON.parse(gunzipSync(Buffer.from(packed.trim(), "base64")).toString("utf8"));
     assert.ok("core/index.js" in modules && "player/index.js" in modules && "core/schema/schemas.js" in modules);
     assert.ok(!Object.keys(modules).some((k) => k.endsWith(".test.js")));
     const game = /<script type="application\/octet-stream" id="moonstage-game">([^<]+)<\/script>/.exec(html)![1]!;
     const zip = Buffer.from(game.trim(), "base64");
     assert.equal(zip.readUInt32LE(0), 0x04034b50, "the game is an inlined .msp (ZIP)");
-    assert.ok(r.json.bytes < 400 * 1024, `single file stays small (${r.json.bytes} bytes)`);
+    assert.ok(r.json.bytes < 150 * 1024, `single file stays small (${r.json.bytes} bytes)`);
   });
 
   it("packs a project into an .msp that runs, validates and unpacks like the source", moon, () => {

@@ -43,6 +43,14 @@ versions so you can tell what moved.
 
 ### Changed
 
+- **From the first agent eval** (`evals/results/2026-10-30.md`):
+  - Physics stacks stay still with default settings: the engine warm-starts its solver and gives box
+    contacts per-point depth (an untouched 23-block tower now moves 0.2 px in 60 s instead of collapsing).
+  - `MS2018` warns when a behavior on a kinematic body keeps its own data in physics-owned `vx`/`vy`/`av`.
+  - `run --headless` and `render` take `--input-script` timelines; event counts are exact on long runs.
+  - `moonstage fmt` and `moonstage edit` write compact JSON (scenes about half as long).
+  - Single-file games are about half the size (runtime modules gzipped; Moon Hopper 211 → 108 KB).
+  - The MoonBit primer has a full `@sdk` table; `guide physics` documents solver settings and state names.
 - `ctx.world.setTransform` accepts the scene-file shape (`position: [x, y]`, `scale`) and throws `MS5003` on
   unknown keys or non-finite numbers. Previously `{ position: [...] }` was silently ignored, which broke the
   first game an outside agent built from the repo alone.

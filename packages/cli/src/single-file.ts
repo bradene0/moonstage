@@ -3,13 +3,14 @@
  * network and no other files. Useful for sharing, attaching to messages and
  * running inside chat or sandboxed preview widgets.
  *
- * The page carries the runtime's ES modules (core + player) as text and the
- * game as an .msp package (base64). A small inline loader turns the modules
+ * The page carries the runtime's ES modules (core + player) as gzipped JSON
+ * and the game as an .msp package, both base64. A small inline loader turns the modules
  * into blob: URLs in dependency order, rewriting their relative imports, and
  * hands the package bytes to `play()`.
  */
 
 import { readdir, readFile } from "node:fs/promises";
+import { gzipSync } from "node:zlib";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,7 +28,9 @@ async function moduleSources(prefix: string, dir: string, out: Record<string, st
 
 /** Runs in the page: blob-URL module loader, then play the inlined package. */
 const LOADER = `
-const sources = JSON.parse(document.getElementById("moonstage-modules").textContent);
+const decode = (id) => Uint8Array.from(atob(document.getElementById(id).textContent.trim()), (c) => c.charCodeAt(0));
+const gunzip = (bytes) => new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+const sources = JSON.parse(await gunzip(decode("moonstage-modules")));
 const urls = {};
 const SPECIFIER = /((?:import|export)\\s[^"';]*?from\\s*)(["'])([^"']+)\\2/g;
 function resolve(from, spec) {
@@ -52,15 +55,12 @@ function load(key, stack = new Set()) {
   stack.delete(key);
   return (urls[key] = URL.createObjectURL(new Blob([code], { type: "text/javascript" })));
 }
-const encoded = document.getElementById("moonstage-game").textContent.trim();
-const bytes = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
+const bytes = decode("moonstage-game");
 const { play } = await import(load("player/index.js"));
 await play("#game", bytes, { autofocus: true });
 `;
 
 const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
-/** JSON that is safe inside a <script> element. */
-const scriptJson = (value: unknown) => JSON.stringify(value).replace(/</g, "\\u003c");
 
 export async function singleFileHtml(name: string, display: { width?: number; height?: number }, msp: Uint8Array): Promise<string> {
   const sources: Record<string, string> = {};
@@ -80,7 +80,7 @@ export async function singleFileHtml(name: string, display: { width?: number; he
 </head>
 <body>
 <div id="game"></div>
-<script type="application/json" id="moonstage-modules">${scriptJson(sources)}</script>
+<script type="application/octet-stream" id="moonstage-modules">${gzipSync(JSON.stringify(sources), { level: 9 }).toString("base64")}</script>
 <script type="application/octet-stream" id="moonstage-game">${Buffer.from(msp).toString("base64")}</script>
 <script type="module">${LOADER}</script>
 </body>
