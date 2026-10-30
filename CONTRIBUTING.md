@@ -51,16 +51,15 @@ npm run smoke:pack   # pack, install the tarballs into a temp dir, run new/valid
 `npm pack` in `packages/cli` copies `packages/moonbit-sdk` into the package (`prepack`) and removes the
 copy afterwards (`postpack`). CI runs the smoke test on every push.
 
-## Publishing (not done yet)
+## Publishing
 
-Nothing has been published. When the project owner decides to publish:
+The project owner publishes releases; 0.1.0 is the first. For a new release:
 
-1. Create the `moonstage` npm organization, which owns the `@moonstage` scope. The unscoped `moonstage`
-   name is needed too.
+1. Make sure you have publish rights in the `moonstage` npm organization.
 2. Set the versions in all three `package.json` files, including `@moonstage/core` / `@moonstage/player`
    dependency ranges. Keep the MoonBit SDK version in `packages/moonbit-sdk/moon.mod` in sync with the
    template's `moonstage/sdk@…` import.
 3. `npm run smoke:pack`, then publish in dependency order: `npm publish -w packages/core`,
-   `-w packages/player`, `-w packages/cli`.
+   `-w packages/player`, `-w packages/cli`. Each publish asks for two-factor authentication.
 
 The version policy and release automation are open decisions; see `docs/decisions.md`.

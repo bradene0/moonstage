@@ -42,8 +42,19 @@ pub fn ms_update(entity : Int, dt : Double) -> Unit {
 
 You need Node.js 22 or newer and the [MoonBit toolchain](https://www.moonbitlang.com/download) (`moon`).
 
+Start a project from npm:
+
 ```bash
-git clone <this repository> moonstage && cd moonstage
+npx moonstage new my-game
+cd my-game
+npx moonstage test      # compile behaviors and run headless tests
+npx moonstage run       # play at http://localhost:5173
+```
+
+Or run the reference game from this repository:
+
+```bash
+git clone https://github.com/bradene0/moonstage.git && cd moonstage
 npm install
 npm run build
 node packages/cli/dist/main.js run examples/moon-hopper
@@ -57,14 +68,6 @@ Without a browser:
 node packages/cli/dist/main.js test examples/moon-hopper             # headless tests
 node packages/cli/dist/main.js render examples/moon-hopper --tick 120  # write a frame as SVG
 node packages/cli/dist/main.js run examples/moon-hopper --headless --ticks 600 --json
-```
-
-Once the packages are published, `npx moonstage new my-game` will work anywhere. Until then, use the CLI from
-this checkout. Create your own project:
-
-```bash
-node packages/cli/dist/main.js new my-game
-cd my-game && node ../packages/cli/dist/main.js run
 ```
 
 Every command accepts `--json`, and the exit codes are meaningful (see `moonstage describe`).
