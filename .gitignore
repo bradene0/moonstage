@@ -63,3 +63,8 @@ packages/*/dist/
 dist/
 # Headless render output.
 *.frame.svg
+
+# MoonBit SDK copied into the CLI package only while packing.
+packages/cli/moonbit-sdk/
+# Tarballs from `npm run pack`.
+.release/

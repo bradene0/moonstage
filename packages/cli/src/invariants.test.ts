@@ -47,6 +47,10 @@ describe("repository invariants", () => {
     assert.ok(!sources("packages/player/src").some((f) => /from "moonstage"/.test(read(f))));
   });
 
+  it("every package ships the root license", () => {
+    for (const pkg of ["core", "player", "cli"]) assert.equal(read(`packages/${pkg}/LICENSE`), read("LICENSE"), pkg);
+  });
+
   it("published schemas match the canonical schemas in core", () => {
     for (const [name, schema] of Object.entries(SCHEMAS)) {
       assert.deepEqual(json(`schemas/${name}.schema.json`), schema, `schemas/${name}.schema.json is stale; run npm run schemas`);

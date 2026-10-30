@@ -19,7 +19,9 @@
     "test": "npm run build && node --test \"packages/*/dist/**/*.test.js\"",
     "check": "npm test",
     "size": "npm run build && node scripts/size-report.mjs",
-    "schemas": "npm run build && node packages/cli/dist/main.js schemas --write"
+    "schemas": "npm run build && node packages/cli/dist/main.js schemas --write",
+    "pack": "npm run build && npm pack --workspaces --pack-destination .release",
+    "smoke:pack": "npm run build && node scripts/pack-smoke.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

@@ -6,6 +6,8 @@ silently by implementation work.
 - **Governance and ownership.** How decisions are made and who maintains which packages.
 - **Plugin registry and discovery.** Whether a registry exists, and if so, how plugins are listed and
   trusted. Today plugins are loaded by module path or package name only.
+- **npm publishing.** The names `moonstage` and `@moonstage/*` were free when checked. The `@moonstage`
+  scope needs an npm organization. Packaging is ready and tested (`npm run smoke:pack`).
 - **Release and versioning policy.** When packages are published, what compatibility promises are
   made, and how `projectFormat`, `pluginApi` and `behaviorAbi` evolve. Today none of these is stable.
 - **`.msp` package details.** ZIP-compatible is the current direction. The manifest layout, signing

@@ -59,7 +59,8 @@ node packages/cli/dist/main.js render examples/moon-hopper --tick 120  # write a
 node packages/cli/dist/main.js run examples/moon-hopper --headless --ticks 600 --json
 ```
 
-Create your own project:
+Once the packages are published, `npx moonstage new my-game` will work anywhere. Until then, use the CLI from
+this checkout. Create your own project:
 
 ```bash
 node packages/cli/dist/main.js new my-game

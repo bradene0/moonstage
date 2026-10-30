@@ -41,7 +41,26 @@ The easiest fixture is a scene plus a `tests/*.test.json` file in an example pro
 without MoonBit, build behaviors from JS with `jsBehavior()` from
 `packages/core/src/test-helpers.test.ts`.
 
-## Publishing (not set up yet)
+## Packaging
 
-Publishing the CLI needs `packages/moonbit-sdk` copied into `packages/cli/moonbit-sdk`. The CLI already
-looks there first. Release automation is an open decision; see `docs/decisions.md`.
+```bash
+npm run pack         # build, then write tarballs for all three packages to .release/
+npm run smoke:pack   # pack, install the tarballs into a temp dir, run new/validate/test/build there
+```
+
+`npm pack` in `packages/cli` copies `packages/moonbit-sdk` into the package (`prepack`) and removes the
+copy afterwards (`postpack`). CI runs the smoke test on every push.
+
+## Publishing (not done yet)
+
+Nothing has been published. When the project owner decides to publish:
+
+1. Create the `moonstage` npm organization, which owns the `@moonstage` scope. The unscoped `moonstage`
+   name is needed too.
+2. Set the versions in all three `package.json` files, including `@moonstage/core` / `@moonstage/player`
+   dependency ranges. Keep the MoonBit SDK version in `packages/moonbit-sdk/moon.mod` in sync with the
+   template's `moonstage/sdk@…` import.
+3. `npm run smoke:pack`, then publish in dependency order: `npm publish -w packages/core`,
+   `-w packages/player`, `-w packages/cli`.
+
+The version policy and release automation are open decisions; see `docs/decisions.md`.

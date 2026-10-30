@@ -3,6 +3,23 @@
   "version": "0.0.0",
   "description": "Moonstage command-line interface: create, validate, inspect, build, run, test and render Moonstage projects. Human- and agent-friendly (--json everywhere).",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bradene0/moonstage.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/bradene0/moonstage#readme",
+  "bugs": {
+    "url": "https://github.com/bradene0/moonstage/issues"
+  },
+  "keywords": [
+    "moonstage",
+    "game-engine",
+    "cli",
+    "moonbit",
+    "webassembly",
+    "agents"
+  ],
   "type": "module",
   "bin": {
     "moonstage": "./dist/main.js"
@@ -27,5 +44,9 @@
   "dependencies": {
     "@moonstage/core": "0.0.0",
     "@moonstage/player": "0.0.0"
+  },
+  "scripts": {
+    "prepack": "node ../../scripts/bundle-moonbit-sdk.mjs",
+    "postpack": "node ../../scripts/bundle-moonbit-sdk.mjs --clean"
   }
 }

@@ -26,5 +26,7 @@ jobs:
       - run: npm test
         env:
           MOONSTAGE_REQUIRE_MOON: "1"
+      - name: Pack and install smoke test
+        run: node scripts/pack-smoke.mjs
       - name: Size report
         run: node scripts/size-report.mjs >> "$GITHUB_STEP_SUMMARY"
