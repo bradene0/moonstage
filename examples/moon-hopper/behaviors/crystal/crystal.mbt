@@ -20,6 +20,7 @@ pub fn ms_update(entity : Int32, _dt : Double) -> Unit {
     return
   }
   @sdk.emit(event_collected, @sdk.param(param_value))
+  @sdk.play_sound(sound_chime, 0.6)
   let x = @sdk.x(entity)
   let y = @sdk.y(entity)
   let burst = @sdk.param(param_burst).to_int()

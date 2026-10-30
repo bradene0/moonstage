@@ -253,7 +253,8 @@ export const projectSchema: JsonSchema = {
           path: relativePath,
           type: {
             type: "string",
-            description: "'image' (default for .png/.jpg/.jpeg/.gif/.webp/.svg). Plugins may define other types.",
+            description:
+              "'image' (default for .png/.jpg/.jpeg/.gif/.webp/.svg), 'audio' (default for .ogg/.mp3/.wav/.m4a/.aac/.flac). Plugins may define other types.",
           },
           frame: {
             type: "object",
@@ -319,6 +320,8 @@ export const projectSchema: JsonSchema = {
         inputs: { ...nameList, description: "Input axes/buttons, read with input(slot)." },
         events: { ...nameList, description: "Events this module emits or receives." },
         prefabs: { ...nameList, description: "Prefabs this module can spawn, with spawn(slot)." },
+        scenes: { ...nameList, description: "Scenes this module can switch to, with load_scene(slot)." },
+        sounds: { ...nameList, description: "Audio assets this module can play, with play_sound(slot, volume)." },
       },
     },
     prefab: {
@@ -498,6 +501,23 @@ export const testSchema: JsonSchema = {
             target: id,
             property: { type: "string", description: "transform.position.x, transform.rotation, state.<name>, active" },
             ...comparison,
+          },
+        },
+        {
+          title: "scene assertion",
+          type: "object",
+          required: ["scene"],
+          additionalProperties: false,
+          properties: { scene: { ...id, description: "The scene that is current when the test ends." } },
+        },
+        {
+          title: "sound count assertion",
+          type: "object",
+          required: ["sound"],
+          additionalProperties: false,
+          properties: {
+            sound: { ...id, description: "Counts plays of this audio asset." },
+            count: { type: "object", additionalProperties: false, properties: comparison },
           },
         },
         {

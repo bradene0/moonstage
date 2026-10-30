@@ -23,6 +23,7 @@ export const CAPABILITIES = {
   "world.write": "Change transforms, state and active flags.",
   events: "Subscribe to and emit events.",
   "input.read": "Read named inputs.",
+  audio: "Play sound assets (API 3).",
 } as const;
 
 export type Capability = keyof typeof CAPABILITIES;
@@ -61,6 +62,8 @@ export interface PluginContext {
     spawn(prefab: string): string;
     /** API 2: remove an entity and its descendants at the end of the tick. Needs world.write. */
     remove(id: string): void;
+    /** API 3: switch scenes at the end of the tick. Needs world.write. */
+    loadScene(scene: string): void;
   };
   readonly events: {
     on(name: string, listener: (event: EventRecord) => void): () => void;
@@ -68,6 +71,10 @@ export interface PluginContext {
     emit(name: string, value?: number, source?: string): void;
   };
   readonly input: { get(name: string): number };
+  /** API 3: play a sound asset at volume 0..1. Needs the "audio" capability. */
+  readonly audio: { play(asset: string, volume?: number): void };
+  /** API 3: id of the current scene. On a scene switch, plugins get stop() then start(). */
+  readonly scene: string;
   readonly time: { readonly tick: number; readonly elapsed: number; readonly dt: number };
   /** API 2: seeded random number in [0, 1), shared with behaviors. Use it instead of Math.random(). */
   random(): number;

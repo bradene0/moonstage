@@ -50,6 +50,13 @@ in order:
 5. Settle the lifecycle: run `ms_start` and plugin `entityAdded` for entities spawned during the tick, then
    remove entities marked for removal (plugin `entityRemoved`).
 
+A scene switch (`load_scene`, or a plugin's `ctx.world.loadScene`) also happens at step 5. The world is rebuilt
+from the new scene's source, behaviors start fresh, and plugins are stopped and started; module instances,
+the random generator and simulation time carry over.
+
+Core never plays audio. `play_sound` records a request (`Runtime.sounds`, `drainSounds()`), and the platform plays it.
+Button presses latch until the end of the next tick, so taps shorter than a tick are not lost.
+
 Spawned entities exist immediately, so the spawner can position them, but they are only started at step 5
 and first updated on the next tick. Entity handles are never reused, so a stale handle can never reach a
 different entity.
@@ -108,6 +115,7 @@ too.
 
 - Built-in renderables are shapes, text and image sprites (with sprite sheets). There is no tinting,
   nine-slice or texture atlas packing yet.
+- Audio is fire-and-forget sound effects; there is no music streaming, mixing or spatial audio yet.
 - Physics is a provider plugin boundary ([docs/physics.md](docs/physics.md)). The only provider shipped is a
   small reference one in `examples/physics-playground`.
 - Plugins in the browser bundle must be project-local files. Bare package specifiers need an import map.

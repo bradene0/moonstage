@@ -2,6 +2,7 @@
   "$schema": "../../../schemas/test.schema.json",
   "format": 1,
   "name": "touching a crystal scores a point, bursts into sparkles, shakes the camera and respawns the crystal",
+  "scene": "main",
   "ticks": 2,
   "setup": [
     {
@@ -41,6 +42,12 @@
       "target": "crystal-1",
       "property": "transform.position.y",
       "lte": 1000
+    },
+    {
+      "sound": "chime",
+      "count": {
+        "equals": 1
+      }
     }
   ]
 }

@@ -8,9 +8,22 @@ import type { ProjectManifest } from "./project.js";
 
 export class InputState {
   private readonly values = new Map<string, number>();
+  /** Buttons pressed since the last tick ended; they read as 1 for one tick even if already released. */
+  private readonly latched = new Set<string>();
 
   get(name: string): number {
-    return this.values.get(name) ?? 0;
+    const value = this.values.get(name) ?? 0;
+    return this.latched.has(name) ? Math.max(value, 1) : value;
+  }
+
+  /** Make a button read as pressed through the next tick, so taps shorter than a tick are not lost. */
+  latch(name: string): void {
+    this.latched.add(name);
+  }
+
+  /** Called by the runtime after each tick. */
+  endTick(): void {
+    this.latched.clear();
   }
 
   set(name: string, value: number): void {
@@ -19,6 +32,7 @@ export class InputState {
 
   reset(): void {
     this.values.clear();
+    this.latched.clear();
   }
 
   toJSON(): Record<string, number> {
@@ -50,6 +64,9 @@ export class KeyBindings {
 
   press(code: string): void {
     this.down.add(code);
+    for (const [name, keys] of Object.entries(this.manifest.input?.buttons ?? {})) {
+      if (keys.includes(code)) this.input.latch(name);
+    }
     this.sync();
   }
 

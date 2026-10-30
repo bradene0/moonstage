@@ -16,11 +16,15 @@ pub fn input(Int32) -> Double
 
 pub fn is_active(Int32) -> Bool
 
+pub fn load_scene(Int32) -> Unit
+
 pub fn log(Double) -> Unit
 
 pub let no_entity : Int32
 
 pub fn param(Int32) -> Double
+
+pub fn play_sound(Int32, Double) -> Unit
 
 pub fn random() -> Double
 

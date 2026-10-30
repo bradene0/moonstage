@@ -129,7 +129,7 @@
           },
           "type": {
             "type": "string",
-            "description": "'image' (default for .png/.jpg/.jpeg/.gif/.webp/.svg). Plugins may define other types."
+            "description": "'image' (default for .png/.jpg/.jpeg/.gif/.webp/.svg), 'audio' (default for .ogg/.mp3/.wav/.m4a/.aac/.flac). Plugins may define other types."
           },
           "frame": {
             "type": "object",
@@ -304,6 +304,24 @@
             "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
           },
           "description": "Prefabs this module can spawn, with spawn(slot)."
+        },
+        "scenes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+            "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+          },
+          "description": "Scenes this module can switch to, with load_scene(slot)."
+        },
+        "sounds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+            "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+          },
+          "description": "Audio assets this module can play, with play_sound(slot, volume)."
         }
       }
     },

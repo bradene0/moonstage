@@ -69,6 +69,17 @@ export interface Snapshot {
   entities: Record<string, { active: boolean; transform: Transform; state: Record<string, number>; prefab?: string }>;
 }
 
+/** A sound a behavior or plugin asked to play. Platforms play it; core only records it. */
+export interface SoundRequest {
+  tick: number;
+  /** Asset id. */
+  asset: string;
+  /** 0..1 */
+  volume: number;
+  /** Entity that asked, or null for plugins. */
+  source: string | null;
+}
+
 interface BehaviorBinding {
   module: string;
   exports: BehaviorExports;
@@ -90,9 +101,11 @@ const MAX_LIFECYCLE_ROUNDS = 8;
 
 export class Runtime {
   readonly manifest: ProjectManifest;
-  readonly sceneId: string;
-  readonly scene: SceneSource;
-  readonly world: World;
+  /** Current scene id; changes when a scene switch completes. */
+  sceneId: string;
+  scene: SceneSource;
+  world: World;
+  private readonly project: LoadedProject;
   readonly input = new InputState();
   readonly tickRate: number;
   readonly dt: number;
@@ -103,6 +116,13 @@ export class Runtime {
   readonly events: EventRecord[] = [];
   /** Values passed to the behavior `log` host function. */
   readonly logs: { tick: number; entity: string; value: number }[] = [];
+  /** Every sound requested, oldest first (capped). Platforms play them; tests count them. */
+  readonly sounds: SoundRequest[] = [];
+  /** Scenes entered, including the first, with the tick they started at. */
+  readonly sceneHistory: { tick: number; scene: string }[] = [];
+  private unplayed: SoundRequest[] = [];
+  private pendingScene: string | undefined;
+  private switchesThisTick = 0;
 
   tick = 0;
   elapsed = 0;
@@ -122,6 +142,7 @@ export class Runtime {
 
   private constructor(project: LoadedProject, options: RuntimeOptions) {
     this.manifest = project.manifest;
+    this.project = project;
     this.sceneId = options.scene ?? project.manifest.entryScene;
     const scene = options.sceneSource ?? project.scenes[this.sceneId];
     if (scene === undefined) {
@@ -133,6 +154,7 @@ export class Runtime {
     this.dt = 1 / this.tickRate;
     this.random = createRandom(options.seed ?? project.manifest.simulation?.seed ?? 1);
     this.maxEventRounds = options.maxEventRounds ?? 8;
+    this.sceneHistory.push({ tick: 0, scene: this.sceneId });
   }
 
   /** Create a runtime: instantiate behaviors and plugins for the chosen scene. */
@@ -149,6 +171,7 @@ export class Runtime {
     // Modules used by scene entities, plus any a prefab could bring in at runtime.
     const used = new Set([
       ...this.world.entities.flatMap((e) => behaviorsOf(e.components).map((b) => b.module)),
+      ...Object.values(project.scenes).flatMap((s) => s.entities.flatMap((e) => behaviorsOf(e.components).map((b) => b.module))),
       ...Object.values(project.manifest.prefabs ?? {}).flatMap((p) => behaviorsOf(p.components).map((b) => b.module)),
     ]);
     const problems: Diagnostic[] = [];
@@ -249,6 +272,9 @@ export class Runtime {
         this.removing.add(entity);
       },
       entity_exists: (entity) => (this.exists(entity) ? 1 : 0),
+      load_scene: (slot) => this.requestScene(this.slotName(iface.scenes, slot, "scene")),
+      play_sound: (slot, volume) =>
+        this.playSound(this.slotName(iface.sounds, slot, "sound"), volume, this.world.get(this.current)?.id ?? null),
     };
   }
 
@@ -258,6 +284,26 @@ export class Runtime {
 
   private badSlot(kind: string, slot: number): never {
     throw new Error(`invalid ${kind} slot ${slot}`);
+  }
+
+  /** Switch scenes at the end of the current tick. The last request in a tick wins. */
+  private requestScene(scene: string): void {
+    if (this.project.scenes[scene] === undefined) throw new Error(`scene "${scene}" is not loaded`);
+    this.pendingScene = scene;
+  }
+
+  private playSound(asset: string, volume: number, source: string | null): void {
+    if (this.manifest.assets?.[asset] === undefined) throw new Error(`unknown sound asset "${asset}"`);
+    const request = { tick: this.tick, asset, volume: Math.max(0, Math.min(1, volume)), source };
+    if (this.sounds.length < MAX_LOGGED_EVENTS) this.sounds.push(request);
+    this.unplayed.push(request);
+  }
+
+  /** Sounds requested since the last call. Platforms call this after advancing and play them. */
+  drainSounds(): SoundRequest[] {
+    const out = this.unplayed;
+    this.unplayed = [];
+    return out;
   }
 
   /** Spawn a prefab now; it is started at the end of the tick. */
@@ -339,6 +385,12 @@ export class Runtime {
         return this.spawn(prefab).id;
       },
       remove: (id: string) => void this.removing.add(entity(id).handle),
+      loadScene: (scene: string) => {
+        if (this.project.scenes[scene] === undefined) {
+          throw new MoonstageError([diagnostic("MS2004", `scene "${scene}" is not loaded`)]);
+        }
+        this.pendingScene = scene;
+      },
     });
     const rt = this;
     return {
@@ -354,6 +406,17 @@ export class Runtime {
         emit: (event: string, value = 0, source?: string) => this.queueEvent(event, source ?? null, value),
       }),
       input: gate(name, granted, "input.read", { get: (input: string) => this.input.get(input) }),
+      audio: gate(name, granted, "audio", {
+        play: (asset: string, volume = 1) => {
+          if (this.manifest.assets?.[asset] === undefined) {
+            throw new MoonstageError([diagnostic("MS2017", `sound asset "${asset}" is not declared`)]);
+          }
+          this.playSound(asset, volume, null);
+        },
+      }),
+      get scene() {
+        return rt.sceneId;
+      },
       time: {
         get tick() {
           return rt.tick;
@@ -425,12 +488,14 @@ export class Runtime {
     this.start();
     this.tick += 1;
     this.elapsed = this.tick * this.dt;
+    this.switchesThisTick = 0;
     this.world.snapshotPrevious();
     // Entities spawned during this tick are not updated until the next one.
     this.eachBinding([...this.world.entities], (h, b) => this.call(h, b, () => b.exports.ms_update(h, this.dt)));
     for (const p of this.plugins) p.instance.update?.(this.dt);
     this.dispatchEvents();
     this.settleLifecycle();
+    this.input.endTick();
   }
 
   /** Start entities spawned this tick, then remove entities marked for removal. */
@@ -454,6 +519,44 @@ export class Runtime {
         for (const p of this.plugins) p.instance.entityRemoved?.(e.id);
       }
     }
+    if (this.pendingScene !== undefined) {
+      if (this.switchesThisTick >= MAX_LIFECYCLE_ROUNDS) {
+        this.diagnostics.push(diagnostic("MS3004", `scene switches did not settle within one tick (last: "${this.pendingScene}")`));
+        this.pendingScene = undefined;
+        return;
+      }
+      this.switchesThisTick += 1;
+      this.switchScene(this.pendingScene);
+    }
+  }
+
+
+  /**
+   * Replace the world with a fresh copy of `scene`. Behaviors start again
+   * (ms_start), plugins are stopped and started, pending events are dropped.
+   * Module instances and the random generator carry over.
+   */
+  private switchScene(sceneId: string): void {
+    this.pendingScene = undefined;
+    for (const p of this.plugins) p.instance.stop?.();
+    for (const e of this.world.entities) for (const p of this.plugins) p.instance.entityRemoved?.(e.id);
+    this.bindings.clear();
+    this.removing.clear();
+    this.spawned = [];
+    this.pending = [];
+    this.sceneId = sceneId;
+    this.scene = this.project.scenes[sceneId]!;
+    this.world = new World(this.scene);
+    for (const e of this.world.entities) {
+      e.born = this.tick;
+      this.bind(e);
+    }
+    this.sceneHistory.push({ tick: this.tick, scene: sceneId });
+    this.eachBinding([...this.world.entities], (h, b) => this.call(h, b, () => b.exports.ms_start(h)));
+    for (const p of this.plugins) p.instance.start?.();
+    this.dispatchEvents();
+    // A scene's own start may spawn or switch again; settle once more.
+    if (this.spawned.length > 0 || this.removing.size > 0) this.settleLifecycle();
   }
 
   /**

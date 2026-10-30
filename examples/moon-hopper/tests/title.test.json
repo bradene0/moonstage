@@ -1,0 +1,29 @@
+{
+  "$schema": "../../../schemas/test.schema.json",
+  "format": 1,
+  "name": "pressing thrust on the title screen starts the game",
+  "ticks": 10,
+  "input": [
+    {
+      "tick": 5,
+      "set": {
+        "thrust": 1
+      }
+    }
+  ],
+  "expect": [
+    {
+      "scene": "main"
+    },
+    {
+      "target": "lander",
+      "property": "transform.position.y",
+      "lt": 901
+    },
+    {
+      "target": "score",
+      "property": "state.points",
+      "equals": 0
+    }
+  ]
+}

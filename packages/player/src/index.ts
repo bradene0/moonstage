@@ -20,7 +20,10 @@ import {
   type ProjectManifest,
   type Renderer,
 } from "@moonstage/core";
+import { SoundPlayer } from "./audio.js";
 import { CanvasRenderer, type ImageMap } from "./canvas-renderer.js";
+
+export { SoundPlayer } from "./audio.js";
 
 export { CanvasRenderer, type ImageMap } from "./canvas-renderer.js";
 
@@ -108,7 +111,10 @@ export async function play(target: string | HTMLElement, src: string | URL, opti
     showDiagnostics(host, loaded.diagnostics);
     throw new PlayerLoadError(loaded.diagnostics);
   }
-  const { images, diagnostics: imageProblems } = await loadImages(loaded.project.manifest, projectUrl(src));
+  const [{ images, diagnostics: imageProblems }, sounds] = await Promise.all([
+    loadImages(loaded.project.manifest, projectUrl(src)),
+    SoundPlayer.load(loaded.project.manifest, projectUrl(src)),
+  ]);
   if (imageProblems.length > 0) {
     showDiagnostics(host, imageProblems);
     throw new PlayerLoadError(imageProblems);
@@ -135,6 +141,7 @@ export async function play(target: string | HTMLElement, src: string | URL, opti
 
   const keys = new KeyBindings(loaded.project.manifest, runtime.input);
   const onKeyDown = (e: KeyboardEvent) => {
+    sounds.unlock();
     if (!keys.handles(e.code)) return;
     e.preventDefault();
     keys.press(e.code);
@@ -146,7 +153,10 @@ export async function play(target: string | HTMLElement, src: string | URL, opti
   canvas.addEventListener("keydown", onKeyDown);
   canvas.addEventListener("keyup", onKeyUp);
   canvas.addEventListener("blur", onBlur);
-  canvas.addEventListener("pointerdown", () => canvas.focus());
+  canvas.addEventListener("pointerdown", () => {
+    sounds.unlock();
+    canvas.focus();
+  });
   if (options.autofocus) canvas.focus();
 
   let frameId = 0;
@@ -157,6 +167,7 @@ export async function play(target: string | HTMLElement, src: string | URL, opti
     const dt = last === 0 ? 0 : Math.min(0.25, (now - last) / 1000);
     last = now;
     const alpha = runtime.advance(dt);
+    sounds.play(runtime.drainSounds());
     renderer.render(runtime.frame(alpha));
     frameId = requestAnimationFrame(loop);
   };
@@ -188,6 +199,7 @@ export async function play(target: string | HTMLElement, src: string | URL, opti
       runtime.stop();
       runtime.dispose();
       renderer.dispose?.();
+      sounds.dispose();
     },
   };
 }

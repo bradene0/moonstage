@@ -2,11 +2,32 @@
   "$schema": "../../../schemas/test.schema.json",
   "format": 1,
   "name": "holding thrust lifts the lander and lights the flame",
+  "scene": "main",
   "ticks": 60,
-  "input": [{ "tick": 0, "set": { "thrust": 1 } }],
+  "input": [
+    {
+      "tick": 0,
+      "set": {
+        "thrust": 1
+      }
+    }
+  ],
   "expect": [
-    { "target": "lander", "property": "transform.position.y", "lt": 900 },
-    { "target": "lander", "property": "transform.position.x", "approx": 800, "tolerance": 0.001 },
-    { "target": "flame", "property": "active", "equals": true }
+    {
+      "target": "lander",
+      "property": "transform.position.y",
+      "lt": 900
+    },
+    {
+      "target": "lander",
+      "property": "transform.position.x",
+      "approx": 800,
+      "tolerance": 0.001
+    },
+    {
+      "target": "flame",
+      "property": "active",
+      "equals": true
+    }
   ]
 }

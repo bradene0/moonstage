@@ -55,6 +55,7 @@ export const DIAGNOSTIC_CODES = {
   MS2014: { title: "Unknown prefab", hint: "Declare the prefab under `prefabs` in moonstage.json." },
   MS2015: { title: "Invalid sprite asset", hint: "Declare the image under `assets` in moonstage.json and check frame indices." },
   MS2016: { title: "Invalid physics setup", hint: "Joints must target another entity; physics components need a plugin that provides \"physics\"." },
+  MS2017: { title: "Invalid sound", hint: "Declare the sound under `assets` with an audio file (.ogg, .mp3, .wav, ...) or type \"audio\"." },
   MS3001: { title: "Behavior not built", hint: "Run `moonstage build` to compile behaviors." },
   MS3002: { title: "Behavior ABI mismatch", hint: "Rebuild the behavior against a compatible Moonstage SDK." },
   MS3003: { title: "Behavior export missing", hint: "Behaviors must export ms_abi_version, ms_start, ms_update and ms_event." },

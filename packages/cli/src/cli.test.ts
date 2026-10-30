@@ -81,7 +81,7 @@ describe("moonstage CLI", () => {
     const out = join(scratch, "bundle");
     const r = cli("build", example, "--out", out, "--json");
     assert.equal(r.code, 0, r.stdout);
-    assert.deepEqual(r.json.behaviors.map((b: { name: string }) => b.name).sort(), ["camera", "crystal", "lander", "pulse", "score", "sparkle"]);
+    assert.deepEqual(r.json.behaviors.map((b: { name: string }) => b.name).sort(), ["camera", "crystal", "lander", "pulse", "score", "sparkle", "title"]);
     const html = readFileSync(join(out, "index.html"), "utf8");
     assert.match(html, /<moonstage-player src="\.\/game\/"/);
     readFileSync(join(out, "game", ".moonstage", "behaviors", "lander.wasm"));
@@ -93,7 +93,7 @@ describe("moonstage CLI", () => {
     const r = cli("test", example, "--json");
     assert.equal(r.code, 0, r.stdout);
     assert.equal(r.json.failed, 0);
-    assert.equal(r.json.passed, 4);
+    assert.equal(r.json.passed, 5);
   });
 
   it("runs the physics example through its reference provider", moon, () => {
@@ -104,8 +104,15 @@ describe("moonstage CLI", () => {
     assert.equal(cli("plugin", "check", join(physics, "plugins", "arcade-physics.js"), "--json").code, 0);
   });
 
+  it("switches from the title scene and plays sounds headlessly", moon, () => {
+    const r = cli("run", example, "--headless", "--ticks", "20", "--input", '{"thrust":1}', "--json", "--no-build");
+    assert.equal(r.code, 0, r.stdout);
+    assert.deepEqual(r.json.scenes.map((s: { scene: string }) => s.scene), ["title", "main"]);
+    assert.equal(r.json.scene, "main");
+  });
+
   it("simulates headlessly and deterministically", moon, () => {
-    const args = ["run", example, "--headless", "--ticks", "240", "--seed", "3", "--input", '{"thrust":1}', "--json"];
+    const args = ["run", example, "--headless", "--scene", "main", "--ticks", "240", "--seed", "3", "--input", '{"thrust":1}', "--json"];
     const a = cli(...args);
     const b = cli(...args, "--no-build");
     assert.equal(a.code, 0, a.stdout);
@@ -117,7 +124,7 @@ describe("moonstage CLI", () => {
 
   it("renders a frame to SVG", moon, () => {
     const output = join(scratch, "frame.svg");
-    const r = cli("render", example, "--tick", "30", "--output", output, "--json", "--no-build");
+    const r = cli("render", example, "--scene", "main", "--tick", "30", "--output", output, "--json", "--no-build");
     assert.equal(r.code, 0, r.stdout);
     assert.equal(r.json.tick, 30);
     const svg = readFileSync(output, "utf8");

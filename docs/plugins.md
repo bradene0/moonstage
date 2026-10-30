@@ -50,19 +50,21 @@ knows which services the project has. Physics providers follow [physics.md](phys
 `create(ctx, config)` runs when a runtime is created. Then `start()` runs once, `update(dt)` runs on every
 fixed tick after behaviors, `stop()` runs when play stops, and `dispose()` releases resources. With API 2,
 `entityAdded(id)` runs for each spawned entity at the end of its spawn tick, and `entityRemoved(id)` runs for
-each removed entity, descendants included. Every hook is optional.
+each removed entity, descendants included. When the scene switches, plugins get `stop()`, `entityRemoved` for
+every entity of the old scene, and then `start()` in the new one. Every hook is optional.
 
 ## Capabilities
 
 | Capability | Grants |
 | --- | --- |
 | `world.read` | `ctx.world.entities()`, `withExtension()`, `extension(id)`, `transform(id)`, `state(id, name)`, `active(id)`, and with API 3 `component(id, name)`, `handle(id)`, `parent(id)` |
-| `world.write` | `ctx.world.setTransform(id, patch)`, `setState(id, name, value)`, `setActive(id, bool)`, `spawn(prefab)` (returns the id), `remove(id)` |
+| `world.write` | `ctx.world.setTransform(id, patch)`, `setState(id, name, value)`, `setActive(id, bool)`, `spawn(prefab)` (returns the id), `remove(id)`, and with API 3 `loadScene(id)` |
 | `events` | `ctx.events.on(name, listener)` (returns an unsubscribe function), `ctx.events.emit(name, value, source?)` (API 3: `source` is an entity id) |
 | `input.read` | `ctx.input.get(name)` |
+| `audio` | API 3: `ctx.audio.play(asset, volume)` |
 
 `ctx.time` (`tick`, `elapsed`, `dt`), `ctx.random()` (seeded, API 2) and `ctx.project` (`name`, `display`,
-`simulation`, `physics`; API 3) are always available. Use
+`simulation`, `physics`; API 3) and `ctx.scene` (the current scene id; API 3) are always available. Use
 `ctx.random()` instead of `Math.random()` so runs stay reproducible. Calling a method whose capability was not declared
 throws `MS4003`.
 

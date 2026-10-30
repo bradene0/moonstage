@@ -1,4 +1,4 @@
-// MoonBit bindings for Moonstage Behavior ABI 2.
+// MoonBit bindings for Moonstage Behavior ABI 3.
 //
 // A behavior package imports this SDK and exports four functions:
 //
@@ -14,7 +14,7 @@
 
 ///|
 /// ABI version implemented by this SDK. Return it from `ms_abi_version`.
-pub let abi_version : Int32 = 2
+pub let abi_version : Int32 = 3
 
 ///|
 /// Handle value meaning "no entity" (e.g. an unset ref).
@@ -67,6 +67,12 @@ fn host_remove(entity : Int32) -> Unit = "moonstage" "remove"
 
 ///|
 fn host_entity_exists(entity : Int32) -> Int32 = "moonstage" "entity_exists"
+
+///|
+fn host_load_scene(scene : Int32) -> Unit = "moonstage" "load_scene"
+
+///|
+fn host_play_sound(sound : Int32, volume : Double) -> Unit = "moonstage" "play_sound"
 
 // Transform fields, in ABI order: x, y, rotation, scale_x, scale_y.
 // Positions are pixels (y grows downward), rotation is radians (clockwise),
@@ -238,4 +244,17 @@ pub fn clamp(value : Double, lo : Double, hi : Double) -> Double {
   } else {
     value
   }
+}
+
+///|
+/// Switch to scene `slot` (index in the module's `scenes` list) at the end of
+/// this tick. Every behavior in the new scene starts fresh.
+pub fn load_scene(scene : Int32) -> Unit {
+  host_load_scene(scene)
+}
+
+///|
+/// Play sound `slot` (index in the module's `sounds` list) at volume 0..1.
+pub fn play_sound(sound : Int32, volume : Double) -> Unit {
+  host_play_sound(sound, volume)
 }

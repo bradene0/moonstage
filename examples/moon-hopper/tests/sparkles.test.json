@@ -2,6 +2,7 @@
   "$schema": "../../../schemas/test.schema.json",
   "format": 1,
   "name": "sparkles fade out and remove themselves",
+  "scene": "main",
   "ticks": 60,
   "setup": [
     {

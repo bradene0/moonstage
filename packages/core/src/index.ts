@@ -24,6 +24,7 @@ export {
   inputNames,
   behaviorsOf,
   isImageAsset,
+  isAudioAsset,
   TEXT_BINDING,
   type ProjectManifest,
   type BehaviorModuleDecl,
@@ -76,7 +77,7 @@ export {
   type PluginContext,
   type PluginInstance,
 } from "./plugin.js";
-export { Runtime, type LoadedProject, type RuntimeOptions, type Snapshot } from "./runtime.js";
+export { Runtime, type LoadedProject, type RuntimeOptions, type Snapshot, type SoundRequest } from "./runtime.js";
 export {
   buildFrame,
   spriteFrame,

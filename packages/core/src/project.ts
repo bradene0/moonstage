@@ -43,6 +43,13 @@ export interface AssetDecl {
 
 const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|webp|svg)$/i;
 
+const AUDIO_EXTENSIONS = /\.(ogg|mp3|wav|m4a|aac|flac)$/i;
+
+/** True for assets platforms play as sounds. */
+export function isAudioAsset(asset: AssetDecl): boolean {
+  return asset.type === "audio" || (asset.type === undefined && AUDIO_EXTENSIONS.test(asset.path));
+}
+
 /** True for assets the built-in renderers draw as images. */
 export function isImageAsset(asset: AssetDecl): boolean {
   return asset.type === "image" || (asset.type === undefined && IMAGE_EXTENSIONS.test(asset.path));
@@ -62,6 +69,8 @@ export interface BehaviorModuleDecl {
   inputs?: string[];
   events?: string[];
   prefabs?: string[];
+  scenes?: string[];
+  sounds?: string[];
 }
 
 export interface TransformComponent {
@@ -202,6 +211,8 @@ export type Comparison = {
 export type Assertion =
   | { event: string; count?: Comparison }
   | { prefab: string; count?: Comparison }
+  | { scene: string }
+  | { sound: string; count?: Comparison }
   | ({ target: string; property: string } & Comparison)
   | { target: string; exists: boolean };
 
@@ -303,6 +314,27 @@ export function validateProjectSemantics(
 
   const prefabs = manifest.prefabs ?? {};
   for (const [name, decl] of Object.entries(behaviors)) {
+    for (const scene of decl.scenes ?? []) {
+      if (!(scene in manifest.scenes)) {
+        out.push(
+          diagnostic("MS2004", `behaviors.${name}.scenes: "${scene}" is not declared in scenes`, {
+            file: "moonstage.json",
+            path: `behaviors.${name}.scenes`,
+          }),
+        );
+      }
+    }
+    for (const sound of decl.sounds ?? []) {
+      const asset = manifest.assets?.[sound];
+      if (asset === undefined || !isAudioAsset(asset)) {
+        out.push(
+          diagnostic("MS2017", `behaviors.${name}.sounds: "${sound}" is not an audio asset`, {
+            file: "moonstage.json",
+            path: `behaviors.${name}.sounds`,
+          }),
+        );
+      }
+    }
     for (const prefab of decl.prefabs ?? []) {
       if (!(prefab in prefabs)) {
         out.push(

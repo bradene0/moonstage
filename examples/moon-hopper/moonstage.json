@@ -3,8 +3,9 @@
   "format": 1,
   "name": "moon-hopper",
   "description": "Pilot a small lander around a moon base and collect crystals. Reference project for Moonstage.",
-  "entryScene": "main",
+  "entryScene": "title",
   "scenes": {
+    "title": "scenes/title.scene.json",
     "main": "scenes/main.scene.json"
   },
   "display": {
@@ -47,9 +48,22 @@
         "count": 4
       },
       "pixelated": true
+    },
+    "chime": {
+      "path": "assets/chime.wav"
     }
   },
   "behaviors": {
+    "title": {
+      "description": "Starts the game when thrust is pressed.",
+      "source": "behaviors/title",
+      "inputs": [
+        "thrust"
+      ],
+      "scenes": [
+        "main"
+      ]
+    },
     "lander": {
       "description": "Player ship: turn, thrust, gravity, bounce off the world bounds.",
       "source": "behaviors/lander",
@@ -95,6 +109,9 @@
       ],
       "prefabs": [
         "sparkle"
+      ],
+      "sounds": [
+        "chime"
       ]
     },
     "pulse": {

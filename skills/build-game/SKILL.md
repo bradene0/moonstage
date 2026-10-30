@@ -29,6 +29,8 @@ Work in small verified steps. Never hand off a project that you have not validat
      (`self` is reserved).
    - Keep per-entity data in `state`. Communicate between entities with `refs` and `events`.
    - Compose: `"behavior"` can be a list of small behaviors that share state.
+   - Switch scenes (title, levels, game over) with `@sdk.load_scene(scene_x)` and play sound effects with
+     `@sdk.play_sound(sound_x, volume)`; declare them in the module's `scenes` / `sounds` lists.
    - Spawn bullets, particles and enemies from `prefabs` with `@sdk.spawn_at(prefab_x, x, y)`, and clean up
      with `@sdk.remove`. Check `@sdk.exists(handle)` before using a handle kept in state.
    - Use only `@sdk.random()` for randomness.

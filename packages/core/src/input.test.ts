@@ -23,6 +23,18 @@ describe("key bindings", () => {
   });
 });
 
+describe("button latching", () => {
+  it("keeps a tap shorter than a tick visible for one tick", () => {
+    const input = new InputState();
+    const keys = new KeyBindings(manifest({ input: { buttons: { jump: ["Space"] } } }), input);
+    keys.press("Space");
+    keys.release("Space");
+    assert.equal(input.get("jump"), 1, "tap between ticks still reads as pressed");
+    input.endTick();
+    assert.equal(input.get("jump"), 0);
+  });
+});
+
 describe("random", () => {
   it("is reproducible per seed and in [0, 1)", () => {
     const a = createRandom(9);

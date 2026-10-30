@@ -94,10 +94,10 @@ describe("runtime", () => {
     rt.step();
     assert.equal(rt.diagnostics.length, 0);
     await assert.rejects(
-      Runtime.create(project(moverScene, { manifest: moverManifest, behaviors: { mover: minimalWasm(3) } })),
+      Runtime.create(project(moverScene, { manifest: moverManifest, behaviors: { mover: minimalWasm(4) } })),
       (err: MoonstageError) => err.diagnostics[0]!.code === "MS3002",
     );
-    // ABI 1 modules keep working: ABI 2 only added imports.
+    // Older modules keep working: each ABI version only added imports.
     await Runtime.create(project(moverScene, { manifest: moverManifest, behaviors: { mover: minimalWasm(1) } }));
     await assert.rejects(
       Runtime.create(project(moverScene, { manifest: moverManifest, behaviors: { mover: new Uint8Array([1, 2, 3]) } })),
@@ -497,5 +497,72 @@ describe("plugin API 3", () => {
     assert.deepEqual(seen, ["loaded:true", "gravity:0,500", 'body:{"type":"dynamic","mass":2}', "handle:0:-1", "parent:box:null"]);
     assert.deepEqual(rt.events.map((e) => [e.name, e.source, e.value]), [["hit", "box", 1]]);
     assert.equal(rt.logs[0]!.value, 0 * 100 + 1, "behaviors receive the source entity's handle");
+  });
+});
+
+describe("scene switching and sounds (ABI 3)", () => {
+  const m = manifest({
+    scenes: { a: "a.json", b: "b.json" },
+    entryScene: "a",
+    assets: { beep: { path: "beep.wav" } },
+    behaviors: {
+      go: { wasm: "go.wasm", scenes: ["b"], sounds: ["beep"], state: ["n"] },
+      count: { wasm: "c.wasm", state: ["n"] },
+    },
+    plugins: { watch: { module: "./watch.js" } },
+  });
+  const a: SceneSource = { format: 1, entities: [{ id: "switcher", components: { behavior: { module: "go" } } }] };
+  const b: SceneSource = { format: 1, entities: [{ id: "counter", components: { behavior: { module: "count" }, sprite: { asset: "beep" } } }] };
+  // At tick 3: beep, then switch to b.
+  const go = jsBehavior((h) => ({
+    ms_update(self) {
+      const n = h.state_get(self, 0) + 1;
+      h.state_set(self, 0, n);
+      if (n === 3) {
+        h.play_sound(0, 2);
+        h.load_scene(0);
+      }
+    },
+  }));
+  const count = jsBehavior((h) => ({ ms_start: (self) => h.state_set(self, 0, 100), ms_update: (self) => h.state_set(self, 0, h.state_get(self, 0) + 1) }));
+
+  it("switches at the end of the tick, restarts behaviors and plugins, and records sounds", async () => {
+    const log: string[] = [];
+    const watch = definePlugin({
+      name: "watch",
+      version: "0",
+      pluginApi: 3,
+      capabilities: ["world.read", "audio"],
+      create: (ctx) => ({
+        start: () => log.push(`start:${ctx.scene}:${ctx.world.entities().join(",")}`),
+        stop: () => log.push(`stop:${ctx.scene}`),
+        entityRemoved: (id) => log.push(`removed:${id}`),
+        update: () => ctx.time.tick === 5 && ctx.audio.play("beep", 0.5),
+      }),
+    });
+    const rt = await Runtime.create({ manifest: m, scenes: { a, b }, behaviors: { go, count }, plugins: { watch } });
+    for (let i = 0; i < 3; i++) rt.step();
+    assert.equal(rt.sceneId, "b");
+    assert.equal(rt.read("counter", "state.n"), 100, "new scene started, not yet updated");
+    assert.equal(rt.read("switcher", "state.n"), undefined);
+    rt.step();
+    assert.equal(rt.read("counter", "state.n"), 101);
+    assert.equal(rt.world.byStableId("counter")!.born, 3);
+    rt.step();
+    assert.deepEqual(log, ["start:a:switcher", "stop:a", "removed:switcher", "start:b:counter"]);
+    assert.deepEqual(rt.sceneHistory, [{ tick: 0, scene: "a" }, { tick: 3, scene: "b" }]);
+    assert.deepEqual(rt.sounds.map((s) => [s.tick, s.asset, s.volume, s.source]), [[3, "beep", 1, "switcher"], [5, "beep", 0.5, null]]);
+    assert.equal(rt.drainSounds().length, 2);
+    assert.equal(rt.drainSounds().length, 0, "drained sounds are not returned again");
+  });
+
+  it("supports scene and sound assertions in tests", async () => {
+    const result = await runTest({ manifest: m, scenes: { a, b }, behaviors: { go, count }, plugins: { watch: definePlugin({ name: "watch", version: "0", pluginApi: 3, capabilities: [], create: () => {} }) } }, {
+      format: 1,
+      name: "switch",
+      ticks: 4,
+      expect: [{ scene: "b" }, { sound: "beep", count: { equals: 1 } }],
+    });
+    assert.equal(result.passed, true, JSON.stringify(result.diagnostics));
   });
 });

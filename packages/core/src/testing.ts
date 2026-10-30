@@ -46,6 +46,13 @@ export function checkAssertion(rt: Runtime, a: Assertion, index: number, file?: 
     const count = rt.events.filter((e) => e.name === a.event).length;
     return compare(count, a.count ?? { gte: 1 }).map((m) => fail(`event "${a.event}" count: ${m}`));
   }
+  if ("scene" in a) {
+    return rt.sceneId === a.scene ? [] : [fail(`expected scene "${a.scene}", current scene is "${rt.sceneId}"`)];
+  }
+  if ("sound" in a) {
+    const count = rt.sounds.filter((s) => s.asset === a.sound).length;
+    return compare(count, a.count ?? { gte: 1 }).map((m) => fail(`sound "${a.sound}" plays: ${m}`));
+  }
   if ("prefab" in a) {
     const count = rt.countSpawned(a.prefab);
     return compare(count, a.count ?? { gte: 1 }).map((m) => fail(`live "${a.prefab}" entities: ${m}`));

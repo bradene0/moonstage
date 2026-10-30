@@ -41,6 +41,9 @@ A project is a folder. All paths are relative to the project root. The canonical
   }
   ```
 
+  Audio files (`.ogg`, `.mp3`, `.wav`, `.m4a`, `.aac`, `.flac`, or `"type": "audio"`) are sounds that behaviors
+  list under `sounds` and play with `play_sound`.
+
   `frame` describes a sprite sheet of equal-size frames, numbered left to right, top to bottom.
   `pixelated` turns off smoothing when scaled, for pixel art.
 
@@ -107,6 +110,9 @@ exactly the frame a player would.
 - `setup` is a list of scene operations applied before loading.
 - `input` changes start at the given tick and are held until changed.
 - `{ "prefab": … }` counts live entities spawned from that prefab.
+- `{ "scene": "main" }` checks the scene that is current at the end.
+- `{ "sound": "chime", "count": { … } }` counts plays of a sound.
+- `scene` in a test picks the starting scene (default: `entryScene`).
 - `property` accepts these paths: `transform.position.x` / `.y`, `transform.rotation`, `transform.scale.x` / `.y`,
   `state.<name>` and `active`.
 - Comparisons: `equals`, `approx` with `tolerance`, `gt`, `gte`, `lt` and `lte`.

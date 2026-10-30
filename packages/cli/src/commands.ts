@@ -632,6 +632,10 @@ export async function runCommand(opts: {
       ticks: rt.tick,
       simulatedSeconds: rt.elapsed,
       eventCounts,
+      soundCounts: Object.fromEntries(
+        [...new Set(rt.sounds.map((s) => s.asset))].map((a) => [a, rt.sounds.filter((s) => s.asset === a).length]),
+      ),
+      scenes: rt.sceneHistory,
       events: rt.events.slice(0, 200),
       logs: rt.logs.slice(0, 200),
       snapshot,
@@ -639,6 +643,8 @@ export async function runCommand(opts: {
     lines: [
       `simulated ${rt.tick} ticks (${rt.elapsed.toFixed(2)}s) of scene "${rt.sceneId}" with seed ${rt.random.seed}`,
       `events: ${Object.entries(eventCounts).map(([n, c]) => `${n}×${c}`).join(", ") || "none"}`,
+      ...(rt.sceneHistory.length > 1 ? [`scenes: ${rt.sceneHistory.map((s) => `${s.scene}@${s.tick}`).join(" → ")}`] : []),
+      ...(rt.sounds.length > 0 ? [`sounds played: ${rt.sounds.length}`] : []),
       ...(rt.diagnostics.length > 0 ? [`${rt.diagnostics.length} runtime problem(s)`] : []),
       "Use --json for the full snapshot.",
     ],

@@ -1,0 +1,154 @@
+{
+  "$schema": "../../../schemas/scene.schema.json",
+  "format": 1,
+  "entities": [
+    {
+      "id": "starter",
+      "components": {
+        "behavior": {
+          "module": "title"
+        }
+      }
+    },
+    {
+      "id": "logo",
+      "components": {
+        "transform": {
+          "position": [
+            400,
+            220
+          ]
+        },
+        "text": {
+          "value": "MOON HOPPER",
+          "size": 56,
+          "fill": "#e8ecff",
+          "align": "center"
+        }
+      }
+    },
+    {
+      "id": "prompt",
+      "components": {
+        "transform": {
+          "position": [
+            400,
+            300
+          ]
+        },
+        "text": {
+          "value": "Press Space or ↑ to start",
+          "size": 20,
+          "fill": "#8f9bd9",
+          "align": "center"
+        }
+      }
+    },
+    {
+      "id": "lander",
+      "components": {
+        "transform": {
+          "position": [
+            400,
+            400
+          ],
+          "scale": [
+            2,
+            2
+          ]
+        },
+        "shape": {
+          "kind": "polygon",
+          "points": [
+            [
+              0,
+              -18
+            ],
+            [
+              14,
+              14
+            ],
+            [
+              0,
+              8
+            ],
+            [
+              -14,
+              14
+            ]
+          ],
+          "fill": "#e8ecff",
+          "stroke": "#9aa7ff",
+          "strokeWidth": 1.5
+        },
+        "behavior": {
+          "module": "pulse",
+          "params": {
+            "speed": 2,
+            "amount": 0.08
+          }
+        }
+      }
+    },
+    {
+      "id": "crystal",
+      "components": {
+        "transform": {
+          "position": [
+            560,
+            400
+          ]
+        },
+        "sprite": {
+          "asset": "crystal",
+          "size": [
+            40,
+            40
+          ],
+          "animation": {
+            "fps": 8
+          }
+        }
+      }
+    },
+    {
+      "id": "ring",
+      "components": {
+        "transform": {
+          "position": [
+            240,
+            400
+          ]
+        },
+        "shape": {
+          "kind": "polygon",
+          "points": [
+            [
+              -30,
+              0
+            ],
+            [
+              0,
+              -30
+            ],
+            [
+              30,
+              0
+            ],
+            [
+              0,
+              30
+            ]
+          ],
+          "stroke": "#8f9bd9",
+          "strokeWidth": 2
+        }
+      },
+      "extensions": {
+        "spin": {
+          "speed": 1
+        }
+      }
+    }
+  ]
+}
