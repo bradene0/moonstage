@@ -4,36 +4,19 @@
   "name": "a ball that touches the bucket is caught, counted and removed, but the cart is not",
   "ticks": 60,
   "setup": [
-    {
-      "operation": "remove_entity",
-      "target": "dropper"
-    },
+    { "operation": "remove_entity", "target": "dropper" },
     {
       "operation": "add_entity",
       "entity": {
         "id": "probe",
         "components": {
-          "transform": {
-            "position": [
-              730,
-              380
-            ]
-          },
-          "physicsBody": {
-            "type": "dynamic"
-          },
-          "collider": {
-            "shape": "circle",
-            "radius": 10
-          },
+          "transform": { "position": [730, 380] },
+          "physicsBody": { "type": "dynamic" },
+          "collider": { "shape": "circle", "radius": 10 },
           "behavior": {
             "module": "ball",
-            "params": {
-              "floorY": 700
-            },
-            "refs": {
-              "bucket": "bucket"
-            }
+            "params": { "floorY": 700 },
+            "refs": { "bucket": "bucket" }
           }
         }
       }
@@ -42,25 +25,12 @@
       "operation": "set_property",
       "target": "cart",
       "property": "transform.position",
-      "value": [
-        730,
-        520
-      ]
+      "value": [730, 520]
     }
   ],
   "expect": [
-    {
-      "target": "bucket",
-      "property": "state.count",
-      "equals": 1
-    },
-    {
-      "target": "probe",
-      "exists": false
-    },
-    {
-      "target": "cart",
-      "exists": true
-    }
+    { "target": "bucket", "property": "state.count", "equals": 1 },
+    { "target": "probe", "exists": false },
+    { "target": "cart", "exists": true }
   ]
 }

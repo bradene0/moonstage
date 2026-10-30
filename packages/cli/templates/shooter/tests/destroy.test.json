@@ -2,9 +2,7 @@
   "format": 1,
   "name": "bullets destroy enemies and score points",
   "ticks": 240,
-  "saves": {
-    "best": 0
-  },
+  "saves": { "best": 0 },
   "setup": [
     {
       "operation": "set_property",
@@ -19,34 +17,11 @@
       "value": 240
     }
   ],
-  "input": [
-    {
-      "tick": 0,
-      "set": {
-        "fire": 1
-      }
-    }
-  ],
+  "input": [{ "tick": 0, "set": { "fire": 1 } }],
   "expect": [
-    {
-      "event": "destroyed",
-      "count": {
-        "gte": 1
-      }
-    },
-    {
-      "target": "score",
-      "property": "state.points",
-      "gte": 1
-    },
-    {
-      "save": "best",
-      "gte": 1
-    },
-    {
-      "target": "ship",
-      "property": "state.lives",
-      "equals": 3
-    }
+    { "event": "destroyed", "count": { "gte": 1 } },
+    { "target": "score", "property": "state.points", "gte": 1 },
+    { "save": "best", "gte": 1 },
+    { "target": "ship", "property": "state.lives", "equals": 3 }
   ]
 }

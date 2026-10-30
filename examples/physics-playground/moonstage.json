@@ -4,102 +4,41 @@
   "name": "physics-playground",
   "description": "Balls roll down tilted ledges; drive the cart to push them into the bucket. Uses @moonstage/physics (a MoonBit engine).",
   "entryScene": "main",
-  "scenes": {
-    "main": "scenes/main.scene.json"
-  },
-  "display": {
-    "width": 800,
-    "height": 600,
-    "background": "#101826"
-  },
-  "simulation": {
-    "tickRate": 60,
-    "seed": 3
-  },
-  "physics": {
-    "gravity": [
-      0,
-      900
-    ]
-  },
+  "scenes": { "main": "scenes/main.scene.json" },
+  "display": { "width": 800, "height": 600, "background": "#101826" },
+  "simulation": { "tickRate": 60, "seed": 3 },
+  "physics": { "gravity": [0, 900] },
   "input": {
-    "axes": {
-      "move": {
-        "negative": [
-          "ArrowLeft",
-          "KeyA"
-        ],
-        "positive": [
-          "ArrowRight",
-          "KeyD"
-        ]
-      }
-    },
-    "buttons": {
-      "jump": [
-        "ArrowUp",
-        "KeyW",
-        "Space"
-      ]
-    }
+    "axes": { "move": { "negative": ["ArrowLeft", "KeyA"], "positive": ["ArrowRight", "KeyD"] } },
+    "buttons": { "jump": ["ArrowUp", "KeyW", "Space"] }
   },
   "behaviors": {
     "dropper": {
       "description": "Spawns balls at random x positions.",
       "source": "behaviors/dropper",
-      "params": [
-        "interval",
-        "maxBalls",
-        "minX",
-        "maxX"
-      ],
-      "state": [
-        "timer",
-        "dropped"
-      ],
-      "prefabs": [
-        "ball"
-      ]
+      "params": ["interval", "maxBalls", "minX", "maxX"],
+      "state": ["timer", "dropped"],
+      "prefabs": ["ball"]
     },
     "cart": {
       "description": "Player cart, driven through physics velocity state.",
       "source": "behaviors/cart",
-      "params": [
-        "speed",
-        "jump"
-      ],
-      "state": [
-        "vx",
-        "vy"
-      ],
-      "inputs": [
-        "move",
-        "jump"
-      ]
+      "params": ["speed", "jump"],
+      "state": ["vx", "vy"],
+      "inputs": ["move", "jump"]
     },
     "bucket": {
       "description": "Counts balls that report being caught.",
       "source": "behaviors/bucket",
-      "state": [
-        "count"
-      ],
-      "events": [
-        "caught"
-      ]
+      "state": ["count"],
+      "events": ["caught"]
     },
     "ball": {
       "description": "Gets caught by touching the bucket; removes itself when it falls out of the world.",
       "source": "behaviors/ball",
-      "params": [
-        "floorY"
-      ],
-      "refs": [
-        "bucket"
-      ],
-      "events": [
-        "collision",
-        "caught"
-      ]
+      "params": ["floorY"],
+      "refs": ["bucket"],
+      "events": ["collision", "caught"]
     }
   },
   "prefabs": {
@@ -112,23 +51,12 @@
           "stroke": "#fde68a",
           "strokeWidth": 1
         },
-        "physicsBody": {
-          "type": "dynamic"
-        },
-        "collider": {
-          "shape": "circle",
-          "radius": 10,
-          "restitution": 0.5,
-          "friction": 0.2
-        },
+        "physicsBody": { "type": "dynamic" },
+        "collider": { "shape": "circle", "radius": 10, "restitution": 0.5, "friction": 0.2 },
         "behavior": {
           "module": "ball",
-          "params": {
-            "floorY": 700
-          },
-          "refs": {
-            "bucket": "bucket"
-          }
+          "params": { "floorY": 700 },
+          "refs": { "bucket": "bucket" }
         }
       }
     }
@@ -136,10 +64,7 @@
   "plugins": {
     "@moonstage/physics": {
       "module": "@moonstage/physics",
-      "config": {
-        "substeps": 4,
-        "iterations": 8
-      }
+      "config": { "substeps": 4, "iterations": 8 }
     }
   }
 }

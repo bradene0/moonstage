@@ -44,6 +44,7 @@ import {
   type TestResult,
 } from "@moonstage/core";
 import { runtimeFiles, serve, writeBundle } from "./bundle.js";
+import { formatJson } from "./json-format.js";
 import { singleFileHtml } from "./single-file.js";
 import { writeZip } from "./zip.js";
 import { buildMoonbitBehaviors, findMoon } from "./moonbit.js";
@@ -84,6 +85,11 @@ export const COMMANDS: CommandSpec[] = [
     name: "render",
     summary: "Simulate to a tick and write that frame as SVG.",
     usage: "moonstage render [dir] [--tick <n>] [--scene <id>] [--seed <n>] [--input <json>] [--input-script <json|file>] [--output <file|->] [--no-build] [--json]",
+  },
+  {
+    name: "fmt",
+    summary: "Format the project's JSON compactly (short arrays and objects on one line).",
+    usage: "moonstage fmt [dir] [--check] [--json]",
   },
   {
     name: "guide",
@@ -172,6 +178,47 @@ export function describe(): CommandResult {
       "",
       "Use --json for the full machine-readable description.",
     ],
+  });
+}
+
+// ---------------------------------------------------------------- fmt
+
+/** Reformat a project's JSON files (manifest, scenes, tests) compactly. With check, only report. */
+export async function fmt(opts: { dir?: string; check?: boolean }): Promise<CommandResult> {
+  const { root, diagnostics: rootIssues } = projectRoot(opts.dir);
+  if (rootIssues.length > 0) return result({ diagnostics: rootIssues, exitCode: EXIT.usage });
+  if (isPackage(root)) return readOnlyPackage(root);
+  const manifest = JSON.parse(await readFile(join(root, "moonstage.json"), "utf8")) as ProjectManifest;
+  const testDir = join(root, "tests");
+  const tests = existsSync(testDir) ? (await readdir(testDir)).filter((n) => n.endsWith(".test.json")).map((n) => `tests/${n}`) : [];
+  const files = ["moonstage.json", ...Object.values(manifest.scenes), ...tests];
+  const changed: { file: string; before: number; after: number }[] = [];
+  const diagnostics: Diagnostic[] = [];
+  for (const file of files) {
+    const path = join(root, file);
+    if (!existsSync(path)) continue;
+    const text = await readFile(path, "utf8");
+    let formatted: string;
+    try {
+      formatted = formatJson(JSON.parse(text));
+    } catch (err) {
+      diagnostics.push(diagnostic("MS1002", `${file}: ${(err as Error).message}`, { file }));
+      continue;
+    }
+    if (formatted === text) continue;
+    changed.push({ file, before: text.split("\n").length, after: formatted.split("\n").length });
+    if (!opts.check) await writeFile(path, formatted);
+  }
+  const ok = !hasErrors(diagnostics) && !(opts.check && changed.length > 0);
+  return result({
+    ok,
+    exitCode: ok ? EXIT.ok : EXIT.failure,
+    diagnostics,
+    data: { root, changed, checked: files.length },
+    lines:
+      changed.length === 0
+        ? [`${files.length} file(s) already formatted`]
+        : changed.map((c) => `${opts.check ? "would format" : "formatted"} ${c.file} (${c.before} -> ${c.after} lines)`),
   });
 }
 
@@ -612,7 +659,7 @@ export async function editScene(opts: {
   ];
   const ok = !hasErrors(diagnostics);
   const write = ok && !opts.dryRun;
-  if (write) await writeFile(join(root, file), `${JSON.stringify(after, null, 2)}\n`);
+  if (write) await writeFile(join(root, file), formatJson(after));
   const ids = (s: SceneSource) => new Set(s.entities.map((e) => e.id));
   const [old, now] = [ids(before), ids(after)];
   return result({

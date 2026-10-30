@@ -5,445 +5,144 @@
     {
       "id": "camera",
       "components": {
-        "transform": {
-          "position": [
-            450,
-            270
-          ]
-        },
-        "camera": {
-          "zoom": 1
-        },
+        "transform": { "position": [450, 270] },
+        "camera": { "zoom": 1 },
         "behavior": {
           "module": "camera",
-          "params": {
-            "follow": 5,
-            "minX": 450,
-            "maxX": 1550
-          },
-          "refs": {
-            "target": "player"
-          }
+          "params": { "follow": 5, "minX": 450, "maxX": 1550 },
+          "refs": { "target": "player" }
         }
       }
     },
     {
       "id": "ground",
       "components": {
-        "transform": {
-          "position": [
-            1000,
-            520
-          ]
-        },
-        "shape": {
-          "kind": "rect",
-          "size": [
-            2000,
-            40
-          ],
-          "fill": "#334155"
-        },
-        "collider": {
-          "shape": "box",
-          "size": [
-            2000,
-            40
-          ],
-          "friction": 0.8
-        }
+        "transform": { "position": [1000, 520] },
+        "shape": { "kind": "rect", "size": [2000, 40], "fill": "#334155" },
+        "collider": { "shape": "box", "size": [2000, 40], "friction": 0.8 }
       }
     },
     {
       "id": "platform-1",
       "components": {
-        "transform": {
-          "position": [
-            480,
-            410
-          ],
-          "rotation": 0
-        },
-        "shape": {
-          "kind": "rect",
-          "size": [
-            200,
-            20
-          ],
-          "fill": "#475569"
-        },
-        "collider": {
-          "shape": "box",
-          "size": [
-            200,
-            20
-          ],
-          "friction": 0.8
-        }
+        "transform": { "position": [480, 410], "rotation": 0 },
+        "shape": { "kind": "rect", "size": [200, 20], "fill": "#475569" },
+        "collider": { "shape": "box", "size": [200, 20], "friction": 0.8 }
       }
     },
     {
       "id": "platform-2",
       "components": {
-        "transform": {
-          "position": [
-            780,
-            330
-          ],
-          "rotation": -0.2
-        },
-        "shape": {
-          "kind": "rect",
-          "size": [
-            180,
-            20
-          ],
-          "fill": "#475569"
-        },
-        "collider": {
-          "shape": "box",
-          "size": [
-            180,
-            20
-          ],
-          "friction": 0.8
-        }
+        "transform": { "position": [780, 330], "rotation": -0.2 },
+        "shape": { "kind": "rect", "size": [180, 20], "fill": "#475569" },
+        "collider": { "shape": "box", "size": [180, 20], "friction": 0.8 }
       }
     },
     {
       "id": "platform-3",
       "components": {
-        "transform": {
-          "position": [
-            1080,
-            260
-          ],
-          "rotation": 0
-        },
-        "shape": {
-          "kind": "rect",
-          "size": [
-            200,
-            20
-          ],
-          "fill": "#475569"
-        },
-        "collider": {
-          "shape": "box",
-          "size": [
-            200,
-            20
-          ],
-          "friction": 0.8
-        }
+        "transform": { "position": [1080, 260], "rotation": 0 },
+        "shape": { "kind": "rect", "size": [200, 20], "fill": "#475569" },
+        "collider": { "shape": "box", "size": [200, 20], "friction": 0.8 }
       }
     },
     {
       "id": "platform-4",
       "components": {
-        "transform": {
-          "position": [
-            1420,
-            360
-          ],
-          "rotation": 0
-        },
-        "shape": {
-          "kind": "rect",
-          "size": [
-            260,
-            20
-          ],
-          "fill": "#475569"
-        },
-        "collider": {
-          "shape": "box",
-          "size": [
-            260,
-            20
-          ],
-          "friction": 0.8
-        }
+        "transform": { "position": [1420, 360], "rotation": 0 },
+        "shape": { "kind": "rect", "size": [260, 20], "fill": "#475569" },
+        "collider": { "shape": "box", "size": [260, 20], "friction": 0.8 }
       }
     },
     {
       "id": "coin-1",
       "components": {
-        "transform": {
-          "position": [
-            480,
-            370
-          ]
-        },
+        "transform": { "position": [480, 370] },
         "shape": {
           "kind": "polygon",
-          "points": [
-            [
-              0,
-              -10
-            ],
-            [
-              8,
-              0
-            ],
-            [
-              0,
-              10
-            ],
-            [
-              -8,
-              0
-            ]
-          ],
+          "points": [[0, -10], [8, 0], [0, 10], [-8, 0]],
           "fill": "#facc15",
           "stroke": "#fef08a",
           "strokeWidth": 1
         },
-        "collider": {
-          "shape": "circle",
-          "radius": 10,
-          "sensor": true
-        },
-        "behavior": {
-          "module": "coin",
-          "params": {
-            "value": 1
-          },
-          "refs": {
-            "player": "player"
-          }
-        }
+        "collider": { "shape": "circle", "radius": 10, "sensor": true },
+        "behavior": { "module": "coin", "params": { "value": 1 }, "refs": { "player": "player" } }
       }
     },
     {
       "id": "coin-2",
       "components": {
-        "transform": {
-          "position": [
-            780,
-            280
-          ]
-        },
+        "transform": { "position": [780, 280] },
         "shape": {
           "kind": "polygon",
-          "points": [
-            [
-              0,
-              -10
-            ],
-            [
-              8,
-              0
-            ],
-            [
-              0,
-              10
-            ],
-            [
-              -8,
-              0
-            ]
-          ],
+          "points": [[0, -10], [8, 0], [0, 10], [-8, 0]],
           "fill": "#facc15",
           "stroke": "#fef08a",
           "strokeWidth": 1
         },
-        "collider": {
-          "shape": "circle",
-          "radius": 10,
-          "sensor": true
-        },
-        "behavior": {
-          "module": "coin",
-          "params": {
-            "value": 1
-          },
-          "refs": {
-            "player": "player"
-          }
-        }
+        "collider": { "shape": "circle", "radius": 10, "sensor": true },
+        "behavior": { "module": "coin", "params": { "value": 1 }, "refs": { "player": "player" } }
       }
     },
     {
       "id": "coin-3",
       "components": {
-        "transform": {
-          "position": [
-            1080,
-            220
-          ]
-        },
+        "transform": { "position": [1080, 220] },
         "shape": {
           "kind": "polygon",
-          "points": [
-            [
-              0,
-              -10
-            ],
-            [
-              8,
-              0
-            ],
-            [
-              0,
-              10
-            ],
-            [
-              -8,
-              0
-            ]
-          ],
+          "points": [[0, -10], [8, 0], [0, 10], [-8, 0]],
           "fill": "#facc15",
           "stroke": "#fef08a",
           "strokeWidth": 1
         },
-        "collider": {
-          "shape": "circle",
-          "radius": 10,
-          "sensor": true
-        },
-        "behavior": {
-          "module": "coin",
-          "params": {
-            "value": 1
-          },
-          "refs": {
-            "player": "player"
-          }
-        }
+        "collider": { "shape": "circle", "radius": 10, "sensor": true },
+        "behavior": { "module": "coin", "params": { "value": 1 }, "refs": { "player": "player" } }
       }
     },
     {
       "id": "coin-4",
       "components": {
-        "transform": {
-          "position": [
-            1420,
-            320
-          ]
-        },
+        "transform": { "position": [1420, 320] },
         "shape": {
           "kind": "polygon",
-          "points": [
-            [
-              0,
-              -10
-            ],
-            [
-              8,
-              0
-            ],
-            [
-              0,
-              10
-            ],
-            [
-              -8,
-              0
-            ]
-          ],
+          "points": [[0, -10], [8, 0], [0, 10], [-8, 0]],
           "fill": "#facc15",
           "stroke": "#fef08a",
           "strokeWidth": 1
         },
-        "collider": {
-          "shape": "circle",
-          "radius": 10,
-          "sensor": true
-        },
-        "behavior": {
-          "module": "coin",
-          "params": {
-            "value": 1
-          },
-          "refs": {
-            "player": "player"
-          }
-        }
+        "collider": { "shape": "circle", "radius": 10, "sensor": true },
+        "behavior": { "module": "coin", "params": { "value": 1 }, "refs": { "player": "player" } }
       }
     },
     {
       "id": "coin-5",
       "components": {
-        "transform": {
-          "position": [
-            1750,
-            470
-          ]
-        },
+        "transform": { "position": [1750, 470] },
         "shape": {
           "kind": "polygon",
-          "points": [
-            [
-              0,
-              -10
-            ],
-            [
-              8,
-              0
-            ],
-            [
-              0,
-              10
-            ],
-            [
-              -8,
-              0
-            ]
-          ],
+          "points": [[0, -10], [8, 0], [0, 10], [-8, 0]],
           "fill": "#facc15",
           "stroke": "#fef08a",
           "strokeWidth": 1
         },
-        "collider": {
-          "shape": "circle",
-          "radius": 10,
-          "sensor": true
-        },
-        "behavior": {
-          "module": "coin",
-          "params": {
-            "value": 1
-          },
-          "refs": {
-            "player": "player"
-          }
-        }
+        "collider": { "shape": "circle", "radius": 10, "sensor": true },
+        "behavior": { "module": "coin", "params": { "value": 1 }, "refs": { "player": "player" } }
       }
     },
     {
       "id": "player",
       "components": {
-        "transform": {
-          "position": [
-            120,
-            470
-          ]
-        },
+        "transform": { "position": [120, 470] },
         "shape": {
           "kind": "rect",
-          "size": [
-            28,
-            40
-          ],
+          "size": [28, 40],
           "fill": "#38bdf8",
           "stroke": "#e0f2fe",
           "strokeWidth": 1.5,
           "layer": 2
         },
-        "physicsBody": {
-          "type": "dynamic",
-          "fixedRotation": true,
-          "mass": 10
-        },
-        "collider": {
-          "shape": "box",
-          "size": [
-            28,
-            40
-          ],
-          "friction": 0
-        },
+        "physicsBody": { "type": "dynamic", "fixedRotation": true, "mass": 10 },
+        "collider": { "shape": "box", "size": [28, 40], "friction": 0 },
         "behavior": {
           "module": "player",
           "params": {
@@ -457,26 +156,11 @@
         }
       }
     },
-    {
-      "id": "score",
-      "components": {
-        "behavior": {
-          "module": "score",
-          "state": {
-            "points": 0
-          }
-        }
-      }
-    },
+    { "id": "score", "components": { "behavior": { "module": "score", "state": { "points": 0 } } } },
     {
       "id": "hud",
       "components": {
-        "transform": {
-          "position": [
-            20,
-            34
-          ]
-        },
+        "transform": { "position": [20, 34] },
         "text": {
           "value": "Coins {score.points}   Best {score.best}",
           "size": 22,
@@ -489,12 +173,7 @@
     {
       "id": "help",
       "components": {
-        "transform": {
-          "position": [
-            450,
-            528
-          ]
-        },
+        "transform": { "position": [450, 528] },
         "text": {
           "value": "← → run   Space / ↑ jump",
           "size": 13,

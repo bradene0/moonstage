@@ -6,36 +6,19 @@
     {
       "id": "camera",
       "components": {
-        "transform": {
-          "position": [
-            800,
-            900
-          ]
-        },
-        "camera": {
-          "zoom": 1
-        },
+        "transform": { "position": [800, 900] },
+        "camera": { "zoom": 1 },
         "behavior": {
           "module": "camera",
-          "params": {
-            "follow": 4,
-            "shake": 14
-          },
-          "refs": {
-            "target": "lander"
-          }
+          "params": { "follow": 4, "shake": 14 },
+          "refs": { "target": "lander" }
         }
       }
     },
     {
       "id": "star-1",
       "components": {
-        "transform": {
-          "position": [
-            120,
-            140
-          ]
-        },
+        "transform": { "position": [120, 140] },
         "shape": {
           "kind": "circle",
           "radius": 1.5,
@@ -48,12 +31,7 @@
     {
       "id": "star-2",
       "components": {
-        "transform": {
-          "position": [
-            380,
-            60
-          ]
-        },
+        "transform": { "position": [380, 60] },
         "shape": {
           "kind": "circle",
           "radius": 2.5,
@@ -66,12 +44,7 @@
     {
       "id": "star-3",
       "components": {
-        "transform": {
-          "position": [
-            660,
-            210
-          ]
-        },
+        "transform": { "position": [660, 210] },
         "shape": {
           "kind": "circle",
           "radius": 3.5,
@@ -84,12 +57,7 @@
     {
       "id": "star-4",
       "components": {
-        "transform": {
-          "position": [
-            940,
-            90
-          ]
-        },
+        "transform": { "position": [940, 90] },
         "shape": {
           "kind": "circle",
           "radius": 1.5,
@@ -102,12 +70,7 @@
     {
       "id": "star-5",
       "components": {
-        "transform": {
-          "position": [
-            1210,
-            160
-          ]
-        },
+        "transform": { "position": [1210, 160] },
         "shape": {
           "kind": "circle",
           "radius": 2.5,
@@ -120,12 +83,7 @@
     {
       "id": "star-6",
       "components": {
-        "transform": {
-          "position": [
-            1480,
-            70
-          ]
-        },
+        "transform": { "position": [1480, 70] },
         "shape": {
           "kind": "circle",
           "radius": 3.5,
@@ -138,12 +96,7 @@
     {
       "id": "star-7",
       "components": {
-        "transform": {
-          "position": [
-            240,
-            420
-          ]
-        },
+        "transform": { "position": [240, 420] },
         "shape": {
           "kind": "circle",
           "radius": 1.5,
@@ -156,12 +109,7 @@
     {
       "id": "star-8",
       "components": {
-        "transform": {
-          "position": [
-            720,
-            480
-          ]
-        },
+        "transform": { "position": [720, 480] },
         "shape": {
           "kind": "circle",
           "radius": 2.5,
@@ -174,12 +122,7 @@
     {
       "id": "star-9",
       "components": {
-        "transform": {
-          "position": [
-            1100,
-            380
-          ]
-        },
+        "transform": { "position": [1100, 380] },
         "shape": {
           "kind": "circle",
           "radius": 3.5,
@@ -192,12 +135,7 @@
     {
       "id": "star-10",
       "components": {
-        "transform": {
-          "position": [
-            1400,
-            520
-          ]
-        },
+        "transform": { "position": [1400, 520] },
         "shape": {
           "kind": "circle",
           "radius": 1.5,
@@ -210,12 +148,7 @@
     {
       "id": "star-11",
       "components": {
-        "transform": {
-          "position": [
-            90,
-            760
-          ]
-        },
+        "transform": { "position": [90, 760] },
         "shape": {
           "kind": "circle",
           "radius": 2.5,
@@ -228,12 +161,7 @@
     {
       "id": "star-12",
       "components": {
-        "transform": {
-          "position": [
-            520,
-            700
-          ]
-        },
+        "transform": { "position": [520, 700] },
         "shape": {
           "kind": "circle",
           "radius": 3.5,
@@ -246,12 +174,7 @@
     {
       "id": "star-13",
       "components": {
-        "transform": {
-          "position": [
-            980,
-            680
-          ]
-        },
+        "transform": { "position": [980, 680] },
         "shape": {
           "kind": "circle",
           "radius": 1.5,
@@ -264,12 +187,7 @@
     {
       "id": "star-14",
       "components": {
-        "transform": {
-          "position": [
-            1330,
-            820
-          ]
-        },
+        "transform": { "position": [1330, 820] },
         "shape": {
           "kind": "circle",
           "radius": 2.5,
@@ -282,12 +200,7 @@
     {
       "id": "star-15",
       "components": {
-        "transform": {
-          "position": [
-            1560,
-            300
-          ]
-        },
+        "transform": { "position": [1560, 300] },
         "shape": {
           "kind": "circle",
           "radius": 3.5,
@@ -300,157 +213,56 @@
     {
       "id": "planet",
       "components": {
-        "transform": {
-          "position": [
-            1300,
-            260
-          ]
-        },
-        "shape": {
-          "kind": "circle",
-          "radius": 90,
-          "fill": "#2a3466",
-          "layer": -5
-        }
+        "transform": { "position": [1300, 260] },
+        "shape": { "kind": "circle", "radius": 90, "fill": "#2a3466", "layer": -5 }
       }
     },
     {
       "id": "planet-ring",
       "parent": "planet",
       "components": {
-        "transform": {
-          "scale": [
-            1,
-            0.35
-          ]
-        },
+        "transform": { "scale": [1, 0.35] },
         "shape": {
           "kind": "polygon",
-          "points": [
-            [
-              -150,
-              0
-            ],
-            [
-              0,
-              -150
-            ],
-            [
-              150,
-              0
-            ],
-            [
-              0,
-              150
-            ]
-          ],
+          "points": [[-150, 0], [0, -150], [150, 0], [0, 150]],
           "stroke": "#8f9bd9",
           "strokeWidth": 3,
           "layer": -4
         }
       },
-      "extensions": {
-        "spin": {
-          "speed": 0.3
-        }
-      }
+      "extensions": { "spin": { "speed": 0.3 } }
     },
     {
       "id": "ground",
       "components": {
-        "transform": {
-          "position": [
-            800,
-            1145
-          ]
-        },
-        "shape": {
-          "kind": "rect",
-          "size": [
-            1700,
-            50
-          ],
-          "fill": "#3b3f58",
-          "layer": -1
-        }
+        "transform": { "position": [800, 1145] },
+        "shape": { "kind": "rect", "size": [1700, 50], "fill": "#3b3f58", "layer": -1 }
       }
     },
     {
       "id": "beacon",
       "components": {
-        "transform": {
-          "position": [
-            800,
-            1105
-          ]
-        },
+        "transform": { "position": [800, 1105] },
         "shape": {
           "kind": "polygon",
-          "points": [
-            [
-              0,
-              -14
-            ],
-            [
-              12,
-              8
-            ],
-            [
-              -12,
-              8
-            ]
-          ],
+          "points": [[0, -14], [12, 8], [-12, 8]],
           "fill": "#ff6b8b",
           "layer": 0
         },
-        "behavior": {
-          "module": "pulse",
-          "params": {
-            "speed": 3,
-            "amount": 0.25
-          }
-        }
+        "behavior": { "module": "pulse", "params": { "speed": 3, "amount": 0.25 } }
       },
       "extensions": {
         "spin": {},
-        "radar": {
-          "radius": 70,
-          "rings": 3,
-          "speed": 0.6,
-          "color": "#ff6b8b",
-          "layer": -1
-        }
+        "radar": { "radius": 70, "rings": 3, "speed": 0.6, "color": "#ff6b8b", "layer": -1 }
       }
     },
     {
       "id": "lander",
       "components": {
-        "transform": {
-          "position": [
-            800,
-            900
-          ]
-        },
+        "transform": { "position": [800, 900] },
         "shape": {
           "kind": "polygon",
-          "points": [
-            [
-              0,
-              -18
-            ],
-            [
-              14,
-              14
-            ],
-            [
-              0,
-              8
-            ],
-            [
-              -14,
-              14
-            ]
-          ],
+          "points": [[0, -18], [14, 14], [0, 8], [-14, 14]],
           "fill": "#e8ecff",
           "stroke": "#9aa7ff",
           "strokeWidth": 1.5,
@@ -468,9 +280,7 @@
             "minY": 30,
             "maxY": 1100
           },
-          "refs": {
-            "flame": "flame"
-          }
+          "refs": { "flame": "flame" }
         }
       }
     },
@@ -479,28 +289,10 @@
       "parent": "lander",
       "active": false,
       "components": {
-        "transform": {
-          "position": [
-            0,
-            6
-          ]
-        },
+        "transform": { "position": [0, 6] },
         "shape": {
           "kind": "polygon",
-          "points": [
-            [
-              -6,
-              4
-            ],
-            [
-              6,
-              4
-            ],
-            [
-              0,
-              24
-            ]
-          ],
+          "points": [[-6, 4], [6, 4], [0, 24]],
           "fill": "#ffb347",
           "layer": 4
         }
@@ -509,32 +301,15 @@
     {
       "id": "crystal-1",
       "components": {
-        "transform": {
-          "position": [
-            500,
-            820
-          ]
-        },
+        "transform": { "position": [500, 820] },
         "sprite": {
           "asset": "crystal",
-          "size": [
-            28,
-            28
-          ],
-          "animation": {
-            "fps": 8,
-            "offset": "auto"
-          },
+          "size": [28, 28],
+          "animation": { "fps": 8, "offset": "auto" },
           "layer": 3
         },
         "behavior": [
-          {
-            "module": "pulse",
-            "params": {
-              "speed": 4,
-              "amount": 0.15
-            }
-          },
+          { "module": "pulse", "params": { "speed": 4, "amount": 0.15 } },
           {
             "module": "crystal",
             "params": {
@@ -546,9 +321,7 @@
               "minY": 120,
               "maxY": 1000
             },
-            "refs": {
-              "lander": "lander"
-            }
+            "refs": { "lander": "lander" }
           }
         ]
       }
@@ -556,32 +329,15 @@
     {
       "id": "crystal-2",
       "components": {
-        "transform": {
-          "position": [
-            1100,
-            760
-          ]
-        },
+        "transform": { "position": [1100, 760] },
         "sprite": {
           "asset": "crystal",
-          "size": [
-            28,
-            28
-          ],
-          "animation": {
-            "fps": 8,
-            "offset": "auto"
-          },
+          "size": [28, 28],
+          "animation": { "fps": 8, "offset": "auto" },
           "layer": 3
         },
         "behavior": [
-          {
-            "module": "pulse",
-            "params": {
-              "speed": 4,
-              "amount": 0.15
-            }
-          },
+          { "module": "pulse", "params": { "speed": 4, "amount": 0.15 } },
           {
             "module": "crystal",
             "params": {
@@ -593,9 +349,7 @@
               "minY": 120,
               "maxY": 1000
             },
-            "refs": {
-              "lander": "lander"
-            }
+            "refs": { "lander": "lander" }
           }
         ]
       }
@@ -603,32 +357,15 @@
     {
       "id": "crystal-3",
       "components": {
-        "transform": {
-          "position": [
-            300,
-            420
-          ]
-        },
+        "transform": { "position": [300, 420] },
         "sprite": {
           "asset": "crystal",
-          "size": [
-            28,
-            28
-          ],
-          "animation": {
-            "fps": 8,
-            "offset": "auto"
-          },
+          "size": [28, 28],
+          "animation": { "fps": 8, "offset": "auto" },
           "layer": 3
         },
         "behavior": [
-          {
-            "module": "pulse",
-            "params": {
-              "speed": 4,
-              "amount": 0.15
-            }
-          },
+          { "module": "pulse", "params": { "speed": 4, "amount": 0.15 } },
           {
             "module": "crystal",
             "params": {
@@ -640,9 +377,7 @@
               "minY": 120,
               "maxY": 1000
             },
-            "refs": {
-              "lander": "lander"
-            }
+            "refs": { "lander": "lander" }
           }
         ]
       }
@@ -650,32 +385,15 @@
     {
       "id": "crystal-4",
       "components": {
-        "transform": {
-          "position": [
-            1350,
-            500
-          ]
-        },
+        "transform": { "position": [1350, 500] },
         "sprite": {
           "asset": "crystal",
-          "size": [
-            28,
-            28
-          ],
-          "animation": {
-            "fps": 8,
-            "offset": "auto"
-          },
+          "size": [28, 28],
+          "animation": { "fps": 8, "offset": "auto" },
           "layer": 3
         },
         "behavior": [
-          {
-            "module": "pulse",
-            "params": {
-              "speed": 4,
-              "amount": 0.15
-            }
-          },
+          { "module": "pulse", "params": { "speed": 4, "amount": 0.15 } },
           {
             "module": "crystal",
             "params": {
@@ -687,9 +405,7 @@
               "minY": 120,
               "maxY": 1000
             },
-            "refs": {
-              "lander": "lander"
-            }
+            "refs": { "lander": "lander" }
           }
         ]
       }
@@ -697,32 +413,15 @@
     {
       "id": "crystal-5",
       "components": {
-        "transform": {
-          "position": [
-            820,
-            300
-          ]
-        },
+        "transform": { "position": [820, 300] },
         "sprite": {
           "asset": "crystal",
-          "size": [
-            28,
-            28
-          ],
-          "animation": {
-            "fps": 8,
-            "offset": "auto"
-          },
+          "size": [28, 28],
+          "animation": { "fps": 8, "offset": "auto" },
           "layer": 3
         },
         "behavior": [
-          {
-            "module": "pulse",
-            "params": {
-              "speed": 4,
-              "amount": 0.15
-            }
-          },
+          { "module": "pulse", "params": { "speed": 4, "amount": 0.15 } },
           {
             "module": "crystal",
             "params": {
@@ -734,33 +433,16 @@
               "minY": 120,
               "maxY": 1000
             },
-            "refs": {
-              "lander": "lander"
-            }
+            "refs": { "lander": "lander" }
           }
         ]
       }
     },
-    {
-      "id": "score",
-      "components": {
-        "behavior": {
-          "module": "score",
-          "state": {
-            "points": 0
-          }
-        }
-      }
-    },
+    { "id": "score", "components": { "behavior": { "module": "score", "state": { "points": 0 } } } },
     {
       "id": "hud",
       "components": {
-        "transform": {
-          "position": [
-            20,
-            34
-          ]
-        },
+        "transform": { "position": [20, 34] },
         "text": {
           "value": "Crystals: {score.points}   Best: {score.best}",
           "size": 22,
@@ -773,12 +455,7 @@
     {
       "id": "help",
       "components": {
-        "transform": {
-          "position": [
-            400,
-            580
-          ]
-        },
+        "transform": { "position": [400, 580] },
         "text": {
           "value": "← → turn   ↑ / Space thrust",
           "size": 14,

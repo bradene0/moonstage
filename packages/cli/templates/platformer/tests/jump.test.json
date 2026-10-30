@@ -2,19 +2,6 @@
   "format": 1,
   "name": "jump lifts the player off the ground",
   "ticks": 45,
-  "input": [
-    {
-      "tick": 30,
-      "set": {
-        "jump": 1
-      }
-    }
-  ],
-  "expect": [
-    {
-      "target": "player",
-      "property": "transform.position.y",
-      "lt": 420
-    }
-  ]
+  "input": [{ "tick": 30, "set": { "jump": 1 } }],
+  "expect": [{ "target": "player", "property": "transform.position.y", "lt": 420 }]
 }

@@ -4,10 +4,7 @@
   "name": "the cart drives and jumps through the physics velocity state",
   "ticks": 50,
   "setup": [{ "operation": "remove_entity", "target": "dropper" }],
-  "input": [
-    { "tick": 0, "set": { "move": 1 } },
-    { "tick": 40, "set": { "jump": 1 } }
-  ],
+  "input": [{ "tick": 0, "set": { "move": 1 } }, { "tick": 40, "set": { "jump": 1 } }],
   "expect": [
     { "target": "cart", "property": "transform.position.x", "gt": 480 },
     { "target": "cart", "property": "state.vx", "approx": 260, "tolerance": 0.001 },

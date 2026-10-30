@@ -16,15 +16,5 @@
       "value": 240
     }
   ],
-  "expect": [
-    {
-      "event": "hit",
-      "count": {
-        "equals": 3
-      }
-    },
-    {
-      "scene": "over"
-    }
-  ]
+  "expect": [{ "event": "hit", "count": { "equals": 3 } }, { "scene": "over" }]
 }

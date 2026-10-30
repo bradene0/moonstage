@@ -10,6 +10,7 @@
 | `inspect` | Structured summary of scenes, entities, behaviors (built or not), plugins and tests |
 | `pack [--out file.msp]` | Build, then write an `.msp` package of the project's runtime files |
 | `unpack <file.msp> [dir]` | Extract a package into a runnable (WebAssembly-only) project |
+| `fmt [--check]` | Format the project's JSON compactly (short arrays and objects on one line); `--check` only reports |
 | `scene [--scene id]` | Print a scene's source JSON |
 | `edit [--scene id] (--op '<json>' \| --ops <file\|->) [--dry-run]` | Apply semantic operations to a scene. The whole project is validated first; nothing is written if there are errors. |
 | `mcp` | Serve these operations to agents over the Model Context Protocol (stdio) |

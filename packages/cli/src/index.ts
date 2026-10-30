@@ -18,6 +18,7 @@ export {
   schemas,
   pluginNew,
   guide,
+  fmt,
   pack,
   unpack,
   getScene,

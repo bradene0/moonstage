@@ -2,9 +2,7 @@
   "format": 1,
   "name": "__NAME__",
   "entryScene": "main",
-  "scenes": {
-    "main": "scenes/main.scene.json"
-  },
+  "scenes": { "main": "scenes/main.scene.json" },
   "display": { "width": 800, "height": 600, "background": "#101418" },
   "simulation": { "tickRate": 60, "seed": 1 },
   "input": {

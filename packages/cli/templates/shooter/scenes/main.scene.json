@@ -4,97 +4,38 @@
     {
       "id": "ship",
       "components": {
-        "transform": {
-          "position": [
-            240,
-            590
-          ]
-        },
+        "transform": { "position": [240, 590] },
         "shape": {
           "kind": "polygon",
-          "points": [
-            [
-              0,
-              -18
-            ],
-            [
-              14,
-              14
-            ],
-            [
-              0,
-              6
-            ],
-            [
-              -14,
-              14
-            ]
-          ],
+          "points": [[0, -18], [14, 14], [0, 6], [-14, 14]],
           "fill": "#e0f2fe",
           "stroke": "#7dd3fc",
           "strokeWidth": 1.5,
           "layer": 4
         },
-        "physicsBody": {
-          "type": "kinematic"
-        },
-        "collider": {
-          "shape": "circle",
-          "radius": 14,
-          "sensor": true
-        },
+        "physicsBody": { "type": "kinematic" },
+        "collider": { "shape": "circle", "radius": 14, "sensor": true },
         "behavior": {
           "module": "ship",
-          "params": {
-            "speed": 320,
-            "minX": 20,
-            "maxX": 460,
-            "cooldown": 0.18,
-            "lives": 3
-          }
+          "params": { "speed": 320, "minX": 20, "maxX": 460, "cooldown": 0.18, "lives": 3 }
         }
       }
     },
     {
       "id": "spawner",
       "components": {
-        "transform": {
-          "position": [
-            240,
-            -30
-          ]
-        },
+        "transform": { "position": [240, -30] },
         "behavior": {
           "module": "spawner",
-          "params": {
-            "interval": 1.1,
-            "minInterval": 0.35,
-            "minX": 30,
-            "maxX": 450
-          }
+          "params": { "interval": 1.1, "minInterval": 0.35, "minX": 30, "maxX": 450 }
         }
       }
     },
-    {
-      "id": "score",
-      "components": {
-        "behavior": {
-          "module": "score",
-          "state": {
-            "points": 0
-          }
-        }
-      }
-    },
+    { "id": "score", "components": { "behavior": { "module": "score", "state": { "points": 0 } } } },
     {
       "id": "hud",
       "components": {
-        "transform": {
-          "position": [
-            16,
-            30
-          ]
-        },
+        "transform": { "position": [16, 30] },
         "text": {
           "value": "Score {score.points}   Lives {ship.lives}   Best {score.best}",
           "size": 18,
@@ -107,12 +48,7 @@
     {
       "id": "help",
       "components": {
-        "transform": {
-          "position": [
-            240,
-            630
-          ]
-        },
+        "transform": { "position": [240, 630] },
         "text": {
           "value": "← → move   Space fire",
           "size": 12,

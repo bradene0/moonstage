@@ -9,24 +9,11 @@
       "operation": "set_property",
       "target": "crystal-1",
       "property": "transform.position",
-      "value": [
-        800,
-        905
-      ]
+      "value": [800, 905]
     }
   ],
   "expect": [
-    {
-      "event": "collected",
-      "count": {
-        "equals": 1
-      }
-    },
-    {
-      "prefab": "sparkle",
-      "count": {
-        "equals": 0
-      }
-    }
+    { "event": "collected", "count": { "equals": 1 } },
+    { "prefab": "sparkle", "count": { "equals": 0 } }
   ]
 }

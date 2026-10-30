@@ -2,25 +2,9 @@
   "format": 1,
   "name": "holding right runs the player right",
   "ticks": 60,
-  "input": [
-    {
-      "tick": 0,
-      "set": {
-        "move": 1
-      }
-    }
-  ],
+  "input": [{ "tick": 0, "set": { "move": 1 } }],
   "expect": [
-    {
-      "target": "player",
-      "property": "transform.position.x",
-      "gt": 300
-    },
-    {
-      "target": "player",
-      "property": "state.vx",
-      "approx": 300,
-      "tolerance": 1
-    }
+    { "target": "player", "property": "transform.position.x", "gt": 300 },
+    { "target": "player", "property": "state.vx", "approx": 300, "tolerance": 1 }
   ]
 }

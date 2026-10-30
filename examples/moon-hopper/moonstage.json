@@ -4,202 +4,83 @@
   "name": "moon-hopper",
   "description": "Pilot a small lander around a moon base and collect crystals. Reference project for Moonstage.",
   "entryScene": "title",
-  "scenes": {
-    "title": "scenes/title.scene.json",
-    "main": "scenes/main.scene.json"
-  },
-  "display": {
-    "width": 800,
-    "height": 600,
-    "background": "#0b1020"
-  },
-  "simulation": {
-    "tickRate": 60,
-    "seed": 7
-  },
+  "scenes": { "title": "scenes/title.scene.json", "main": "scenes/main.scene.json" },
+  "display": { "width": 800, "height": 600, "background": "#0b1020" },
+  "simulation": { "tickRate": 60, "seed": 7 },
   "input": {
-    "axes": {
-      "turn": {
-        "negative": [
-          "ArrowLeft",
-          "KeyA"
-        ],
-        "positive": [
-          "ArrowRight",
-          "KeyD"
-        ]
-      }
-    },
-    "buttons": {
-      "thrust": [
-        "ArrowUp",
-        "KeyW",
-        "Space"
-      ]
-    }
+    "axes": { "turn": { "negative": ["ArrowLeft", "KeyA"], "positive": ["ArrowRight", "KeyD"] } },
+    "buttons": { "thrust": ["ArrowUp", "KeyW", "Space"] }
   },
   "assets": {
     "crystal": {
       "path": "assets/crystal.png",
-      "frame": {
-        "width": 16,
-        "height": 16,
-        "columns": 4,
-        "count": 4
-      },
+      "frame": { "width": 16, "height": 16, "columns": 4, "count": 4 },
       "pixelated": true
     },
-    "chime": {
-      "path": "assets/chime.wav"
-    }
+    "chime": { "path": "assets/chime.wav" }
   },
   "behaviors": {
     "title": {
       "description": "Starts the game when thrust is pressed.",
       "source": "behaviors/title",
-      "inputs": [
-        "thrust"
-      ],
-      "scenes": [
-        "main"
-      ]
+      "inputs": ["thrust"],
+      "scenes": ["main"]
     },
     "lander": {
       "description": "Player ship: turn, thrust, gravity, bounce off the world bounds.",
       "source": "behaviors/lander",
-      "params": [
-        "thrust",
-        "gravity",
-        "turnSpeed",
-        "bounce",
-        "minX",
-        "maxX",
-        "minY",
-        "maxY"
-      ],
-      "state": [
-        "vx",
-        "vy"
-      ],
-      "refs": [
-        "flame"
-      ],
-      "inputs": [
-        "turn",
-        "thrust"
-      ]
+      "params": ["thrust", "gravity", "turnSpeed", "bounce", "minX", "maxX", "minY", "maxY"],
+      "state": ["vx", "vy"],
+      "refs": ["flame"],
+      "inputs": ["turn", "thrust"]
     },
     "crystal": {
       "description": "Emits `collected` when the lander touches it, bursts into sparkles, then respawns.",
       "source": "behaviors/crystal",
-      "params": [
-        "pickupRadius",
-        "value",
-        "burst",
-        "minX",
-        "maxX",
-        "minY",
-        "maxY"
-      ],
-      "refs": [
-        "lander"
-      ],
-      "events": [
-        "collected"
-      ],
-      "prefabs": [
-        "sparkle"
-      ],
-      "sounds": [
-        "chime"
-      ]
+      "params": ["pickupRadius", "value", "burst", "minX", "maxX", "minY", "maxY"],
+      "refs": ["lander"],
+      "events": ["collected"],
+      "prefabs": ["sparkle"],
+      "sounds": ["chime"]
     },
     "pulse": {
       "description": "Reusable scale animation.",
       "source": "behaviors/pulse",
-      "params": [
-        "speed",
-        "amount"
-      ],
-      "state": [
-        "phase"
-      ]
+      "params": ["speed", "amount"],
+      "state": ["phase"]
     },
     "sparkle": {
       "description": "Short-lived particle: flies outward, shrinks, removes itself.",
       "source": "behaviors/sparkle",
-      "params": [
-        "life",
-        "speed"
-      ],
-      "state": [
-        "vx",
-        "vy",
-        "age"
-      ]
+      "params": ["life", "speed"],
+      "state": ["vx", "vy", "age"]
     },
     "score": {
       "description": "Adds each `collected` payload to `points` and keeps a saved best score.",
       "source": "behaviors/score",
-      "state": [
-        "points",
-        "best"
-      ],
-      "events": [
-        "collected"
-      ],
-      "saves": [
-        "best"
-      ]
+      "state": ["points", "best"],
+      "events": ["collected"],
+      "saves": ["best"]
     },
     "camera": {
       "description": "Follows its target smoothly and shakes on `collected`.",
       "source": "behaviors/camera",
-      "params": [
-        "follow",
-        "shake"
-      ],
-      "state": [
-        "shake",
-        "cx",
-        "cy"
-      ],
-      "refs": [
-        "target"
-      ],
-      "events": [
-        "collected"
-      ]
+      "params": ["follow", "shake"],
+      "state": ["shake", "cx", "cy"],
+      "refs": ["target"],
+      "events": ["collected"]
     }
   },
   "prefabs": {
     "sparkle": {
       "components": {
-        "shape": {
-          "kind": "circle",
-          "radius": 3,
-          "fill": "#e0ffff",
-          "layer": 6
-        },
-        "behavior": {
-          "module": "sparkle",
-          "params": {
-            "life": 0.6,
-            "speed": 160
-          }
-        }
+        "shape": { "kind": "circle", "radius": 3, "fill": "#e0ffff", "layer": 6 },
+        "behavior": { "module": "sparkle", "params": { "life": 0.6, "speed": 160 } }
       }
     }
   },
   "plugins": {
-    "spin": {
-      "module": "./plugins/spin.js",
-      "config": {
-        "defaultSpeed": 0.5
-      }
-    },
-    "radar": {
-      "module": "./plugins/radar.js"
-    }
+    "spin": { "module": "./plugins/spin.js", "config": { "defaultSpeed": 0.5 } },
+    "radar": { "module": "./plugins/radar.js" }
   }
 }

@@ -2,110 +2,42 @@
   "format": 1,
   "name": "__NAME__",
   "entryScene": "main",
-  "scenes": {
-    "main": "scenes/main.scene.json"
-  },
-  "display": {
-    "width": 900,
-    "height": 540,
-    "background": "#1d2433"
-  },
-  "simulation": {
-    "tickRate": 60,
-    "seed": 1
-  },
-  "physics": {
-    "gravity": [
-      0,
-      1600
-    ]
-  },
+  "scenes": { "main": "scenes/main.scene.json" },
+  "display": { "width": 900, "height": 540, "background": "#1d2433" },
+  "simulation": { "tickRate": 60, "seed": 1 },
+  "physics": { "gravity": [0, 1600] },
   "input": {
-    "axes": {
-      "move": {
-        "negative": [
-          "ArrowLeft",
-          "KeyA"
-        ],
-        "positive": [
-          "ArrowRight",
-          "KeyD"
-        ]
-      }
-    },
-    "buttons": {
-      "jump": [
-        "Space",
-        "ArrowUp",
-        "KeyW"
-      ]
-    }
+    "axes": { "move": { "negative": ["ArrowLeft", "KeyA"], "positive": ["ArrowRight", "KeyD"] } },
+    "buttons": { "jump": ["Space", "ArrowUp", "KeyW"] }
   },
   "behaviors": {
     "player": {
       "description": "Runs and jumps through physics velocity state; respawns after a fall.",
       "source": "behaviors/player",
-      "params": [
-        "speed",
-        "accel",
-        "jump",
-        "fallY",
-        "spawnX",
-        "spawnY"
-      ],
-      "state": [
-        "vx",
-        "vy"
-      ],
-      "inputs": [
-        "move",
-        "jump"
-      ]
+      "params": ["speed", "accel", "jump", "fallY", "spawnX", "spawnY"],
+      "state": ["vx", "vy"],
+      "inputs": ["move", "jump"]
     },
     "coin": {
       "description": "Spins; reports `collected` when the player touches it.",
       "source": "behaviors/coin",
-      "params": [
-        "value"
-      ],
-      "refs": [
-        "player"
-      ],
-      "events": [
-        "collision",
-        "collected"
-      ]
+      "params": ["value"],
+      "refs": ["player"],
+      "events": ["collision", "collected"]
     },
     "score": {
       "description": "Totals `collected` and keeps a saved best.",
       "source": "behaviors/score",
-      "state": [
-        "points",
-        "best"
-      ],
-      "saves": [
-        "best"
-      ],
-      "events": [
-        "collected"
-      ]
+      "state": ["points", "best"],
+      "saves": ["best"],
+      "events": ["collected"]
     },
     "camera": {
       "description": "Follows its target horizontally.",
       "source": "behaviors/camera",
-      "params": [
-        "follow",
-        "minX",
-        "maxX"
-      ],
-      "refs": [
-        "target"
-      ]
+      "params": ["follow", "minX", "maxX"],
+      "refs": ["target"]
     }
   },
-  "plugins": {
-    "@moonstage/physics": {
-      "module": "@moonstage/physics"
-    }
-  }
+  "plugins": { "@moonstage/physics": { "module": "@moonstage/physics" } }
 }

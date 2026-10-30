@@ -9,52 +9,17 @@
       "operation": "set_property",
       "target": "crystal-1",
       "property": "transform.position",
-      "value": [
-        800,
-        905
-      ]
+      "value": [800, 905]
     }
   ],
   "expect": [
-    {
-      "event": "collected",
-      "count": {
-        "equals": 1
-      }
-    },
-    {
-      "prefab": "sparkle",
-      "count": {
-        "equals": 8
-      }
-    },
-    {
-      "target": "score",
-      "property": "state.points",
-      "equals": 1
-    },
-    {
-      "target": "camera",
-      "property": "state.shake",
-      "gt": 0.9
-    },
-    {
-      "target": "crystal-1",
-      "property": "transform.position.y",
-      "lte": 1000
-    },
-    {
-      "sound": "chime",
-      "count": {
-        "equals": 1
-      }
-    },
-    {
-      "save": "best",
-      "equals": 1
-    }
+    { "event": "collected", "count": { "equals": 1 } },
+    { "prefab": "sparkle", "count": { "equals": 8 } },
+    { "target": "score", "property": "state.points", "equals": 1 },
+    { "target": "camera", "property": "state.shake", "gt": 0.9 },
+    { "target": "crystal-1", "property": "transform.position.y", "lte": 1000 },
+    { "sound": "chime", "count": { "equals": 1 } },
+    { "save": "best", "equals": 1 }
   ],
-  "saves": {
-    "best": 0
-  }
+  "saves": { "best": 0 }
 }

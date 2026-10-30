@@ -250,6 +250,8 @@ describe("moonstage CLI", () => {
 
     // An edit that breaks the project is rejected and nothing is written.
     const before = readFileSync(scenePath, "utf8");
+    assert.match(readFileSync(scenePath, "utf8"), /"transform": \{ "position": \[10, 20\] \}/, "edit writes compact JSON");
+    assert.equal(cli("fmt", dir, "--check", "--json").code, 0, "edited files are already formatted");
     const broken = cli("edit", dir, "--op", '{"operation":"set_property","target":"coin","property":"parent","value":"ghost"}', "--json");
     assert.equal(broken.code, 1);
     assert.equal(broken.json.written, false);

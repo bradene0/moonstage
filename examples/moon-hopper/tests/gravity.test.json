@@ -5,21 +5,8 @@
   "scene": "main",
   "ticks": 600,
   "expect": [
-    {
-      "target": "lander",
-      "property": "transform.position.y",
-      "approx": 1100,
-      "tolerance": 0.5
-    },
-    {
-      "target": "lander",
-      "property": "state.vy",
-      "equals": 0
-    },
-    {
-      "target": "flame",
-      "property": "active",
-      "equals": false
-    }
+    { "target": "lander", "property": "transform.position.y", "approx": 1100, "tolerance": 0.5 },
+    { "target": "lander", "property": "state.vy", "equals": 0 },
+    { "target": "flame", "property": "active", "equals": false }
   ]
 }

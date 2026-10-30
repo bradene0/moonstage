@@ -1,40 +1,18 @@
 {
   "format": 1,
   "entities": [
-    {
-      "id": "restart",
-      "components": {
-        "behavior": {
-          "module": "restart"
-        }
-      }
-    },
+    { "id": "restart", "components": { "behavior": { "module": "restart" } } },
     {
       "id": "title",
       "components": {
-        "transform": {
-          "position": [
-            240,
-            280
-          ]
-        },
-        "text": {
-          "value": "GAME OVER",
-          "size": 44,
-          "fill": "#f472b6",
-          "align": "center"
-        }
+        "transform": { "position": [240, 280] },
+        "text": { "value": "GAME OVER", "size": 44, "fill": "#f472b6", "align": "center" }
       }
     },
     {
       "id": "prompt",
       "components": {
-        "transform": {
-          "position": [
-            240,
-            340
-          ]
-        },
+        "transform": { "position": [240, 340] },
         "text": {
           "value": "Press Space to play again",
           "size": 16,

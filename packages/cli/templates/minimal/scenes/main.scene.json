@@ -16,7 +16,13 @@
       "id": "title",
       "components": {
         "transform": { "position": [400, 60] },
-        "text": { "value": "__NAME__", "size": 28, "fill": "#e5e7eb", "align": "center", "space": "screen" }
+        "text": {
+          "value": "__NAME__",
+          "size": 28,
+          "fill": "#e5e7eb",
+          "align": "center",
+          "space": "screen"
+        }
       }
     }
   ]

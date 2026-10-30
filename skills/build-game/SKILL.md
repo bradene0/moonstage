@@ -37,7 +37,8 @@ Work in small verified steps. Never hand off a project that you have not validat
      with `@sdk.remove`. Check `@sdk.exists(handle)` before using a handle kept in state.
    - Use only `@sdk.random()` for randomness.
    - Reference: `docs/behavior-abi.md` and `examples/moon-hopper/behaviors/`.
-5. **Validate**: run `moonstage validate --json` and fix every error. Each diagnostic has `file`, `path`
+5. **Validate**: run `moonstage fmt` (compact JSON keeps scenes short and diffs small), then
+   `moonstage validate --json`, and fix every error. Each diagnostic has `file`, `path`
    and `hint`.
 6. **Test**: add `tests/<feature>.test.json` for each mechanic, using scripted `input`, `setup`
    operations and assertions on `state.*`, `transform.*`, `active`, events and prefab counts. Run `moonstage test --json`.
