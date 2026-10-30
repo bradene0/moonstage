@@ -85,8 +85,9 @@ while n < 2 {
   n = n + 1
 }
 
-let dist = (dx * dx + dy * dy).sqrt()                  // methods on Double: sqrt, abs, ...
-let angle = @math.atan2(dy, dx)                        // also @math.sin, cos, pow (import math)
+let dist = (dx * dx + dy * dy).sqrt()                  // methods on Double: sqrt, abs, floor, ...
+let angle = @math.atan2(dy, dx)                        // trig is not a method: @math.sin(x), @math.cos(x),
+                                                       // @math.pow (needs the math import in moon.pkg)
 let near = dist < 20.0 && @sdk.is_active(target)       // && || !
 
 @sdk.spawn_at(prefab_bullet, x, y) |> ignore           // discard a return value (else error 4014)
@@ -116,6 +117,13 @@ State slots are names, not per-module storage. To read or write another entity's
 in your own behavior's `state` too: if a `player` behavior declares `state: ["score"]` and a `hud`
 behavior also declares `state: ["score"]`, then `@sdk.state(@sdk.ref_entity(ref_player), state_score)` in
 `hud` reads the player's score. A state value nobody has set reads as 0.
+
+A scene or test can give an entity starting state (`"behavior": { "module": "ship", "state": { "shield": 1 } }`
+or a `setup` operation). `ms_start` runs after that and overwrites anything it sets, so initialise state in
+`ms_start` only when it is still 0 if you want scenes and tests to be able to override it.
+
+Events go to every entity whose behavior module declares that event in its `events` list, not only to the
+entity that emitted it. `source` tells you who emitted it; ignore events that are not about you.
 
 ## What to keep where
 

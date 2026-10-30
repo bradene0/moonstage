@@ -5,7 +5,7 @@
  */
 
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { cp, mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
@@ -48,7 +48,7 @@ import { formatJson } from "./json-format.js";
 import { singleFileHtml } from "./single-file.js";
 import { writeZip } from "./zip.js";
 import { buildMoonbitBehaviors, findMoon } from "./moonbit.js";
-import { EXIT, result, type CommandResult } from "./output.js";
+import { EXIT, formatDiagnostic, result, type CommandResult } from "./output.js";
 import { ioFor, isPackage, load, loadTests, projectRoot, resolvePlugin } from "./project-io.js";
 import { slotCollisions, staleSlotFiles, writeSlotFiles } from "./slots.js";
 import { renderSvg, svgImage, type SvgImage } from "./svg.js";
@@ -915,6 +915,18 @@ function inputTimeline(opts: { input?: string; inputScript?: string }): { tick: 
   return timeline.sort((a, b) => a.tick - b.tick);
 }
 
+/** Newest modification time of the project's source files (build output and dependencies excluded). */
+async function newestChange(dir: string): Promise<number> {
+  let newest = 0;
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith(".") || ["dist", "_build", "node_modules", "target"].includes(entry.name)) continue;
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) newest = Math.max(newest, await newestChange(path));
+    else if (!entry.name.endsWith(".generated.mbt") && !entry.name.endsWith(".wasm")) newest = Math.max(newest, (await stat(path)).mtimeMs);
+  }
+  return newest;
+}
+
 async function simulate(
   project: LoadedProject,
   opts: { scene?: string; seed?: string; ticks: number; input?: string; inputScript?: string; setup?: string },
@@ -959,8 +971,21 @@ export async function runCommand(opts: {
   if (!opts.headless) {
     const built = await build({ dir: opts.dir });
     if (!built.ok) return built;
-    const { server, url } = await serve(built.data.bundle as string, int(opts.port, "port", 5173));
-    return { ...result({ data: { ...built.data, url }, lines: [...built.lines, "", `Playing at ${url}  (Ctrl+C to stop)`] }), server };
+    const root = built.data.root as string;
+    let builtAt = Date.now();
+    // Rebuild on page load when any project file changed, so a reload shows the latest edit.
+    const rebuild = async () => {
+      if ((await newestChange(root)) <= builtAt) return;
+      builtAt = Date.now();
+      const again = await build({ dir: opts.dir });
+      for (const d of again.diagnostics) process.stderr.write(`${formatDiagnostic(d)}\n`);
+      process.stderr.write(again.ok ? "rebuilt after a change\n" : "rebuild failed; serving the previous build\n");
+    };
+    const { server, url } = await serve(built.data.bundle as string, int(opts.port, "port", 5173), isPackage(root) ? undefined : rebuild);
+    return {
+      ...result({ data: { ...built.data, url }, lines: [...built.lines, "", `Playing at ${url}  (reload to pick up edits; Ctrl+C to stop)`] }),
+      server,
+    };
   }
   const p = await prepare(opts.dir, opts.build !== false);
   if (p.project === undefined) return failed(p);
@@ -1065,8 +1090,9 @@ export async function check(opts: { dir?: string; ticks?: string }): Promise<Com
   const tests = await test({ dir: opts.dir });
   add(tests.diagnostics);
   if (tests.data.passed === undefined) return result({ diagnostics, data, lines, exitCode: tests.exitCode });
-  // Behaviors are compiled now, so validate's "not built yet" warnings no longer apply.
-  for (let i = diagnostics.length - 1; i >= 0; i--) if (diagnostics[i]!.code === "MS3001") diagnostics.splice(i, 1);
+  // Behaviors and slot files are rebuilt now, so validate's "not built" and "slots out of date" warnings
+  // no longer apply.
+  for (let i = diagnostics.length - 1; i >= 0; i--) if (diagnostics[i]!.code === "MS3001" || diagnostics[i]!.code === "MS3008") diagnostics.splice(i, 1);
   if (lines[0]?.includes("warning")) lines[0] = lines[0].replace(/ \(\d+ warning\(s\)\)$/, diagnostics.length ? ` (${diagnostics.length} warning(s))` : "");
   const results = (tests.data.results as TestResult[]) ?? [];
   data.testsPassed = tests.data.passed;

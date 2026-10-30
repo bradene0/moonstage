@@ -67,6 +67,11 @@ versions so you can tell what moved.
   - `MS2019` warns when physics bodies overlap at scene start.
   - `build --out` is relative to the current directory, like `pack --out` and `render --output`.
   - The MoonBit primer explains reading another entity's state.
+- **From the third agent eval:**
+  - `moonstage run` rebuilds on page reload when project files changed.
+  - `check` no longer repeats validate's stale-slot warnings after regenerating slots.
+  - The MoonBit primer covers trig (`@math.sin`, not a method), starting state versus `ms_start`, and
+    which entities receive events.
 - `ctx.world.setTransform` accepts the scene-file shape (`position: [x, y]`, `scale`) and throws `MS5003` on
   unknown keys or non-finite numbers. Previously `{ position: [...] }` was silently ignored, which broke the
   first game an outside agent built from the repo alone.

@@ -158,7 +158,11 @@ const TYPES: Record<string, string> = {
 };
 
 /** Minimal static file server for local play. Binds to localhost only. */
-export function serve(dir: string, port: number): Promise<{ server: Server; url: string }> {
+/**
+ * Serve a bundle. `beforePage` runs before each page load (a request for an HTML file), so the dev server
+ * can rebuild when the project changed and a browser reload shows the new version.
+ */
+export function serve(dir: string, port: number, beforePage?: () => Promise<void>): Promise<{ server: Server; url: string }> {
   const base = resolve(dir);
   const server = createServer(async (req, res) => {
     const path = decodeURIComponent(new URL(req.url ?? "/", "http://localhost").pathname);
@@ -169,6 +173,7 @@ export function serve(dir: string, port: number): Promise<{ server: Server; url:
     }
     try {
       if ((await stat(file)).isDirectory()) file = join(file, "index.html");
+      if (beforePage !== undefined && extname(file) === ".html") await beforePage();
       await stat(file);
     } catch {
       res.writeHead(404).end("not found");
