@@ -21,6 +21,11 @@ versions so you can tell what moved.
 
 ### Changed
 
+- `ctx.world.setTransform` accepts the scene-file shape (`position: [x, y]`, `scale`) and throws `MS5003` on
+  unknown keys or non-finite numbers. Previously `{ position: [...] }` was silently ignored, which broke the
+  first game an outside agent built from the repo alone.
+- Text bindings and sprite `frameState` no longer warn (`MS2012`) about state on entities that carry data
+  for a plugin, since plugins may write that state.
 - Faster event dispatch (an index of listeners instead of scanning every entity: 19.7 → 6.8 ms per tick in
   the 100,000-call benchmark), allocation-free behavior calls and transform snapshots, cached ancestor matrices.
 - The reference physics provider uses a uniform-grid broad phase (600 bodies: 8.3 → 5.0 ms per tick).

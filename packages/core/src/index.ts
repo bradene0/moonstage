@@ -77,6 +77,7 @@ export {
   type PluginContext,
   type PluginInstance,
   type PluginLoadContext,
+  type TransformPatch,
 } from "./plugin.js";
 export { Runtime, type LoadedProject, type RuntimeOptions, type Snapshot, type SoundRequest } from "./runtime.js";
 export {

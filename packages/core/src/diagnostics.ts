@@ -51,7 +51,7 @@ export const DIAGNOSTIC_CODES = {
   MS2009: { title: "Unknown input", hint: "Declare the input under `input.axes` or `input.buttons` in moonstage.json." },
   MS2010: { title: "Invalid camera", hint: "The scene `camera` must name an entity that has a `camera` component." },
   MS2011: { title: "Extension without plugin", hint: "Add the plugin to `plugins` in moonstage.json, or remove the extension data." },
-  MS2012: { title: "Unknown state binding", hint: "Text placeholders use {entityId.stateName}; frameState names a state of the entity's behaviors." },
+  MS2012: { title: "Unknown state binding", hint: "Text placeholders use {entityId.stateName}; the state must be declared by one of that entity's behaviors, or the entity must carry data for a plugin that writes it." },
   MS2013: { title: "Slot name collision", hint: "Behavior names must stay distinct after conversion to snake_case; rename one." },
   MS2014: { title: "Unknown prefab", hint: "Declare the prefab under `prefabs` in moonstage.json." },
   MS2015: { title: "Invalid sprite asset", hint: "Declare the image under `assets` in moonstage.json and check frame indices." },

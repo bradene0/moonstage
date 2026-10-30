@@ -116,6 +116,21 @@ describe("project validation", () => {
     assert.deepEqual(found.sort(), ["MS2012:noState", "MS2015:missing", "MS2015:notImage", "MS2015:tooFar"]);
   });
 
+  it("does not warn about state bindings a plugin may own", () => {
+    const m = manifest({ plugins: { dirtbike: { module: "./d.js" } } });
+    const scene: SceneSource = {
+      format: 1,
+      entities: [
+        { id: "bike", extensions: { dirtbike: { role: "bike" } } },
+        { id: "hud", components: { text: { value: "Score {bike.score} {ghost.x} {plain.y}" } } },
+        { id: "plain" },
+      ],
+    };
+    const found = validateProjectSemantics(m, { main: scene }).map((d) => d.message);
+    assert.equal(found.length, 2, found.join("\n"));
+    assert.ok(found.every((msg) => !msg.includes("bike.score")));
+  });
+
   it("checks joint targets", () => {
     const scene: SceneSource = {
       format: 1,

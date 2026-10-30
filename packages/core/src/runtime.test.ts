@@ -656,3 +656,29 @@ describe("plugin drawing (API 4)", () => {
     assert.equal((await checkPluginConformance(ok)).passed, true);
   });
 });
+
+describe("setTransform accepts what authors write", () => {
+  it("takes the scene-file shape and rejects unknown keys", async () => {
+    let ctxRef: PluginContext | undefined;
+    const mover = definePlugin({
+      name: "mover",
+      version: "0",
+      pluginApi: 3,
+      capabilities: ["world.read", "world.write"],
+      create: (ctx) => void (ctxRef = ctx),
+    });
+    const scene: SceneSource = { format: 1, entities: [{ id: "bike" }] };
+    const rt = await Runtime.create(project(scene, { manifest: manifest({ plugins: { mover: { module: "./m.js" } } }), plugins: { mover } }));
+    const ctx = ctxRef!;
+    // Exactly what an outside agent wrote for a dirt-bike plugin.
+    ctx.world.setTransform("bike", { position: [120, 331], rotation: 0.5 });
+    assert.deepEqual(ctx.world.transform("bike"), { x: 120, y: 331, rotation: 0.5, scaleX: 1, scaleY: 1 });
+    ctx.world.setTransform("bike", { scale: 2 });
+    ctx.world.setTransform("bike", { x: 1, scale: [3, 4] });
+    assert.deepEqual(ctx.world.transform("bike"), { x: 1, y: 331, rotation: 0.5, scaleX: 3, scaleY: 4 });
+    assert.throws(() => ctx.world.setTransform("bike", { pos: [1, 2] } as never), /MS5003.*unknown transform field "pos"/);
+    assert.throws(() => ctx.world.setTransform("bike", { position: [1] } as never), /MS5003/);
+    assert.throws(() => ctx.world.setTransform("bike", { x: Number.NaN }), /MS5003.*finite/);
+    assert.equal(rt.read("bike", "transform.position.x"), 1, "a rejected patch changes nothing");
+  });
+});

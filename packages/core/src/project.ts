@@ -427,7 +427,9 @@ export function validateProjectSemantics(
           const [, targetId, stateName] = match;
           const target = byId.get(targetId!);
           const declared = behaviorsOf(target?.components).flatMap((b) => behaviors[b.module]?.state ?? []);
-          if (!declared.includes(stateName!)) {
+          // Plugins may write state too; an entity carrying plugin data could own it.
+          const pluginOwned = Object.keys(target?.extensions ?? {}).some((n) => n in plugins);
+          if (target === undefined || (!declared.includes(stateName!) && !pluginOwned)) {
             out.push(
               diagnostic("MS2012", `text binding {${targetId}.${stateName}} does not match any entity state`, {
                 ...where,
@@ -552,7 +554,8 @@ function checkSprite(
   }
   if (sprite.frameState !== undefined) {
     const declared = behaviorsOf(entity.components).flatMap((b) => manifest.behaviors?.[b.module]?.state ?? []);
-    if (!declared.includes(sprite.frameState)) {
+    const pluginOwned = Object.keys(entity.extensions ?? {}).some((n) => n in (manifest.plugins ?? {}));
+    if (!declared.includes(sprite.frameState) && !pluginOwned) {
       out.push(
         diagnostic("MS2012", `frameState "${sprite.frameState}" is not a state of this entity's behaviors`, {
           ...swhere,

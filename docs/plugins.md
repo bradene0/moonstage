@@ -63,6 +63,10 @@ every entity of the old scene, and then `start()` in the new one. Every hook is 
 | `input.read` | `ctx.input.get(name)` |
 | `audio` | API 3: `ctx.audio.play(asset, volume)` |
 
+`setTransform(id, patch)` accepts the runtime fields (`x`, `y`, `rotation`, `scaleX`, `scaleY`) and the
+scene-file shape (`position: [x, y]`, `scale: [sx, sy]` or a number). Unknown keys and non-finite numbers
+throw `MS5003` instead of being ignored.
+
 `ctx.time` (`tick`, `elapsed`, `dt`), `ctx.random()` (seeded, API 2) and `ctx.project` (`name`, `display`,
 `simulation`, `physics`; API 3) and `ctx.scene` (the current scene id; API 3) are always available. Use
 `ctx.random()` instead of `Math.random()` so runs stay reproducible. Calling a method whose capability was not declared

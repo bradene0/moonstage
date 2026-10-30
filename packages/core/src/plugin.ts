@@ -50,7 +50,12 @@ export interface PluginContext {
     /** This plugin's extension data on an entity. */
     extension(id: string): Readonly<Record<string, unknown>> | undefined;
     transform(id: string): Transform;
-    setTransform(id: string, patch: Partial<Transform>): void;
+    /**
+     * Change transform fields. Accepts runtime fields (x, y, rotation, scaleX, scaleY)
+     * and the scene-file shape (position: [x, y], scale: [sx, sy] or a number).
+     * Unknown keys or non-finite numbers throw MS5003.
+     */
+    setTransform(id: string, patch: TransformPatch): void;
     state(id: string, name: string): number;
     setState(id: string, name: string, value: number): void;
     active(id: string): boolean;
@@ -97,6 +102,9 @@ export interface PluginLoadContext {
   /** Read-only project settings and declarations. */
   readonly project: Readonly<Pick<ProjectManifest, "name" | "assets" | "display" | "simulation" | "physics">>;
 }
+
+/** What plugins may pass to ctx.world.setTransform. */
+export type TransformPatch = Partial<Transform> & { position?: [number, number]; scale?: [number, number] | number };
 
 export interface PluginInstance {
   /**

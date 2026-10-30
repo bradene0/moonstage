@@ -37,6 +37,7 @@ import {
   type PluginContext,
   type PluginInstance,
   type PluginLoadContext,
+  type TransformPatch,
 } from "./plugin.js";
 import { behaviorsOf, type ProjectManifest, type SceneSource } from "./project.js";
 import { createRandom, type Random } from "./random.js";
@@ -95,6 +96,44 @@ interface BehaviorBinding {
 interface Module {
   exports: BehaviorExports;
   iface: BehaviorInterface;
+}
+
+const TRANSFORM_KEYS = new Set(["x", "y", "rotation", "scaleX", "scaleY"]);
+
+/**
+ * Turn a plugin's transform patch into runtime fields. The scene-file shape
+ * (position/scale arrays) is accepted because that is what authors and agents
+ * naturally write; anything else is an error rather than silently ignored.
+ */
+function normalizeTransformPatch(id: string, patch: TransformPatch): Partial<Transform> {
+  const out: Partial<Record<keyof Transform, number>> = {};
+  const fail = (message: string) =>
+    new MoonstageError([
+      diagnostic("MS5003", `setTransform("${id}"): ${message}`, {
+        entity: id,
+        hint: "Use x, y, rotation, scaleX, scaleY, or position: [x, y] and scale: [sx, sy] (or a number).",
+      }),
+    ]);
+  const num = (key: string, value: unknown): number => {
+    if (typeof value !== "number" || !Number.isFinite(value)) throw fail(`${key} must be a finite number`);
+    return value;
+  };
+  for (const [key, value] of Object.entries(patch as Record<string, unknown>)) {
+    if (value === undefined) continue;
+    if (TRANSFORM_KEYS.has(key)) out[key as keyof Transform] = num(key, value);
+    else if (key === "position") {
+      if (!Array.isArray(value) || value.length !== 2) throw fail("position must be [x, y]");
+      out.x = num("position[0]", value[0]);
+      out.y = num("position[1]", value[1]);
+    } else if (key === "scale") {
+      if (typeof value === "number") out.scaleX = out.scaleY = num("scale", value);
+      else if (Array.isArray(value) && value.length === 2) {
+        out.scaleX = num("scale[0]", value[0]);
+        out.scaleY = num("scale[1]", value[1]);
+      } else throw fail("scale must be [sx, sy] or a number");
+    } else throw fail(`unknown transform field "${key}"`);
+  }
+  return out;
 }
 
 /** Which lifecycle export a behavior call runs. */
@@ -402,7 +441,7 @@ export class Runtime {
       parent: (id: string) => this.world.get(entity(id).parent)?.id ?? null,
     });
     const write = gate(name, granted, "world.write", {
-      setTransform: (id: string, patch: Partial<Transform>) => void Object.assign(entity(id).transform, patch),
+      setTransform: (id: string, patch: TransformPatch) => void Object.assign(entity(id).transform, normalizeTransformPatch(id, patch)),
       setState: (id: string, key: string, value: number) => void entity(id).state.set(key, value),
       setActive: (id: string, active: boolean) => void (entity(id).active = active),
       spawn: (prefab: string) => {
