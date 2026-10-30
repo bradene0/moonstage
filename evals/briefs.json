@@ -17,5 +17,20 @@
     "moonstage": "Build it with Moonstage, a browser game runtime with a CLI. The CLI is `{cli}` (equivalent to `npx moonstage`). Work in `{dir}`. You know nothing else about Moonstage; find out what you need from the CLI.",
     "freestyle": "Build it as a single self-contained HTML file (inline JavaScript and CSS, no external libraries or network requests) at `{dir}/index.html`."
   },
-  "protocol": "First build the game and make sure it works. Then copy the finished version to `{dir}-v1` (a sibling directory) so it can be compared. Then apply the follow-up request in `{dir}` and make sure it still works. Do not ask questions; make reasonable choices. Finish with a short report: what you built, how you verified it, anything that did not work."
+  "protocol": "First build the game and make sure it works. Then copy the finished version to `{dir}-v1` (a sibling directory) so it can be compared. Then apply the follow-up request in `{dir}` and make sure it still works. Do not ask questions; make reasonable choices. Finish with a short report: what you built, how you verified it, anything that did not work.",
+  "campaigns": [
+    {
+      "id": "breakout",
+      "title": "Brick breaker campaign",
+      "brief": "A brick breaker: a paddle at the bottom (left/right to move) bounces a ball into rows of bricks at the top. Bricks break when hit and add to the score. Missing the ball costs one of three lives; at zero lives a game-over screen shows the score, and a key restarts. Clearing every brick shows a win screen.",
+      "followUps": [
+        "Some bricks drop a power-up capsule when broken. Catching it with the paddle makes the paddle twice as wide for 10 seconds.",
+        "Add a second level with a different brick layout that loads after the first is cleared, keeping score and lives. The win screen now appears after the last level.",
+        "Keep the five best scores across page reloads and show them on the game-over and win screens.",
+        "Pressing P pauses and resumes the game; while paused nothing moves and a PAUSED overlay shows.",
+        "A rare power-up splits the ball into three. A life is lost only when the last ball is missed."
+      ]
+    }
+  ],
+  "campaignProtocol": "Build the base game and make sure it works, then copy it to `{dir}-step0`. Then apply each follow-up in order; after follow-up N works, copy the project to `{dir}-stepN`. Every follow-up must keep every earlier feature working. Do not ask questions; make reasonable choices. Finish with a short report: what you built at each step, how you verified it, and anything that broke along the way."
 }

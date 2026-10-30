@@ -55,12 +55,20 @@ function editSize(before, after) {
 const rows = [];
 // Run directories are named <brief>-<condition>; anything else (agents' scratch folders) is skipped.
 for (const name of readdirSync(runs).filter((n) => /^[a-z0-9]+-(moonstage|freestyle)$/.test(n)).sort()) {
+  // A campaign's final state is the directory itself; its -stepN copies are scored as edit sizes.
   const dir = join(runs, name);
   if (!statSync(dir).isDirectory()) continue;
   const [brief, condition] = name.split("-");
   const row = { brief, condition, files: sources(dir).length, lines: sources(dir).reduce((n, f) => n + readFileSync(join(dir, f), "utf8").split("\n").length, 0) };
   const edit = editSize(`${dir}-v1`, dir);
   row.followUp = edit ? `+${edit.added} −${edit.removed} in ${edit.files} file(s)` : "no v1 copy";
+  // Campaigns copy the project after each step (-step0, -step1, ...): report each step's edit size.
+  const steps = [];
+  for (let n = 1; existsSync(`${dir}-step${n}`); n++) {
+    const e = editSize(`${dir}-step${n - 1}`, `${dir}-step${n}`);
+    if (e) steps.push(`${n}: +${e.added} −${e.removed}`);
+  }
+  if (steps.length > 0) row.followUp = steps.join(", ");
   if (condition === "moonstage") {
     const validate = moonstage("validate", dir);
     row.validate = validate.ok ? `ok (${validate.warnings ?? 0} warnings)` : `FAIL ${validate.diagnostics?.[0]?.code ?? validate.parseError ?? ""}`;

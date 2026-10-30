@@ -21,6 +21,14 @@ node evals/score.mjs <runs-directory>
 Also open every game in a browser and play it: does it load without errors, and does it do what the brief
 asks? Record that next to the score table in `results/<date>.md`.
 
+## Campaigns
+
+One-shot briefs reward speed. A campaign (`campaigns` in `briefs.json`) is one game plus five follow-ups
+applied in order, where every follow-up must keep earlier features working: the setting where tests and
+structure should pay off. Give the agent the brief, all follow-ups, the condition and `campaignProtocol`.
+The agent copies the project after each step (`{dir}-step0` … `{dir}-step5`); `score.mjs` reports each
+step's edit size. Also play the final game through every earlier feature and record what regressed.
+
 ## What counts
 
 1. **Works**: loads without errors and meets the brief.
