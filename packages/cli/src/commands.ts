@@ -1065,6 +1065,9 @@ export async function check(opts: { dir?: string; ticks?: string }): Promise<Com
   const tests = await test({ dir: opts.dir });
   add(tests.diagnostics);
   if (tests.data.passed === undefined) return result({ diagnostics, data, lines, exitCode: tests.exitCode });
+  // Behaviors are compiled now, so validate's "not built yet" warnings no longer apply.
+  for (let i = diagnostics.length - 1; i >= 0; i--) if (diagnostics[i]!.code === "MS3001") diagnostics.splice(i, 1);
+  if (lines[0]?.includes("warning")) lines[0] = lines[0].replace(/ \(\d+ warning\(s\)\)$/, diagnostics.length ? ` (${diagnostics.length} warning(s))` : "");
   const results = (tests.data.results as TestResult[]) ?? [];
   data.testsPassed = tests.data.passed;
   data.testsFailed = tests.data.failed;

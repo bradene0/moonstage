@@ -35,8 +35,9 @@ A provider is a plugin with `provides: ["physics"]` and plugin API 3. Every tick
 ### Solver settings
 
 `@moonstage/physics` takes `config.substeps` (default 4) and `config.iterations` (default 8). The defaults
-keep stacks of dozens of blocks still for minutes: the solver warm-starts, and a body that stays nearly still
-for half a second sleeps (stops moving) until something pushes it. Raise them only for very tall stacks or
+keep stacks of dozens of blocks still for minutes: the solver warm-starts, and a group of touching bodies
+that stays nearly still for half a second sleeps (stops moving) until something pushes it. Groups sleep and
+wake together, so a slowly pushed crate or a moving kinematic platform keeps what it touches awake. Raise them only for very tall stacks or
 very fast objects.
 
 ### State names

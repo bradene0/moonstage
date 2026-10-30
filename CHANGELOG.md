@@ -49,8 +49,10 @@ versions so you can tell what moved.
 
 - **From the first agent eval** (`evals/results/2026-10-30.md`):
   - Physics stacks stay still with default settings: the engine warm-starts its solver, gives box
-    contacts per-point depth and puts resting bodies to sleep (untouched 9- and 23-block eval towers now
-    move about 1 px in 3 minutes instead of collapsing).
+    contacts per-point depth and puts resting groups of bodies to sleep (untouched 9- and 23-block eval
+    towers now move about 1 px in 3 minutes instead of collapsing).
+  - Bodies ride kinematic platforms: the provider derived a platform's velocity from its own integrated
+    pose, so it read zero every other tick and resting bodies slid off or stayed behind.
   - `MS2018` warns when a behavior on a kinematic body keeps its own data in physics-owned `vx`/`vy`/`av`.
   - `run --headless` and `render` take `--input-script` timelines; event counts are exact on long runs.
   - `moonstage fmt` and `moonstage edit` write compact JSON (scenes about half as long).

@@ -79,6 +79,14 @@ let sensor : Array[Bool] = []
 let still_time : Array[Double] = []
 
 ///|
+/// Union-find parent per body, rebuilt each substep to group touching dynamic bodies into islands.
+let island : Array[Int] = []
+
+///|
+/// Per island root: the shortest still time of its members (0 when something moving touches it).
+let island_still : Array[Double] = []
+
+///|
 let gravity : Array[Double] = [0.0, 980.0]
 
 ///|
@@ -170,10 +178,10 @@ let c_key : Array[Int64] = []
 ///|
 /// Impulses from the previous substep, by contact key. Starting the solver from
 /// them (warm starting) is what keeps stacks from slowly creeping apart.
-let warm_n : Map[Int64, Double] = {}
+let warm_n : Map[Int64, Double] = Map([])
 
 ///|
-let warm_t : Map[Int64, Double] = {}
+let warm_t : Map[Int64, Double] = Map([])
 
 ///|
 /// Touching pairs from the last step (a < b), reported to the plugin.
@@ -981,6 +989,83 @@ fn solve_joints(h : Double) -> Unit {
 }
 
 ///|
+fn find_island(i : Int) -> Int {
+  let mut r = i
+  while island[r] != r {
+    island[r] = island[island[r]]
+    r = island[r]
+  }
+  r
+}
+
+///|
+fn join_islands(a : Int, b : Int) -> Unit {
+  if kind[a] == 1 && kind[b] == 1 {
+    let ra = find_island(a)
+    let rb = find_island(b)
+    if ra != rb {
+      island[ra] = rb
+    }
+  }
+}
+
+///|
+fn moving_kinematic(i : Int) -> Bool {
+  kind[i] == 2 && (vx[i] != 0.0 || vy[i] != 0.0 || av[i] != 0.0)
+}
+
+///|
+/// Sleeping: a group of touching or jointed dynamic bodies that has stayed nearly still for
+/// `sleep_after` seconds stops moving, which removes the slow creep of resting stacks. Groups sleep
+/// and wake together, so a body moving slowly (a pushed crate, a walking player) or a moving kinematic
+/// platform keeps everything it touches awake. A sleeping body keeps its velocity rather than zeroing
+/// it, so anything that keeps accelerating it (a hit, a support moving away) builds past the threshold
+/// and wakes its group.
+fn update_sleep(h : Double) -> Unit {
+  let count = kind.length()
+  while island.length() < count {
+    island.push(0)
+    island_still.push(0.0)
+  }
+  for i = 0; i < count; i = i + 1 {
+    island[i] = i
+    island_still[i] = sleep_after * 2.0
+    if kind[i] == 1 {
+      let speed = (vx[i] * vx[i] + vy[i] * vy[i]).sqrt()
+      if speed < sleep_speed && av[i].abs() < sleep_spin {
+        still_time[i] = still_time[i] + h
+      } else {
+        still_time[i] = 0.0
+      }
+    }
+  }
+  for k = 0; k < c_a.length(); k = k + 1 {
+    join_islands(c_a[k], c_b[k])
+  }
+  for j = 0; j < j_kind.length(); j = j + 1 {
+    if j_kind[j] >= 0 {
+      join_islands(j_a[j], j_b[j])
+    }
+  }
+  for i = 0; i < count; i = i + 1 {
+    if kind[i] == 1 {
+      let r = find_island(i)
+      island_still[r] = fmin(island_still[r], still_time[i])
+    }
+  }
+  for k = 0; k < c_a.length(); k = k + 1 {
+    let a = c_a[k]
+    let b = c_b[k]
+    if kind[a] == 1 && moving_kinematic(b) {
+      island_still[find_island(a)] = 0.0
+    }
+    if kind[b] == 1 && moving_kinematic(a) {
+      island_still[find_island(b)] = 0.0
+    }
+  }
+}
+
+///|
 /// Advance the world by dt seconds in `substeps` substeps with `iterations` solver passes each.
 pub fn step(dt : Double, substeps : Int, iterations : Int) -> Unit {
   let n = if substeps < 1 { 1 } else { substeps }
@@ -1003,21 +1088,10 @@ pub fn step(dt : Double, substeps : Int, iterations : Int) -> Unit {
       solve_contacts()
     }
     store_warm_start()
+    update_sleep(h)
     for i = 0; i < kind.length(); i = i + 1 {
-      if kind[i] == 1 {
-        // Sleeping: a body that stays nearly still after solving stops moving, which removes the
-        // slow creep of resting stacks. Its velocity is kept rather than zeroed, so anything that
-        // keeps accelerating it (a hit, a support moving away, a behavior setting velocity)
-        // builds past the threshold and wakes it.
-        let speed = (vx[i] * vx[i] + vy[i] * vy[i]).sqrt()
-        if speed < sleep_speed && av[i].abs() < sleep_spin {
-          still_time[i] = still_time[i] + h
-        } else {
-          still_time[i] = 0.0
-        }
-        if still_time[i] >= sleep_after {
-          continue
-        }
+      if kind[i] == 1 && island_still[find_island(i)] >= sleep_after {
+        continue
       }
       if kind[i] == 1 || kind[i] == 2 {
         px[i] = px[i] + vx[i] * h

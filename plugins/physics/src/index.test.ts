@@ -118,6 +118,23 @@ describe("@moonstage/physics", () => {
     assert.ok(fell > 10, `the plank above a knocked-out post falls (moved ${fell.toFixed(1)} px)`);
   });
 
+  it("keeps resting bodies awake while something slow moves them", async () => {
+    const lift: EntitySource = {
+      id: "lift",
+      components: { transform: { position: [0, 400] }, physicsBody: { type: "kinematic" }, collider: { shape: "box", size: [300, 20], friction: 0.9 } },
+    };
+    const crate = box("crate", 0, 370, 0, { friction: 0.9 });
+    const rt = await simulate(world([lift, crate]), 120);
+    const start = rt.read("crate", "transform.position.x") as number;
+    // Slower than the sleep threshold, so the crate only follows if the moving platform wakes it.
+    for (let i = 0; i < 600; i++) {
+      rt.world.byStableId("lift")!.transform.x += 0.02;
+      rt.step();
+    }
+    const moved = (rt.read("crate", "transform.position.x") as number) - start;
+    assert.ok(Math.abs(moved - 12) < 1, `the crate rides the slow platform (moved ${moved.toFixed(2)} px of 12)`);
+  });
+
   it("is deterministic and isolates worlds", async () => {
     const make = () => world([ground, box("c1", 0, 100, 0.3), box("c2", 10, 0, 0.8), box("c3", -15, -100, 1.2)]);
     const [one, two] = await Promise.all([simulate(make(), 180), simulate(make(), 180)]);

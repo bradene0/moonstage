@@ -233,7 +233,14 @@ export function createPhysicsPlugin(): MoonstagePlugin<{ substeps?: number; iter
               ctx.world.setState(b.id, "vy", vy);
               ctx.world.setState(b.id, "av", av);
             }
-            b.written = { x, y, angle, vx, vy, av };
+            // A kinematic body's pose belongs to its behavior: remember the pose it was given, not the
+            // engine's integrated one, or the next tick sees no motion and derives zero velocity.
+            if (b.kind === "kinematic") {
+              const t = ctx.world.transform(b.id);
+              b.written = { x: t.x, y: t.y, angle: t.rotation, vx, vy, av };
+            } else {
+              b.written = { x, y, angle, vx, vy, av };
+            }
           }
           const now = new Set<string>();
           for (let k = 0; k < engine.contact_count(); k++) {
