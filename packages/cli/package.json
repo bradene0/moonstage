@@ -1,6 +1,6 @@
 {
   "name": "moonstage",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Moonstage command-line interface: create, validate, inspect, build, run, test and render Moonstage projects. Human- and agent-friendly (--json everywhere).",
   "license": "MIT",
   "repository": {
@@ -43,9 +43,9 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@moonstage/core": "^0.3.0",
-    "@moonstage/player": "^0.3.0",
-    "@moonstage/physics": "0.0.0"
+    "@moonstage/core": "^0.4.0",
+    "@moonstage/player": "^0.4.0",
+    "@moonstage/physics": "^0.4.0"
   },
   "scripts": {
     "prepack": "node ../../scripts/bundle-moonbit-sdk.mjs",

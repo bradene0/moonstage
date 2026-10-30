@@ -1,6 +1,6 @@
 {
   "name": "@moonstage/physics",
-  "version": "0.0.0",
+  "version": "0.4.0",
   "description": "Rigid-body physics for Moonstage: rotating circles and boxes, friction, restitution, sensors and joints. Engine written in MoonBit, compiled to WebAssembly, embedded in one module.",
   "license": "MIT",
   "repository": {
@@ -25,7 +25,7 @@
   },
   "files": ["dist", "!dist/**/*.test.*", "moonbit/moon.mod", "moonbit/engine/*.mbt", "moonbit/engine/moon.pkg"],
   "peerDependencies": {
-    "@moonstage/core": ">=0.3.0"
+    "@moonstage/core": ">=0.4.0"
   },
   "publishConfig": {
     "access": "public"

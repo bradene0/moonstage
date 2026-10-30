@@ -3,7 +3,12 @@
 Moonstage is in early development. Contracts may change between releases; each entry lists the contract
 versions so you can tell what moved.
 
-## Unreleased
+## 0.4.0
+
+Contract versions: project format 1, behavior ABI 5 (accepts 1-5), plugin API 4 (accepts 1-4), package format 1.
+
+Existing projects, compiled behaviors and plugins keep working unchanged. `@moonstage/physics` is published
+for the first time; the `moonstage` CLI depends on it.
 
 ### Added
 
