@@ -9,6 +9,7 @@
  */
 
 import {
+  applyOperations,
   diagnostic,
   isImageAsset,
   mspIO,
@@ -21,6 +22,7 @@ import {
   type ProjectManifest,
   type SaveStorage,
   type Renderer,
+  type TestSource,
 } from "@moonstage/core";
 import { SoundPlayer } from "./audio.js";
 import { CanvasRenderer, type CustomDraw, type ImageMap } from "./canvas-renderer.js";
@@ -36,6 +38,13 @@ export interface PlayOptions {
   renderer?: (canvas: HTMLCanvasElement, images: ImageMap, drawCustom: CustomDraw) => Renderer;
   /** Focus the player so keyboard input works immediately. */
   autofocus?: boolean;
+  /**
+   * Play a test (or a recording saved with F8) back instead of reading the keyboard: same scene, seed,
+   * setup, saves and input timeline. The player pauses when the test's ticks have run. A string is a URL.
+   */
+  replay?: TestSource | string;
+  /** Key that downloads the session so far as a test file (default "F8"; null turns it off). */
+  recordKey?: string | null;
 }
 
 export interface Player {
@@ -43,6 +52,10 @@ export interface Player {
   readonly canvas: HTMLCanvasElement;
   pause(): void;
   resume(): void;
+  /** Everything played so far as a test file: replaying it reproduces the session exactly. */
+  recording(name?: string): TestSource;
+  /** Download recording() as `<project>-recording.test.json`. */
+  saveRecording(name?: string): void;
   /** Stop the loop, release input and dispose the runtime. */
   destroy(): void;
 }
@@ -84,8 +97,13 @@ export async function loadImages(
         try {
           const url = await urlFor(asset.path);
           if (url === undefined) throw new Error("not found");
-          image.src = url;
-          await image.decode();
+          // Wait for load events rather than image.decode(), which can stall in pages that are not
+          // being rendered (background or hidden tabs).
+          await new Promise<void>((done, fail) => {
+            image.onload = () => done();
+            image.onerror = () => fail(new Error("load failed"));
+            image.src = url;
+          });
           images.set(id, image);
         } catch {
           diagnostics.push(diagnostic("MS1003", `image for asset "${id}" could not be loaded (${asset.path})`, { file: asset.path }));
@@ -165,6 +183,12 @@ export function localSaves(project: string): SaveStorage {
   };
 }
 
+async function fetchTest(url: string): Promise<TestSource> {
+  const response = await fetch(new URL(url, document.baseURI));
+  if (!response.ok) throw new PlayerLoadError([diagnostic("MS1003", `replay ${url}: HTTP ${response.status}`, { file: url })]);
+  return (await response.json()) as TestSource;
+}
+
 export class PlayerLoadError extends MoonstageError {
   constructor(diagnostics: Diagnostic[]) {
     super(diagnostics);
@@ -200,13 +224,28 @@ export async function play(target: string | HTMLElement, src: Source, options: P
     showDiagnostics(host, imageProblems);
     throw new PlayerLoadError(imageProblems);
   }
+  const replay = typeof options.replay === "string" ? await fetchTest(options.replay) : options.replay;
+  const project = loaded.project;
   let runtime: Runtime;
   try {
-    runtime = await Runtime.create(loaded.project, {
-      storage: localSaves(loaded.project.manifest.name),
-      ...(options.scene !== undefined && { scene: options.scene }),
-      ...(options.seed !== undefined && { seed: options.seed }),
-    });
+    if (replay !== undefined) {
+      const scene = replay.scene ?? project.manifest.entryScene;
+      const base = project.scenes[scene];
+      runtime = await Runtime.create(project, {
+        scene,
+        ...(base !== undefined && replay.setup !== undefined && { sceneSource: applyOperations(base, replay.setup) }),
+        ...(replay.seed !== undefined && { seed: replay.seed }),
+        // A replay never touches the player's real saves.
+        storage: { load: () => replay.saves ?? {}, store: () => {} },
+      });
+    } else {
+      runtime = await Runtime.create(project, {
+        storage: localSaves(project.manifest.name),
+        ...(options.scene !== undefined && { scene: options.scene }),
+        ...(options.seed !== undefined && { seed: options.seed }),
+      });
+    }
+    runtime.startRecording();
   } catch (err) {
     const diagnostics = err instanceof MoonstageError ? err.diagnostics : [];
     if (diagnostics.length > 0) showDiagnostics(host, diagnostics);
@@ -228,9 +267,24 @@ export async function play(target: string | HTMLElement, src: Source, options: P
   const renderer: Renderer = options.renderer?.(canvas, images, drawCustom) ?? new CanvasRenderer(canvas, images, drawCustom);
 
   const keys = new KeyBindings(loaded.project.manifest, runtime.input);
+  const recordKey = options.recordKey === undefined ? "F8" : options.recordKey;
+  const recording = (name?: string) => runtime.recordedTest(name ?? `recorded session of ${project.manifest.name}`);
+  const saveRecording = (name?: string) => {
+    const blob = new Blob([`${JSON.stringify(recording(name), null, 2)}\n`], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${project.manifest.name}-recording.test.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  };
   const onKeyDown = (e: KeyboardEvent) => {
     sounds.unlock();
-    if (!keys.handles(e.code)) return;
+    if (recordKey !== null && e.code === recordKey && !keys.handles(e.code)) {
+      e.preventDefault();
+      saveRecording();
+      return;
+    }
+    if (replay !== undefined || !keys.handles(e.code)) return;
     e.preventDefault();
     keys.press(e.code);
   };
@@ -250,11 +304,37 @@ export async function play(target: string | HTMLElement, src: Source, options: P
   let frameId = 0;
   let last = 0;
   let running = false;
+  // A replay feeds its input timeline in tick by tick, exactly as the test runner does.
+  const timeline = [...(replay?.input ?? [])].sort((a, b) => a.tick - b.tick);
+  let nextInput = 0;
+  const replayStep = (budget: number): number => {
+    let steps = 0;
+    while (budget >= runtime.dt && runtime.tick < replay!.ticks && steps < 8) {
+      while (nextInput < timeline.length && timeline[nextInput]!.tick <= runtime.tick) {
+        for (const [name, value] of Object.entries(timeline[nextInput]!.set)) runtime.input.set(name, value);
+        nextInput += 1;
+      }
+      runtime.step();
+      budget -= runtime.dt;
+      steps += 1;
+    }
+    if (runtime.tick >= replay!.ticks) pause();
+    return Math.min(1, Math.max(0, budget / runtime.dt));
+  };
+  let replayBudget = 0;
   const loop = (now: number) => {
     // Clamp long pauses (background tabs) so the simulation does not spiral.
     const dt = last === 0 ? 0 : Math.min(0.25, (now - last) / 1000);
     last = now;
-    const alpha = runtime.advance(dt);
+    let alpha: number;
+    if (replay !== undefined) {
+      replayBudget += dt;
+      const before = runtime.tick;
+      alpha = replayStep(replayBudget);
+      replayBudget -= (runtime.tick - before) * runtime.dt;
+    } else {
+      alpha = runtime.advance(dt);
+    }
     sounds.play(runtime.drainSounds());
     renderer.render(runtime.frame(alpha));
     frameId = requestAnimationFrame(loop);
@@ -279,6 +359,8 @@ export async function play(target: string | HTMLElement, src: Source, options: P
     canvas,
     pause,
     resume,
+    recording,
+    saveRecording,
     destroy() {
       pause();
       canvas.removeEventListener("keydown", onKeyDown);

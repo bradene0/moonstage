@@ -6,12 +6,13 @@
  *   scene      scene id (default: the project's entryScene)
  *   seed       random seed
  *   autofocus  focus the player on load so the keyboard works immediately
+ *   replay     URL of a test file (or an F8 recording) to play back instead of reading the keyboard
  */
 
 import { play, type Player } from "./index.js";
 
 export class MoonstagePlayerElement extends HTMLElement {
-  static readonly observedAttributes = ["src", "scene", "seed"];
+  static readonly observedAttributes = ["src", "scene", "seed", "replay"];
   private player: Player | undefined;
   private generation = 0;
   private connected = false;
@@ -47,12 +48,14 @@ export class MoonstagePlayerElement extends HTMLElement {
     this.player = undefined;
     const seed = this.getAttribute("seed");
     const scene = this.getAttribute("scene");
+    const replay = this.getAttribute("replay");
     // Load into a detached container so a stale load can never replace a newer one.
     const container = document.createElement("div");
     try {
       const player = await play(container, src, {
         ...(scene !== null && { scene }),
         ...(seed !== null && { seed: Number(seed) }),
+        ...(replay !== null && { replay }),
       });
       if (generation !== this.generation) {
         player.destroy();

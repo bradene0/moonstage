@@ -42,6 +42,7 @@ import {
   type Diagnostic,
   type LoadedProject,
   type TestResult,
+  type TestSource,
 } from "@moonstage/core";
 import { runtimeFiles, serve, writeBundle } from "./bundle.js";
 import { formatJson } from "./json-format.js";
@@ -51,7 +52,7 @@ import { buildMoonbitBehaviors, findMoon } from "./moonbit.js";
 import { EXIT, formatDiagnostic, result, type CommandResult } from "./output.js";
 import { ioFor, isPackage, load, loadTests, projectRoot, resolvePlugin } from "./project-io.js";
 import { slotCollisions, staleSlotFiles, writeSlotFiles } from "./slots.js";
-import { renderSvg, svgImage, type SvgImage } from "./svg.js";
+import { frameBody, renderAnimatedSvg, renderSvg, svgImage, usedImages, type SvgImage } from "./svg.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -81,6 +82,11 @@ export const COMMANDS: CommandSpec[] = [
     usage: "moonstage run [dir] [--headless --ticks <n> --seed <n> --scene <id> --input <json> --input-script <json|file> --setup <json|file>] [--port <n>] [--no-build] [--json]",
   },
   { name: "test", summary: "Run tests/*.test.json headlessly.", usage: "moonstage test [dir] [--filter <text>] [--no-build] [--json]" },
+  {
+    name: "record",
+    summary: "Simulate a session and write it as an animated SVG that loops in any browser.",
+    usage: "moonstage record [dir] [--ticks <n>] [--fps <n>] [--test <file>] [--scene <id>] [--seed <n>] [--input <json>] [--input-script <json|file>] [--setup <json|file>] [--output <file.svg>] [--no-build] [--json]",
+  },
   {
     name: "check",
     summary: "Validate, build, test, simulate and render the last frame, in one step.",
@@ -918,6 +924,30 @@ function inputTimeline(opts: { input?: string; inputScript?: string }): { tick: 
   return timeline.sort((a, b) => a.tick - b.tick);
 }
 
+type SimFlags = { scene?: string; seed?: string; input?: string; inputScript?: string; setup?: string; test?: string };
+
+/**
+ * --test <file> runs a test's session (scene, seed, setup, saves, input) without its assertions, so its
+ * full state, a frame or a replay can be inspected. Explicit flags override the test's values.
+ */
+function withTest<T extends SimFlags>(opts: T): { opts: T; ticks?: number } {
+  if (!opts.test) return { opts };
+  const test = jsonFlag(opts.test, "--test") as Partial<TestSource>;
+  if (test === null || typeof test !== "object" || Array.isArray(test)) {
+    throw new MoonstageError([diagnostic("MS9001", "--test must be a test file (an object with ticks, input, expect)")]);
+  }
+  return {
+    opts: {
+      ...opts,
+      scene: opts.scene ?? test.scene,
+      seed: opts.seed ?? (test.seed !== undefined ? String(test.seed) : undefined),
+      inputScript: opts.inputScript ?? opts.test,
+      setup: opts.setup ?? opts.test,
+    },
+    ...(typeof test.ticks === "number" && { ticks: test.ticks }),
+  };
+}
+
 /** Newest modification time of the project's source files (build output and dependencies excluded). */
 async function newestChange(dir: string): Promise<number> {
   let newest = 0;
@@ -933,6 +963,7 @@ async function newestChange(dir: string): Promise<number> {
 async function simulate(
   project: LoadedProject,
   opts: { scene?: string; seed?: string; ticks: number; input?: string; inputScript?: string; setup?: string },
+  onTick?: (rt: Runtime) => void,
 ) {
   const timeline = inputTimeline(opts);
   let sceneSource: SceneSource | undefined;
@@ -953,6 +984,7 @@ async function simulate(
     ...(opts.seed !== undefined && { seed: int(opts.seed, "seed", 1) }),
   });
   rt.start();
+  onTick?.(rt);
   let next = 0;
   for (let i = 0; i < opts.ticks; i++) {
     while (next < timeline.length && timeline[next]!.tick <= i) {
@@ -960,6 +992,7 @@ async function simulate(
       next += 1;
     }
     rt.step();
+    onTick?.(rt);
   }
   return rt;
 }
@@ -973,6 +1006,9 @@ export async function runCommand(opts: {
   input?: string;
   inputScript?: string;
   setup?: string;
+  test?: string;
+  /** With the dev server: play this test file (or F8 recording) back in the browser. */
+  replay?: string;
   port?: string;
   build?: boolean;
 }): Promise<CommandResult & { server?: import("node:http").Server }> {
@@ -989,16 +1025,22 @@ export async function runCommand(opts: {
       for (const d of again.diagnostics) process.stderr.write(`${formatDiagnostic(d)}\n`);
       process.stderr.write(again.ok ? "rebuilt after a change\n" : "rebuild failed; serving the previous build\n");
     };
-    const { server, url } = await serve(built.data.bundle as string, int(opts.port, "port", 5173), isPackage(root) ? undefined : rebuild);
+    const extra = opts.replay ? { "/replay.test.json": resolve(opts.replay) } : undefined;
+    const served = await serve(built.data.bundle as string, int(opts.port, "port", 5173), isPackage(root) ? undefined : rebuild, extra);
+    const url = opts.replay ? `${served.url}?replay=replay.test.json` : served.url;
     return {
-      ...result({ data: { ...built.data, url }, lines: [...built.lines, "", `Playing at ${url}  (reload to pick up edits; Ctrl+C to stop)`] }),
-      server,
+      ...result({
+        data: { ...built.data, url },
+        lines: [...built.lines, "", `${opts.replay ? "Replaying" : "Playing"} at ${url}  (reload to pick up edits; F8 saves a recording; Ctrl+C to stop)`],
+      }),
+      server: served.server,
     };
   }
   const p = await prepare(opts.dir, opts.build !== false);
   if (p.project === undefined) return failed(p);
-  const ticks = int(opts.ticks, "ticks", 600);
-  const rt = await simulate(p.project, { ...opts, ticks });
+  const fromTest = withTest(opts);
+  const ticks = int(opts.ticks, "ticks", fromTest.ticks ?? 600);
+  const rt = await simulate(p.project, { ...fromTest.opts, ticks });
   const eventCounts = Object.fromEntries(rt.eventTotals);
   const snapshot = rt.snapshot();
   rt.stop();
@@ -1136,6 +1178,72 @@ export async function check(opts: { dir?: string; ticks?: string }): Promise<Com
 
 // ---------------------------------------------------------------- render
 
+async function svgImages(root: string, project: LoadedProject): Promise<Map<string, SvgImage>> {
+  const images = new Map<string, SvgImage>();
+  for (const [id, asset] of Object.entries(project.manifest.assets ?? {})) {
+    if (!isImageAsset(asset)) continue;
+    try {
+      const bytes = await (await ioFor(root)).readBytes(asset.path);
+      if (bytes !== undefined) images.set(id, svgImage(new Uint8Array(bytes), asset.path, asset.pixelated));
+    } catch {
+      // Drawn as a magenta placeholder; `moonstage validate` reports the missing file.
+    }
+  }
+  return images;
+}
+
+// ---------------------------------------------------------------- record
+
+/**
+ * Simulate a session and write it as an animated SVG that loops in any browser: a whole run to watch,
+ * not one frame. Takes the same input flags as `run --headless`, including --test.
+ */
+export async function record(opts: {
+  dir?: string;
+  ticks?: string;
+  fps?: string;
+  scene?: string;
+  seed?: string;
+  input?: string;
+  inputScript?: string;
+  setup?: string;
+  test?: string;
+  output?: string;
+  build?: boolean;
+}): Promise<CommandResult> {
+  const p = await prepare(opts.dir, opts.build !== false);
+  if (p.project === undefined) return failed(p);
+  const fromTest = withTest(opts);
+  const ticks = int(opts.ticks, "ticks", fromTest.ticks ?? 300);
+  const fps = int(opts.fps, "fps", 20);
+  const images = await svgImages(p.root, p.project);
+  const every = Math.max(1, Math.round((p.project.manifest.simulation?.tickRate ?? 60) / fps));
+  const frames: { tick: number; body: string }[] = [];
+  const used = new Set<string>();
+  let size = { width: 800, height: 600 };
+  const rt = await simulate(p.project, { ...fromTest.opts, ticks }, (rt) => {
+    if (rt.tick % every !== 0) return;
+    const frame = rt.frame(1);
+    size = { width: frame.width, height: frame.height };
+    for (const id of usedImages(frame, images)) used.add(id);
+    frames.push({ tick: frame.tick, body: frameBody(frame, images, (item) => rt.plugin(item.plugin)?.drawSvg?.(item)) });
+  });
+  const actualFps = (p.project.manifest.simulation?.tickRate ?? 60) / every;
+  const svg = renderAnimatedSvg(size.width, size.height, frames, actualFps, used, images);
+  const diagnostics = [...p.diagnostics, ...rt.diagnostics];
+  const scene = rt.sceneId;
+  rt.dispose();
+  const output = resolve(opts.output ?? join(p.root, ".moonstage", "record", `${scene}-${ticks}.svg`));
+  await mkdir(dirname(output), { recursive: true });
+  await writeFile(output, svg);
+  const bytes = Buffer.byteLength(svg);
+  return result({
+    diagnostics,
+    data: { root: p.root, output, frames: frames.length, fps: actualFps, ticks, scene, bytes },
+    lines: [`recorded ${frames.length} frames (${ticks} ticks at ${actualFps} fps, ${(bytes / 1024).toFixed(0)} KB) -> ${output}; open it in a browser`],
+  });
+}
+
 export async function render(opts: {
   dir?: string;
   tick?: string;
@@ -1145,23 +1253,16 @@ export async function render(opts: {
   input?: string;
   inputScript?: string;
   setup?: string;
+  test?: string;
   build?: boolean;
 }): Promise<CommandResult & { svg?: string }> {
   const p = await prepare(opts.dir, opts.build !== false);
   if (p.project === undefined) return failed(p);
-  const ticks = int(opts.tick, "tick", 0);
-  const rt = await simulate(p.project, { ...opts, ticks });
+  const fromTest = withTest(opts);
+  const ticks = int(opts.tick, "tick", fromTest.ticks ?? 0);
+  const rt = await simulate(p.project, { ...fromTest.opts, ticks });
   const frame = rt.frame(1);
-  const images = new Map<string, SvgImage>();
-  for (const [id, asset] of Object.entries(p.project.manifest.assets ?? {})) {
-    if (!isImageAsset(asset)) continue;
-    try {
-      const bytes = await (await ioFor(p.root)).readBytes(asset.path);
-      if (bytes !== undefined) images.set(id, svgImage(new Uint8Array(bytes), asset.path, asset.pixelated));
-    } catch {
-      // Drawn as a magenta placeholder; `moonstage validate` reports the missing file.
-    }
-  }
+  const images = await svgImages(p.root, p.project);
   const svg = renderSvg(frame, images, (item) => rt.plugin(item.plugin)?.drawSvg?.(item));
   rt.dispose();
   const data: Record<string, unknown> = {

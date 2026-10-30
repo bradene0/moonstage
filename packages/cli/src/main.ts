@@ -21,6 +21,7 @@ const sim = {
   input: { type: "string" },
   "input-script": { type: "string" },
   setup: { type: "string" },
+  test: { type: "string" },
   "no-build": { type: "boolean" },
 } as const satisfies ParseArgsConfig["options"];
 
@@ -30,9 +31,10 @@ const OPTIONS: Record<string, ParseArgsConfig["options"]> = {
   validate: shared,
   inspect: shared,
   build: { ...shared, out: { type: "string" }, "no-bundle": { type: "boolean" }, "single-file": { type: "boolean" } },
-  run: { ...shared, ...sim, headless: { type: "boolean" }, port: { type: "string" } },
+  run: { ...shared, ...sim, headless: { type: "boolean" }, port: { type: "string" }, replay: { type: "string" } },
   test: { ...shared, filter: { type: "string" }, "no-build": { type: "boolean" } },
   check: { ...shared, ticks: { type: "string" } },
+  record: { ...shared, ...sim, fps: { type: "string" }, output: { type: "string", short: "o" } },
   render: { ...shared, ...sim, output: { type: "string", short: "o" } },
   schemas: { ...shared, write: { type: "boolean" }, out: { type: "string" } },
   plugin: { ...shared, name: { type: "string" } },
@@ -104,11 +106,27 @@ async function dispatch(name: string, values: Record<string, unknown>, dir: stri
         input: s("input"),
         inputScript: s("input-script"),
         setup: s("setup"),
+        test: s("test"),
+        replay: s("replay"),
         port: s("port"),
         build,
       });
     case "test":
       return commands.test({ dir, filter: s("filter"), build });
+    case "record":
+      return commands.record({
+        dir,
+        ticks: s("ticks"),
+        fps: s("fps"),
+        scene: s("scene"),
+        seed: s("seed"),
+        input: s("input"),
+        inputScript: s("input-script"),
+        setup: s("setup"),
+        test: s("test"),
+        output: s("output"),
+        build,
+      });
     case "check":
       return commands.check({ dir, ticks: s("ticks") });
     case "render":
@@ -121,6 +139,7 @@ async function dispatch(name: string, values: Record<string, unknown>, dir: stri
         input: s("input"),
         inputScript: s("input-script"),
         setup: s("setup"),
+        test: s("test"),
         build,
       });
     case "schemas":

@@ -169,6 +169,17 @@ describe("moonstage CLI", () => {
     assert.equal(replay.json.snapshot.entities.beacon.transform.x, 123);
     assert.equal(replay.json.snapshot.entities.flame.active, true);
     assert.equal(replay.json.saves.best, 7, "--setup seeds the test's saves");
+
+    // --test takes the whole session from a test file; record turns it into an animated SVG.
+    const same = cli("run", example, "--headless", "--test", testFile, "--scene", "main", "--ticks", "20", "--json", "--no-build");
+    assert.deepEqual(same.json.snapshot, replay.json.snapshot);
+    const movie = join(scratch, "replay.svg");
+    const rec = cli("record", example, "--test", testFile, "--scene", "main", "--ticks", "60", "--fps", "10", "--output", movie, "--json", "--no-build");
+    assert.equal(rec.code, 0, rec.stdout);
+    assert.equal(rec.json.frames, 11, "ticks 0, 6, ..., 60");
+    const svg = readFileSync(movie, "utf8");
+    assert.match(svg, /@keyframes ms-play/);
+    assert.equal(svg.match(/data-tick=/g)?.length, 11);
   });
 
   it("switches from the title scene and plays sounds headlessly", moon, () => {

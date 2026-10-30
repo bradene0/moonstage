@@ -98,6 +98,22 @@ export const TOOLS: Tool[] = [
     run: (a) => commands.check({ dir: s(a.dir), ticks: n(a.ticks) }),
   },
   {
+    name: "moonstage_record",
+    description: "Simulate a session (optionally a test file's) and write it as an animated SVG that loops in a browser.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        dir,
+        ticks: int("Ticks to simulate (default 300, or the test's ticks)."),
+        fps: int("Frames per second captured (default 20)."),
+        test: str("A test file whose scene, seed, setup, saves and input to use."),
+        output: str("Where to write the .svg."),
+      },
+      required: ["dir"],
+    },
+    run: (a) => commands.record({ dir: s(a.dir), ticks: n(a.ticks), fps: n(a.fps), test: s(a.test), output: s(a.output) }),
+  },
+  {
     name: "moonstage_test",
     description: "Compile behaviors and run tests/*.test.json headlessly.",
     inputSchema: { type: "object", properties: { dir, filter: str("Only tests whose file or name contains this.") }, required: ["dir"] },

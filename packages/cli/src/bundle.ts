@@ -39,6 +39,11 @@ ${JSON.stringify({ imports }, null, 2)}
 </head>
 <body>
 <moonstage-player src="./game/" autofocus></moonstage-player>
+<script>
+  // ?replay=<test file URL> plays a test or an F8 recording back instead of reading the keyboard.
+  const replay = new URLSearchParams(location.search).get("replay");
+  if (replay) document.querySelector("moonstage-player").setAttribute("replay", replay);
+</script>
 <script type="module" src="./runtime/player/element.js"></script>
 </body>
 </html>
@@ -162,12 +167,18 @@ const TYPES: Record<string, string> = {
  * Serve a bundle. `beforePage` runs before each page load (a request for an HTML file), so the dev server
  * can rebuild when the project changed and a browser reload shows the new version.
  */
-export function serve(dir: string, port: number, beforePage?: () => Promise<void>): Promise<{ server: Server; url: string }> {
+export function serve(
+  dir: string,
+  port: number,
+  beforePage?: () => Promise<void>,
+  extra: Record<string, string> = {},
+): Promise<{ server: Server; url: string }> {
   const base = resolve(dir);
   const server = createServer(async (req, res) => {
     const path = decodeURIComponent(new URL(req.url ?? "/", "http://localhost").pathname);
-    let file = normalize(join(base, path));
-    if (file !== base && !file.startsWith(base + sep)) {
+    // Extra routes serve single files from outside the bundle (e.g. a test file to replay).
+    let file = extra[path] ?? normalize(join(base, path));
+    if (extra[path] === undefined && file !== base && !file.startsWith(base + sep)) {
       res.writeHead(403).end();
       return;
     }

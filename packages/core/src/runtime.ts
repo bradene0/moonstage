@@ -39,7 +39,7 @@ import {
   type PluginLoadContext,
   type TransformPatch,
 } from "./plugin.js";
-import { behaviorsOf, type ProjectManifest, type SceneSource } from "./project.js";
+import { behaviorsOf, inputNames, type Assertion, type ProjectManifest, type SceneSource, type TestSource } from "./project.js";
 import { createRandom, type Random } from "./random.js";
 import { buildFrame, type RenderFrame } from "./render.js";
 import { validateSchema } from "./schema/validate.js";
@@ -188,6 +188,7 @@ export class Runtime {
   private switchesThisTick = 0;
 
   tick = 0;
+  private recording: { scene: string; saves: Record<string, number>; input: { tick: number; set: Record<string, number> }[]; last: Record<string, number> } | undefined;
   /** Tick on which the current scene started; behavior time() counts from here. */
   private sceneTick = 0;
   elapsed = 0;
@@ -606,9 +607,52 @@ export class Runtime {
     this.settleLifecycle();
   }
 
+  /**
+   * Record input from the start, so the session can be saved as a test file with recordedTest(). Only
+   * input changes are kept (a few bytes per key press), so recording is cheap enough to leave on.
+   */
+  startRecording(): void {
+    if (this.tick !== 0) throw new Error("startRecording() must be called before the first tick");
+    this.recording = { scene: this.sceneId, saves: Object.fromEntries(this.saves), input: [], last: {} };
+  }
+
+  /**
+   * The recorded session as a test: same scene, seed, saves and input, run for the ticks played so far.
+   * It expects what happened (final scene, saves and event counts), so replaying it is a regression test.
+   */
+  recordedTest(name = "recorded session"): TestSource {
+    const r = this.recording;
+    if (r === undefined) throw new Error("recordedTest() needs startRecording() first");
+    const expect: Assertion[] = [{ scene: this.sceneId }];
+    for (const [save, value] of [...this.saves].sort(([a], [b]) => a.localeCompare(b))) expect.push({ save, equals: value });
+    for (const [event, count] of [...this.eventTotals].sort(([a], [b]) => a.localeCompare(b))) expect.push({ event, count: { equals: count } });
+    return {
+      format: 1,
+      name,
+      scene: r.scene,
+      seed: this.random.seed,
+      ticks: this.tick,
+      ...(Object.keys(r.saves).length > 0 && { saves: r.saves }),
+      input: r.input.map((step) => ({ tick: step.tick, set: { ...step.set } })),
+      expect,
+    };
+  }
+
+  /** Note inputs that differ from the previous tick (effective values, so sub-tick taps count). */
+  private recordInput(): void {
+    const r = this.recording!;
+    const set: Record<string, number> = {};
+    for (const name of inputNames(this.project.manifest)) {
+      const value = this.input.get(name);
+      if (value !== (r.last[name] ?? 0)) set[name] = r.last[name] = value;
+    }
+    if (Object.keys(set).length > 0) r.input.push({ tick: this.tick, set });
+  }
+
   /** Advance exactly one fixed simulation tick. */
   step(): void {
     this.start();
+    if (this.recording !== undefined) this.recordInput();
     this.tick += 1;
     this.elapsed = this.tick * this.dt;
     this.switchesThisTick = 0;

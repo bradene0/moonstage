@@ -54,6 +54,31 @@ describe("runtime", () => {
     assert.equal(rt.read("player", "state.hits"), 2 * rt.events.length);
   });
 
+  it("records a session that replays identically as a test", async () => {
+    const rt = await Runtime.create(moverProject(), { seed: 42 });
+    rt.startRecording();
+    for (let i = 0; i < 30; i++) {
+      if (i === 3) rt.input.set("moveX", 1);
+      if (i === 14) rt.input.set("moveX", 0);
+      if (i === 20) rt.input.set("moveX", -1);
+      if (i === 25) rt.input.set("moveX", 0);
+      rt.step();
+    }
+    const test = rt.recordedTest("my session");
+    assert.equal(test.seed, 42);
+    assert.equal(test.ticks, 30);
+    assert.deepEqual(test.input, [
+      { tick: 3, set: { moveX: 1 } },
+      { tick: 14, set: { moveX: 0 } },
+      { tick: 20, set: { moveX: -1 } },
+      { tick: 25, set: { moveX: 0 } },
+    ]);
+    assert.ok(test.expect.some((a) => "event" in a && a.event === "bump"), "expects what happened");
+    const replay = await runTest(moverProject(), test);
+    assert.ok(replay.passed, JSON.stringify(replay.diagnostics));
+    assert.deepEqual(replay.snapshot, rt.snapshot());
+  });
+
   it("advance() runs whole ticks and returns the interpolation factor", async () => {
     const rt = await Runtime.create(moverProject());
     const alpha = rt.advance(2.5 / 60);

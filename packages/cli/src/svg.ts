@@ -77,23 +77,63 @@ function element(item: DrawItem, images: ReadonlyMap<string, SvgImage>, drawCust
   }
 }
 
-export function renderSvg(
-  frame: RenderFrame,
-  images: ReadonlyMap<string, SvgImage> = new Map(),
-  drawCustom: SvgCustomDraw = () => undefined,
-): string {
-  const used = new Set(frame.items.flatMap((i) => (i.kind === "sprite" && images.has(i.asset) ? [i.asset] : [])));
-  const defs = [...used].map((id) => {
+/** Image assets a frame draws (each embedded once, in <defs>). */
+export function usedImages(frame: RenderFrame, images: ReadonlyMap<string, SvgImage>): string[] {
+  return [...new Set(frame.items.flatMap((i) => (i.kind === "sprite" && images.has(i.asset) ? [i.asset] : [])))];
+}
+
+function imageDefs(ids: Iterable<string>, images: ReadonlyMap<string, SvgImage>): string[] {
+  const defs = [...ids].map((id) => {
     const image = images.get(id)!;
     const size = image.width && image.height ? ` width="${image.width}" height="${image.height}"` : "";
     const style = image.pixelated ? ` style="image-rendering:pixelated"` : "";
     return `<image id="asset-${id}" href="${image.href}"${size} preserveAspectRatio="none"${style}/>`;
   });
+  return defs.length > 0 ? ["<defs>", ...defs, "</defs>"] : [];
+}
+
+/** A frame's background and items, without the surrounding <svg> or image definitions. */
+export function frameBody(frame: RenderFrame, images: ReadonlyMap<string, SvgImage>, drawCustom: SvgCustomDraw = () => undefined): string {
+  return [`<rect width="100%" height="100%" fill="${frame.background}"/>`, ...frame.items.map((item) => element(item, images, drawCustom))].join("\n");
+}
+
+export function renderSvg(
+  frame: RenderFrame,
+  images: ReadonlyMap<string, SvgImage> = new Map(),
+  drawCustom: SvgCustomDraw = () => undefined,
+): string {
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${frame.width}" height="${frame.height}" viewBox="0 0 ${frame.width} ${frame.height}" data-tick="${frame.tick}">`,
-    ...(defs.length > 0 ? ["<defs>", ...defs, "</defs>"] : []),
-    `<rect width="100%" height="100%" fill="${frame.background}"/>`,
-    ...frame.items.map((item) => element(item, images, drawCustom)),
+    ...imageDefs(usedImages(frame, images), images),
+    frameBody(frame, images, drawCustom),
+    "</svg>",
+    "",
+  ].join("\n");
+}
+
+/**
+ * An animated SVG that plays captured frames in a loop, for `moonstage record`. The frames sit side by
+ * side in a strip (each clipped to the view) and one CSS animation steps the strip across the view, so it
+ * plays in any browser without scripts.
+ */
+export function renderAnimatedSvg(
+  width: number,
+  height: number,
+  frames: { tick: number; body: string }[],
+  fps: number,
+  imageIds: Iterable<string>,
+  images: ReadonlyMap<string, SvgImage>,
+): string {
+  const n = frames.length;
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" data-frames="${n}" data-fps="${fps}">`,
+    `<style>@keyframes ms-play { to { transform: translateX(${-n * width}px) } } .ms-strip { animation: ms-play ${num(n / fps)}s steps(${n}) infinite }</style>`,
+    ...imageDefs(imageIds, images),
+    `<g class="ms-strip">`,
+    ...frames.map(
+      (f, i) => `<svg x="${i * width}" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" overflow="hidden" data-tick="${f.tick}">\n${f.body}\n</svg>`,
+    ),
+    "</g>",
     "</svg>",
     "",
   ].join("\n");
