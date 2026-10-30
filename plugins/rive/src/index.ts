@@ -21,7 +21,15 @@
  */
 
 import type { CustomItem, MoonstagePlugin, PluginContext, PluginLoadContext } from "@moonstage/core";
-import type { Artboard, File as RiveFile, RiveCanvas, SMIInput, StateMachineInstance, WrappedRenderer } from "@rive-app/canvas-advanced";
+import type {
+  Artboard,
+  File as RiveFile,
+  LinearAnimationInstance,
+  RiveCanvas,
+  SMIInput,
+  StateMachineInstance,
+  WrappedRenderer,
+} from "@rive-app/canvas-advanced";
 
 export const PLUGIN_NAME = "@moonstage/rive";
 
@@ -32,6 +40,8 @@ export interface RiveExtension {
   artboard?: string;
   /** State machine name (default: the artboard's first state machine, if any). */
   stateMachine?: string;
+  /** Linear animation to loop when the artboard has no state machine (default: its first animation). */
+  animation?: string;
   /** Drawn size in local pixels. */
   size: [number, number];
   /** How the artboard fits the size (default "contain"). */
@@ -51,6 +61,7 @@ interface Instance {
   ext: RiveExtension;
   artboard?: Artboard;
   machine?: StateMachineInstance;
+  animation?: LinearAnimationInstance;
   inputs: Map<string, SMIInput>;
 }
 
@@ -66,8 +77,10 @@ async function loadBrowserRuntime(): Promise<RiveCanvas | undefined> {
   if (typeof document === "undefined") return undefined;
   const specifier = "@rive-app/canvas-advanced";
   const mod = (await import(specifier)) as { default: (options: { locateFile(file: string): string }) => Promise<RiveCanvas> };
-  const base = import.meta.resolve(specifier);
-  return mod.default({ locateFile: (file) => new URL(file, base).href });
+  // The runtime asks for "canvas_advanced.wasm", but the package ships its WebAssembly as rive.wasm
+  // (Rive's own high-level wrapper resolves it the same way).
+  const wasm = new URL("rive.wasm", import.meta.resolve(specifier)).href;
+  return mod.default({ locateFile: () => wasm });
 }
 
 const isRive = (path: string, type?: string) => type === "rive" || (type === undefined && path.toLowerCase().endsWith(".riv"));
@@ -96,6 +109,7 @@ export function createRivePlugin(options: RivePluginOptions = {}): MoonstagePlug
         asset: { type: "string", minLength: 1 },
         artboard: { type: "string" },
         stateMachine: { type: "string" },
+        animation: { type: "string" },
         size: SIZE,
         fit: { enum: ["fill", "contain", "cover", "fitWidth", "fitHeight", "none", "scaleDown"] },
         inputs: NAME_MAP,
@@ -143,6 +157,9 @@ export function createRivePlugin(options: RivePluginOptions = {}): MoonstagePlug
               const input = machine.input(i);
               instance.inputs.set(input.name, input);
             }
+          } else if (ext.animation !== undefined || artboard.animationCount() > 0) {
+            const animation = ext.animation ? artboard.animationByName(ext.animation) : artboard.animationByIndex(0);
+            instance.animation = new rive.LinearAnimationInstance(animation, artboard);
           }
         }
         instances.set(id, instance);
@@ -151,6 +168,7 @@ export function createRivePlugin(options: RivePluginOptions = {}): MoonstagePlug
         const instance = instances.get(id);
         if (instance === undefined) return;
         instance.machine?.delete();
+        instance.animation?.delete();
         instance.artboard?.delete();
         instances.delete(id);
       };
@@ -192,6 +210,10 @@ export function createRivePlugin(options: RivePluginOptions = {}): MoonstagePlug
                 }
               }
             }
+            if (instance.animation !== undefined) {
+              instance.animation.advance(dt);
+              instance.animation.apply(1);
+            }
             instance.artboard?.advance(dt);
           }
         },
@@ -209,15 +231,20 @@ export function createRivePlugin(options: RivePluginOptions = {}): MoonstagePlug
             c.strokeRect(-w / 2, -h / 2, w, h);
             return;
           }
-          // Rive's Canvas 2D renderer wraps our context, so the artboard draws in the entity's local space.
-          const renderer: WrappedRenderer = renderers.get(c) ?? new rive.CanvasRenderer(c);
-          renderers.set(c, renderer);
+          // makeRenderer takes the canvas but draws through its (shared) 2D context, so the artboard
+          // lands in the entity's local space that the player already set on that context.
+          const renderer: WrappedRenderer = renderers.get(c.canvas) ?? rive.makeRenderer(c.canvas as HTMLCanvasElement);
+          renderers.set(c.canvas, renderer);
           const fit = rive.Fit[instance.ext.fit ?? "contain"];
+          // Rive's Canvas 2D renderer queues draws: beginFrame(false) registers it without clearing the
+          // canvas, and resolveAnimationFrame() replays the queue now, while the entity's transform is
+          // still on the context. (flush() alone draws nothing.)
+          renderer.beginFrame(false);
           renderer.save();
           renderer.align(fit, rive.Alignment.center, { minX: -w / 2, minY: -h / 2, maxX: w / 2, maxY: h / 2 }, instance.artboard.bounds);
           instance.artboard.draw(renderer);
           renderer.restore();
-          renderer.flush();
+          rive.resolveAnimationFrame();
         },
         drawSvg(item: CustomItem) {
           const instance = instances.get(item.entity);

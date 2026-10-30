@@ -59,7 +59,16 @@ export class CanvasRenderer implements Renderer {
     if (item.kind === "custom") {
       // Plugins may change any context state; isolate them.
       ctx.save();
-      const drawn = this.drawCustom(ctx, item);
+      let drawn = true;
+      try {
+        drawn = this.drawCustom(ctx, item);
+      } catch (err) {
+        // A failing plugin must not stop the game loop; report it once.
+        if (!this.warned.has(`error:${item.plugin}`)) {
+          this.warned.add(`error:${item.plugin}`);
+          console.error(`moonstage: plugin "${item.plugin}" failed to draw "${item.entity}":`, err);
+        }
+      }
       ctx.restore();
       if (!drawn && !this.warned.has(`plugin:${item.plugin}`)) {
         this.warned.add(`plugin:${item.plugin}`);

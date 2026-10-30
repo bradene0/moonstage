@@ -41,6 +41,7 @@ On an entity:
 | --- | --- |
 | `asset` | Id of a `.riv` asset (or one with `"type": "rive"`). |
 | `artboard` / `stateMachine` | Names. Default: the file's default artboard and its first state machine. |
+| `animation` | Linear animation to loop when the artboard has no state machine (default: its first animation). |
 | `size`, `fit` | Drawn size in local pixels and how the artboard fits it (default `contain`). |
 | `inputs` | State machine input name → entity state name. Number inputs take the value; boolean inputs are true when it is non-zero. Updated every tick. |
 | `triggers` | State machine trigger name → Moonstage event name. Fires when that event is emitted by this entity (or by a plugin, with no source). |
@@ -49,6 +50,9 @@ On an entity:
 
 So a MoonBit behavior animates a Rive character just by writing state (`@sdk.set_state(entity, state_speed, v)`)
 and emitting events (`@sdk.emit(event_jumped, 1.0)`).
+
+Verified in the browser with Rive's public `vehicles.riv` sample: the artboard draws at the entity's
+position and size, in layer order, follows parent entities, and its state machine animates.
 
 ## Browser and headless
 

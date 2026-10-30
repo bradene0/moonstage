@@ -41,6 +41,7 @@ function fakeRive() {
   const artboard = (name: string) => ({
     bounds: { minX: 0, minY: 0, maxX: 100, maxY: 50 },
     stateMachineCount: () => 1,
+    animationCount: () => 0,
     stateMachineByIndex: () => ({ name: "Main" }),
     stateMachineByName: (n: string) => ({ name: n }),
     advance: () => true,
@@ -53,11 +54,13 @@ function fakeRive() {
     align(_fit: number, _alignment: unknown, frame: { minX: number }) {
       log.push(`align:${frame.minX}`);
     }
-    flush() {
-      log.push("flush");
+    beginFrame(clear: boolean) {
+      log.push(`begin:${clear}`);
     }
   }
   const runtime = {
+    makeRenderer: () => new CanvasRenderer(),
+    resolveAnimationFrame: () => log.push("resolve"),
     load: async (bytes: Uint8Array) => {
       log.push(`load:${bytes.length}`);
       return { defaultArtboard: () => artboard("default"), artboardByName: (n: string) => artboard(n) };
@@ -140,9 +143,9 @@ describe("@moonstage/rive", () => {
     assert.equal(hero.kind === "custom" && hero.plugin, PLUGIN_NAME);
     const drawn: string[] = [];
     const before = fake.log.length;
-    rt.plugin(PLUGIN_NAME)!.drawCanvas2d!({} as never, hero as never);
+    rt.plugin(PLUGIN_NAME)!.drawCanvas2d!({ canvas: {} } as never, hero as never);
     drawn.push(...fake.log.slice(before));
-    assert.deepEqual(drawn, ["align:-100", "draw:default", "flush"], "draws centered in the entity's local space");
+    assert.deepEqual(drawn, ["begin:false", "align:-100", "draw:default", "resolve"], "draws centered in the entity's local space, without clearing");
 
     rt.stop();
     assert.ok(fake.log.includes("delete:default") && fake.log.includes("delete:machine"));
