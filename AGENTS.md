@@ -52,7 +52,8 @@ those tests are skipped. CI sets `MOONSTAGE_REQUIRE_MOON=1`, which turns a missi
 - Behavior ABI host: `packages/core/src/behavior.ts` and `runtime.ts` (`hostFunctions`). Docs: `docs/behavior-abi.md`.
 - Plugin API: `packages/core/src/plugin.ts`. Docs: `docs/plugins.md`.
 - Shared mutation model (`set_property`, `add_entity`, `remove_entity`): `packages/core/src/operations.ts`.
-- CLI commands: `packages/cli/src/commands.ts`. Each returns a structured `CommandResult`.
+- CLI commands: `packages/cli/src/commands.ts`. Each returns a structured `CommandResult`. The MCP server
+  (`packages/cli/src/mcp.ts`) exposes the same functions as tools.
 
 ## Changing things safely
 

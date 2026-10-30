@@ -181,6 +181,66 @@ describe("moonstage CLI", () => {
     assert.equal(cli("plugin", "frobnicate", "--json").code, 2);
   });
 
+  it("edits scenes through validated semantic operations", () => {
+    const dir = join(scratch, "edit");
+    cli("new", dir);
+    const scenePath = join(dir, "scenes", "main.scene.json");
+    const ops = JSON.stringify([
+      { operation: "add_entity", entity: { id: "coin", components: { shape: { kind: "circle", radius: 4 } } } },
+      { operation: "set_property", target: "coin", property: "transform.position", value: [10, 20] },
+      { operation: "attach_behavior", target: "coin", behavior: { module: "mover", params: { speed: 1 } } },
+    ]);
+    const dry = cli("edit", dir, "--op", ops, "--dry-run", "--json");
+    assert.equal(dry.code, 0, dry.stdout);
+    assert.equal(dry.json.written, false);
+    assert.doesNotMatch(readFileSync(scenePath, "utf8"), /coin/);
+
+    const applied = cli("edit", dir, "--op", ops, "--json");
+    assert.equal(applied.code, 0, applied.stdout);
+    assert.deepEqual(applied.json.added, ["coin"]);
+    const coin = JSON.parse(readFileSync(scenePath, "utf8")).entities.find((e: { id: string }) => e.id === "coin");
+    assert.deepEqual(coin.components.transform.position, [10, 20]);
+    assert.equal(cli("scene", dir, "--json").json.source.entities.length, 3);
+
+    // An edit that breaks the project is rejected and nothing is written.
+    const before = readFileSync(scenePath, "utf8");
+    const broken = cli("edit", dir, "--op", '{"operation":"set_property","target":"coin","property":"parent","value":"ghost"}', "--json");
+    assert.equal(broken.code, 1);
+    assert.equal(broken.json.written, false);
+    assert.equal(broken.json.diagnostics[0].code, "MS2002");
+    assert.equal(readFileSync(scenePath, "utf8"), before);
+    assert.equal(cli("edit", dir, "--op", "{not json", "--json").code, 2);
+  });
+
+  it("serves the same operations over MCP", () => {
+    const dir = join(scratch, "mcp");
+    cli("new", dir);
+    const messages = [
+      { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "0" } } },
+      { jsonrpc: "2.0", method: "notifications/initialized" },
+      { jsonrpc: "2.0", id: 2, method: "tools/list" },
+      { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "moonstage_edit_scene", arguments: { dir, operations: [{ operation: "set_property", target: "player", property: "transform.position.x", value: 50 }] } } },
+      { jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "moonstage_get_scene", arguments: { dir } } },
+      { jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "moonstage_validate", arguments: { dir: join(scratch, "nope") } } },
+      { jsonrpc: "2.0", id: 6, method: "bogus" },
+    ];
+    const r = spawnSync(process.execPath, [bin, "mcp"], { input: messages.map((m) => JSON.stringify(m)).join("\n") + "\n", encoding: "utf8" });
+    assert.equal(r.status, 0, r.stderr);
+    const replies = Object.fromEntries(r.stdout.trim().split("\n").map((l) => JSON.parse(l)).map((m) => [m.id, m]));
+    assert.equal(Object.keys(replies).length, 6, "notifications get no reply");
+    assert.equal(replies[1].result.protocolVersion, "2025-06-18");
+    const names = replies[2].result.tools.map((t: { name: string }) => t.name);
+    for (const tool of ["moonstage_describe", "moonstage_edit_scene", "moonstage_test", "moonstage_render", "moonstage_plugin_check"]) {
+      assert.ok(names.includes(tool), tool);
+    }
+    assert.equal(replies[3].result.isError, false);
+    const scene = JSON.parse(replies[4].result.content[0].text).source;
+    assert.equal(scene.entities.find((e: { id: string }) => e.id === "player").components.transform.position[0], 50);
+    assert.equal(replies[5].result.isError, true);
+    assert.equal(JSON.parse(replies[5].result.content[0].text).diagnostics[0].code, "MS9002");
+    assert.equal(replies[6].error.code, -32601);
+  });
+
   it("reports MoonBit compile errors as MS3006 with file locations", moon, () => {
     const dir = join(scratch, "compile-error");
     cli("new", dir);

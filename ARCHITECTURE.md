@@ -100,8 +100,9 @@ test keeps the two in sync. Ajv checks that the generated schemas are standard J
 
 ## Semantic operations
 
-`applyOperation(scene, op)` is the one mutation model. Test `setup` uses it today. A future editor, an MCP
-server and `moonstage edit` should use the same operations instead of rewriting files.
+`applyOperation(scene, op)` is the one mutation model. Test `setup`, `moonstage edit` and the MCP server
+(`moonstage mcp`, a thin adapter over the CLI command functions) all use it. A future visual editor should
+too.
 
 ## Known limits (deliberate, for now)
 

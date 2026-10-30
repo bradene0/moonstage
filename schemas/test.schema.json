@@ -143,8 +143,157 @@
               "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
             }
           }
+        },
+        {
+          "title": "unset_property",
+          "type": "object",
+          "required": [
+            "operation",
+            "target",
+            "property"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "operation": {
+              "const": "unset_property"
+            },
+            "target": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+            },
+            "property": {
+              "type": "string",
+              "description": "Component-relative path; a component name removes the component."
+            }
+          }
+        },
+        {
+          "title": "attach_behavior",
+          "type": "object",
+          "required": [
+            "operation",
+            "target",
+            "behavior"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "operation": {
+              "const": "attach_behavior"
+            },
+            "target": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+            },
+            "behavior": {
+              "$ref": "#/$defs/behaviorEntry"
+            },
+            "index": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Position in the behavior list (default: end)."
+            }
+          }
+        },
+        {
+          "title": "detach_behavior",
+          "type": "object",
+          "required": [
+            "operation",
+            "target",
+            "module"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "operation": {
+              "const": "detach_behavior"
+            },
+            "target": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+            },
+            "module": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+            }
+          }
         }
-      ]
+      ],
+      "$defs": {
+        "behaviorEntry": {
+          "title": "behavior",
+          "type": "object",
+          "required": [
+            "module"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "module": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+              "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+            },
+            "params": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "refs": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+                "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+              }
+            },
+            "state": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    },
+    "behaviorEntry": {
+      "title": "behavior",
+      "type": "object",
+      "required": [
+        "module"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "module": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+          "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "refs": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+            "description": "Stable identifier: a letter followed by letters, digits, '_' or '-'."
+          }
+        },
+        "state": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        }
+      }
     },
     "assertion": {
       "anyOf": [

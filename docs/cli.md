@@ -8,6 +8,9 @@
 | `new <dir> [--name]` | Create a project from the `minimal` template |
 | `validate` | Schemas, cross-references, plugins and test files. Missing builds are warnings. |
 | `inspect` | Structured summary of scenes, entities, behaviors (built or not), plugins and tests |
+| `scene [--scene id]` | Print a scene's source JSON |
+| `edit [--scene id] (--op '<json>' \| --ops <file\|->) [--dry-run]` | Apply semantic operations to a scene. The whole project is validated first; nothing is written if there are errors. |
+| `mcp` | Serve these operations to agents over the Model Context Protocol (stdio) |
 | `build [--out dist] [--no-bundle]` | Compile MoonBit behaviors, then write a static web bundle |
 | `run` | Build and serve on http://localhost:5173 (`--port`) |
 | `run --headless [--ticks 600] [--seed] [--scene] [--input '{"thrust":1}']` | Simulate and report events, logs and a state snapshot |
@@ -60,6 +63,31 @@ Codes are stable and never reused. Run `moonstage describe --json` to list all o
 | --- | --- |
 | `MOONSTAGE_MOON` | Path to the `moon` binary. Default: PATH, then `~/.moon/bin/moon`. |
 | `MOONSTAGE_MOONBIT_SDK` | Path to the MoonBit SDK module |
+
+## Editing scenes
+
+`moonstage edit` applies the operations described in [project-format.md](project-format.md#operations), in
+order, to one scene (default: the entry scene):
+
+```bash
+moonstage edit . --op '{"operation":"set_property","target":"lander","property":"transform.position.x","value":300}'
+moonstage edit . --ops changes.json --dry-run --json
+```
+
+Prefer it to rewriting scene files: it touches only what the operations name, and it refuses edits that
+would leave the project invalid.
+
+## MCP
+
+`moonstage mcp` is a Model Context Protocol server over stdio. Its tools (`moonstage_describe`,
+`moonstage_inspect`, `moonstage_get_scene`, `moonstage_edit_scene`, `moonstage_validate`, `moonstage_test`,
+`moonstage_run_headless`, `moonstage_render`, `moonstage_build`, `moonstage_new_project`,
+`moonstage_plugin_check`, `moonstage_schemas`) call the same functions as the CLI and return the same JSON.
+Example client configuration:
+
+```json
+{ "mcpServers": { "moonstage": { "command": "npx", "args": ["-y", "moonstage", "mcp"] } } }
+```
 
 ## Programmatic use
 

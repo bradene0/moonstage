@@ -113,12 +113,15 @@ exactly the frame a player would.
 
 ## Operations
 
-These are semantic edits, shared by tests and future tools:
+These are semantic edits, shared by test `setup`, `moonstage edit` and the MCP server:
 
 ```json
 { "operation": "set_property", "target": "lander", "property": "transform.position.x", "value": 300 }
 { "operation": "add_entity", "entity": { "id": "enemy-1", "components": {} } }
 { "operation": "remove_entity", "target": "enemy-1" }
+{ "operation": "unset_property", "target": "lander", "property": "shape.stroke" }
+{ "operation": "attach_behavior", "target": "enemy-1", "behavior": { "module": "pulse" }, "index": 0 }
+{ "operation": "detach_behavior", "target": "enemy-1", "module": "pulse" }
 ```
 
 `property` paths are relative to `components`, with `x`/`y` as aliases for vector indices 0/1. The

@@ -67,8 +67,12 @@ function check(schema: JsonSchema, value: unknown, path: string, root: JsonSchem
       return branchIssues;
     });
     if (!results.some((r) => r.length === 0)) {
-      // When exactly one branch accepts the value's type, its issues are the useful ones.
-      const typed = results.filter((r) => !r.some((i) => i.path === here && i.message.startsWith("expected ")));
+      // When exactly one branch accepts the value's type (and any discriminating `const`
+      // property, such as "operation"), its issues are the useful ones.
+      const child = (p: string) => p.startsWith(path === "" ? "" : `${path}.`) && !p.slice(path === "" ? 0 : path.length + 1).includes(".");
+      const typed = results.filter(
+        (r) => !r.some((i) => (i.path === here && i.message.startsWith("expected ")) || (child(i.path) && i.message.startsWith("must be "))),
+      );
       if (typed.length === 1) issues.push(...typed[0]!);
       else issues.push({ path: here, message: describeAnyOf(branches, root) });
     }

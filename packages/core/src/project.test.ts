@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { applyOperation, applyOperations } from "./operations.js";
 import { validateManifestShape, validateProjectSemantics, validateSceneShape, validateTestShape, type SceneSource } from "./project.js";
+import { operationSchema } from "./schema/schemas.js";
 import { validateSchema } from "./schema/validate.js";
 import { manifest } from "./test-helpers.test.js";
 
@@ -135,6 +136,27 @@ describe("operations", () => {
     assert.deepEqual(scene.entities[0]!.components!.transform!.position, [1, 2]);
     const created = applyOperation(scene, { operation: "set_property", target: "b", property: "shape", value: { kind: "circle" } });
     assert.deepEqual(created.entities[1]!.components!.shape, { kind: "circle" });
+  });
+
+  it("attaches, detaches and unsets", () => {
+    const one = applyOperation(scene, { operation: "attach_behavior", target: "a", behavior: { module: "x" } });
+    assert.deepEqual(one.entities[0]!.components!.behavior, { module: "x" });
+    const two = applyOperation(one, { operation: "attach_behavior", target: "a", behavior: { module: "y" }, index: 0 });
+    assert.deepEqual(two.entities[0]!.components!.behavior, [{ module: "y" }, { module: "x" }]);
+    const back = applyOperation(two, { operation: "detach_behavior", target: "a", module: "y" });
+    assert.deepEqual(back.entities[0]!.components!.behavior, { module: "x" });
+    const none = applyOperation(back, { operation: "detach_behavior", target: "a", module: "x" });
+    assert.equal(none.entities[0]!.components!.behavior, undefined);
+    assert.throws(() => applyOperation(none, { operation: "detach_behavior", target: "a", module: "x" }), /MS5003/);
+    const unset = applyOperation(scene, { operation: "unset_property", target: "a", property: "transform" });
+    assert.equal(unset.entities[0]!.components!.transform, undefined);
+    assert.equal(applyOperation(scene, { operation: "unset_property", target: "b", property: "parent" }).entities[1]!.parent, undefined);
+    assert.throws(() => applyOperation(scene, { operation: "unset_property", target: "a", property: "shape.fill" }), /MS5003/);
+  });
+
+  it("reports operation schema errors on the matching operation", () => {
+    const issues = validateSchema(operationSchema, { operation: "set_property", target: "a", property: "x" });
+    assert.deepEqual(issues.map((i) => i.message), ['missing required property "value"']);
   });
 
   it("adds and removes entities, detaching children", () => {

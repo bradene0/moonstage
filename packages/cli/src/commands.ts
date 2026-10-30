@@ -26,6 +26,13 @@ import {
   isImageAsset,
   hasErrors,
   MoonstageError,
+  applyOperations,
+  operationSchema,
+  validateProjectSemantics,
+  validateSceneShape,
+  validateSchema,
+  type Operation,
+  type SceneSource,
   runTest,
   sceneSchema,
   type ConformanceFixture,
@@ -68,6 +75,21 @@ export const COMMANDS: CommandSpec[] = [
     name: "render",
     summary: "Simulate to a tick and write that frame as SVG.",
     usage: "moonstage render [dir] [--tick <n>] [--scene <id>] [--seed <n>] [--output <file|->] [--no-build] [--json]",
+  },
+  {
+    name: "scene",
+    summary: "Print a scene's source JSON.",
+    usage: "moonstage scene [dir] [--scene <id>] [--json]",
+  },
+  {
+    name: "edit",
+    summary: "Apply semantic operations to a scene; validates the whole project before writing.",
+    usage: "moonstage edit [dir] [--scene <id>] (--op '<json>' | --ops <file|->) [--dry-run] [--json]",
+  },
+  {
+    name: "mcp",
+    summary: "Serve Moonstage operations to agents over the Model Context Protocol (stdio).",
+    usage: "moonstage mcp",
   },
   {
     name: "plugin",
@@ -407,6 +429,94 @@ export async function inspect(opts: { dir?: string }): Promise<CommandResult> {
     `Tests: ${tests.map((t) => t.file).join(", ") || "none"}`,
   ];
   return result({ data, diagnostics: loaded.diagnostics, lines });
+}
+
+// ---------------------------------------------------------------- scene / edit
+
+/** Return one scene's source JSON (default: the entry scene). */
+export async function getScene(opts: { dir?: string; scene?: string }): Promise<CommandResult> {
+  const { root, diagnostics: rootIssues } = projectRoot(opts.dir);
+  if (rootIssues.length > 0) return result({ diagnostics: rootIssues, exitCode: EXIT.usage });
+  const loaded = await load(root, { behaviors: "skip", plugins: "skip" });
+  const sceneId = opts.scene ?? loaded.manifest?.entryScene ?? "";
+  const scene = loaded.scenes[sceneId];
+  if (scene === undefined) {
+    return result({ diagnostics: [...loaded.diagnostics, diagnostic("MS2004", `scene "${sceneId}" is not loaded`)] });
+  }
+  return result({
+    data: { root, scene: sceneId, file: loaded.manifest!.scenes[sceneId], source: scene },
+    diagnostics: loaded.diagnostics,
+    lines: [JSON.stringify(scene, null, 2)],
+  });
+}
+
+/**
+ * Apply semantic operations to a scene file. The result is validated against
+ * the whole project before anything is written; on errors nothing changes.
+ */
+export async function editScene(opts: {
+  dir?: string;
+  scene?: string;
+  operations?: unknown;
+  dryRun?: boolean;
+}): Promise<CommandResult> {
+  const { root, diagnostics: rootIssues } = projectRoot(opts.dir);
+  if (rootIssues.length > 0) return result({ diagnostics: rootIssues, exitCode: EXIT.usage });
+  const ops = Array.isArray(opts.operations) ? opts.operations : opts.operations === undefined ? [] : [opts.operations];
+  if (ops.length === 0) {
+    return result({ exitCode: EXIT.usage, diagnostics: [diagnostic("MS9001", "no operations: pass --op '<json>' or --ops <file|->")] });
+  }
+  const shape = ops.flatMap((op, i) =>
+    validateSchema(operationSchema, op).map((issue) =>
+      diagnostic("MS5003", `operations[${i}] ${issue.path}: ${issue.message}`, { path: `operations[${i}]` }),
+    ),
+  );
+  if (shape.length > 0) return result({ diagnostics: shape });
+
+  const loaded = await load(root, { behaviors: "skip", plugins: "skip" });
+  const manifest = loaded.manifest;
+  const sceneId = opts.scene ?? manifest?.entryScene ?? "";
+  const before = loaded.scenes[sceneId];
+  if (manifest === undefined || before === undefined) {
+    return result({ diagnostics: [...loaded.diagnostics, diagnostic("MS2004", `scene "${sceneId}" is not loaded`)] });
+  }
+  const file = manifest.scenes[sceneId]!;
+  let after: SceneSource;
+  try {
+    after = applyOperations(before, ops as Operation[]);
+  } catch (err) {
+    if (err instanceof MoonstageError) return result({ diagnostics: err.diagnostics });
+    throw err;
+  }
+  const diagnostics = [
+    ...validateSceneShape(after, file),
+    ...validateProjectSemantics(manifest, { ...loaded.scenes, [sceneId]: after }).filter(
+      (d) => d.file === undefined || d.file === file || d.file === "moonstage.json",
+    ),
+  ];
+  const ok = !hasErrors(diagnostics);
+  const write = ok && !opts.dryRun;
+  if (write) await writeFile(join(root, file), `${JSON.stringify(after, null, 2)}\n`);
+  const ids = (s: SceneSource) => new Set(s.entities.map((e) => e.id));
+  const [old, now] = [ids(before), ids(after)];
+  return result({
+    diagnostics,
+    data: {
+      root,
+      scene: sceneId,
+      file,
+      operations: ops.length,
+      written: write,
+      added: [...now].filter((id) => !old.has(id)),
+      removed: [...old].filter((id) => !now.has(id)),
+      entities: after.entities.length,
+    },
+    lines: [
+      ok
+        ? `${write ? "applied" : "would apply"} ${ops.length} operation(s) to ${file}${opts.dryRun ? " (dry run)" : ""}`
+        : `not written: the edited scene has errors`,
+    ],
+  });
 }
 
 // ---------------------------------------------------------------- build

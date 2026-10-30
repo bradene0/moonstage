@@ -15,7 +15,8 @@ Work in small verified steps. Never hand off a project that you have not validat
    `moonstage inspect --json` to see the current state.
 3. **Design the data first**:
    - Inputs: name them in `moonstage.json` `input.axes` or `input.buttons`.
-   - Entities: give each a stable `id` and `components` in `scenes/*.scene.json`. Use `parent` for rigs
+   - Entities: give each a stable `id` and `components` in `scenes/*.scene.json`. For changes to an
+     existing scene, prefer `moonstage edit --op '<json>' --json`: it validates before writing. Use `parent` for rigs
      (for example a flame attached to a ship) and the scene `camera` for scrolling.
    - Behaviors: declare each module in `moonstage.json` `behaviors` with ordered `params`, `state`,
      `refs`, `inputs` and `events`.

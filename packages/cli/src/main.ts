@@ -4,6 +4,8 @@
 import { parseArgs, type ParseArgsConfig } from "node:util";
 import { diagnostic, MoonstageError } from "@moonstage/core";
 import * as commands from "./commands.js";
+import { readFileSync } from "node:fs";
+import { serveMcp } from "./mcp.js";
 import { EXIT, print, result, type CommandResult } from "./output.js";
 
 const shared = {
@@ -31,7 +33,31 @@ const OPTIONS: Record<string, ParseArgsConfig["options"]> = {
   render: { ...shared, ...sim, output: { type: "string", short: "o" } },
   schemas: { ...shared, write: { type: "boolean" }, out: { type: "string" } },
   plugin: { ...shared, name: { type: "string" } },
+  scene: { ...shared, scene: { type: "string" } },
+  edit: { ...shared, scene: { type: "string" }, op: { type: "string" }, ops: { type: "string" }, "dry-run": { type: "boolean" } },
+  mcp: shared,
 };
+
+/** Operations from --op (inline JSON) or --ops (file path, or "-" for stdin). */
+async function readOperations(values: Record<string, unknown>): Promise<unknown> {
+  const source =
+    typeof values.op === "string"
+      ? values.op
+      : values.ops === "-"
+        ? await new Promise<string>((done) => {
+            let text = "";
+            process.stdin.on("data", (b: Buffer) => (text += b.toString())).on("end", () => done(text));
+          })
+        : typeof values.ops === "string"
+          ? readFileSync(values.ops, "utf8")
+          : undefined;
+  if (source === undefined) return undefined;
+  try {
+    return JSON.parse(source);
+  } catch (err) {
+    throw new MoonstageError([diagnostic("MS9001", `operations are not valid JSON: ${(err as Error).message}`)]);
+  }
+}
 
 function help(): CommandResult {
   return result({
@@ -78,6 +104,18 @@ async function dispatch(name: string, values: Record<string, unknown>, dir: stri
       return commands.render({ dir, tick: s("tick") ?? s("ticks"), scene: s("scene"), seed: s("seed"), output: s("output"), input: s("input"), build });
     case "schemas":
       return commands.schemas({ write: Boolean(values.write), ...(s("out") && { out: s("out") }) });
+    case "scene":
+      return commands.getScene({ dir, ...(s("scene") && { scene: s("scene") }) });
+    case "edit":
+      return commands.editScene({
+        dir,
+        ...(s("scene") && { scene: s("scene") }),
+        operations: await readOperations(values),
+        dryRun: Boolean(values["dry-run"]),
+      });
+    case "mcp":
+      await serveMcp();
+      return result({});
     case "plugin":
       // `dir` is the subcommand here; the path follows it.
       if (dir === "new") return commands.pluginNew({ dir: rest[0], ...(s("name") && { name: s("name") }) });

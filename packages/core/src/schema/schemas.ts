@@ -361,7 +361,38 @@ export const operationSchema: JsonSchema = {
       additionalProperties: false,
       properties: { operation: { const: "remove_entity" }, target: id },
     },
+    {
+      title: "unset_property",
+      type: "object",
+      required: ["operation", "target", "property"],
+      additionalProperties: false,
+      properties: {
+        operation: { const: "unset_property" },
+        target: id,
+        property: { type: "string", description: "Component-relative path; a component name removes the component." },
+      },
+    },
+    {
+      title: "attach_behavior",
+      type: "object",
+      required: ["operation", "target", "behavior"],
+      additionalProperties: false,
+      properties: {
+        operation: { const: "attach_behavior" },
+        target: id,
+        behavior: { $ref: "#/$defs/behaviorEntry" },
+        index: { type: "integer", minimum: 0, description: "Position in the behavior list (default: end)." },
+      },
+    },
+    {
+      title: "detach_behavior",
+      type: "object",
+      required: ["operation", "target", "module"],
+      additionalProperties: false,
+      properties: { operation: { const: "detach_behavior" }, target: id, module: id },
+    },
   ],
+  $defs: { behaviorEntry },
 };
 
 export const testSchema: JsonSchema = {
@@ -395,6 +426,7 @@ export const testSchema: JsonSchema = {
   },
   $defs: {
     operation: operationSchema,
+    behaviorEntry,
     assertion: {
       anyOf: [
         {

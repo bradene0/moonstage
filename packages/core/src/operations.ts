@@ -6,12 +6,15 @@
  */
 
 import { diagnostic, MoonstageError } from "./diagnostics.js";
-import type { EntitySource, SceneSource } from "./project.js";
+import { behaviorsOf, type BehaviorComponent, type EntitySource, type SceneSource } from "./project.js";
 
 export type Operation =
   | { operation: "set_property"; target: string; property: string; value: unknown }
   | { operation: "add_entity"; entity: EntitySource }
-  | { operation: "remove_entity"; target: string };
+  | { operation: "remove_entity"; target: string }
+  | { operation: "unset_property"; target: string; property: string }
+  | { operation: "attach_behavior"; target: string; behavior: BehaviorComponent; index?: number }
+  | { operation: "detach_behavior"; target: string; module: string };
 
 /** Vector component aliases accepted in property paths. */
 const AXIS: Record<string, number> = { x: 0, y: 1 };
@@ -51,6 +54,47 @@ export function applyOperation(scene: SceneSource, op: Operation): SceneSource {
       next.entities.splice(index, 1);
       // Detach children so the scene stays valid.
       for (const e of next.entities) if (e.parent === op.target) e.parent = null;
+      return next;
+    }
+    case "unset_property": {
+      const entity = next.entities.find((e) => e.id === op.target);
+      if (entity === undefined) throw missing(op.target);
+      const keys = parsePropertyPath(op.property);
+      if (keys.length === 1 && ENTITY_FIELDS.has(keys[0] as string)) {
+        delete (entity as unknown as Record<string, unknown>)[keys[0] as string];
+        return next;
+      }
+      let node = entity.components as Record<string | number, unknown> | undefined;
+      for (const key of keys.slice(0, -1)) node = node?.[key] as Record<string | number, unknown> | undefined;
+      const last = keys[keys.length - 1]!;
+      if (node === undefined || !(last in node)) {
+        throw new MoonstageError([diagnostic("MS5003", `"${op.target}" has no property "${op.property}"`, { entity: op.target })]);
+      }
+      if (Array.isArray(node)) node.splice(last as number, 1);
+      else delete node[last];
+      return next;
+    }
+    case "attach_behavior": {
+      const entity = next.entities.find((e) => e.id === op.target);
+      if (entity === undefined) throw missing(op.target);
+      const list = behaviorsOf(entity.components);
+      list.splice(op.index ?? list.length, 0, clone(op.behavior));
+      entity.components = { ...entity.components, behavior: list.length === 1 ? list[0]! : list };
+      return next;
+    }
+    case "detach_behavior": {
+      const entity = next.entities.find((e) => e.id === op.target);
+      if (entity === undefined) throw missing(op.target);
+      const list = behaviorsOf(entity.components);
+      const index = list.findIndex((b) => b.module === op.module);
+      if (index < 0) {
+        throw new MoonstageError([diagnostic("MS5003", `"${op.target}" has no "${op.module}" behavior`, { entity: op.target })]);
+      }
+      list.splice(index, 1);
+      const components = { ...entity.components };
+      if (list.length === 0) delete components.behavior;
+      else components.behavior = list.length === 1 ? list[0]! : list;
+      entity.components = components;
       return next;
     }
     case "set_property": {
