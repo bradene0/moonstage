@@ -82,7 +82,8 @@ agent skills ship with the CLI: `moonstage guide`.
 ```
 
 `moonstage build` writes exactly this kind of static bundle to `dist/`. To ship a game as one file, run
-`moonstage pack` and point the player at it: `<moonstage-player src="./game.msp">`. You can also play from code:
+`moonstage build --single-file`: the result is a single `.html` that plays anywhere, offline. Or run
+`moonstage pack` and point a player at the package: `<moonstage-player src="./game.msp">`. You can also play from code:
 `import { play } from "@moonstage/player"; play("#game", "./game/")`. The player has no framework
 dependency.
 

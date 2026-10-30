@@ -293,6 +293,21 @@ describe("moonstage CLI", () => {
     assert.equal(cli("validate", dir, "--json").code, 0, "the plugin loads headlessly");
   });
 
+  it("builds a self-contained single-file HTML game", moon, () => {
+    const output = join(scratch, "single", "hopper.html");
+    const r = cli("build", example, "--single-file", "--out", output, "--json");
+    assert.equal(r.code, 0, r.stdout);
+    const html = readFileSync(output, "utf8");
+    assert.doesNotMatch(html, /<script[^>]+src=|<link[^>]+href=/, "no external scripts or styles");
+    const modules = JSON.parse(/<script type="application\/json" id="moonstage-modules">([\s\S]*?)<\/script>/.exec(html)![1]!);
+    assert.ok("core/index.js" in modules && "player/index.js" in modules && "core/schema/schemas.js" in modules);
+    assert.ok(!Object.keys(modules).some((k) => k.endsWith(".test.js")));
+    const game = /<script type="application\/octet-stream" id="moonstage-game">([^<]+)<\/script>/.exec(html)![1]!;
+    const zip = Buffer.from(game.trim(), "base64");
+    assert.equal(zip.readUInt32LE(0), 0x04034b50, "the game is an inlined .msp (ZIP)");
+    assert.ok(r.json.bytes < 400 * 1024, `single file stays small (${r.json.bytes} bytes)`);
+  });
+
   it("packs a project into an .msp that runs, validates and unpacks like the source", moon, () => {
     const output = join(scratch, "pack", "hopper.msp");
     const packed = cli("pack", example, "--out", output, "--json");

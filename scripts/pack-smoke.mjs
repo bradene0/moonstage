@@ -43,6 +43,8 @@ try {
   if (!existsSync(join(built.bundle, "index.html")) || !existsSync(join(built.bundle, "runtime", "core", "index.js"))) {
     throw new Error("web bundle is incomplete");
   }
+  const single = cli("build", "game", "--single-file");
+  if (!existsSync(single.output)) throw new Error("single-file build missing");
   const packed = cli("pack", "game");
   const simulated = cli("run", packed.output, "--headless", "--ticks", "60");
   if (simulated.ticks !== 60) throw new Error("packed game did not simulate");

@@ -9,6 +9,9 @@ versions so you can tell what moved.
 
 - **`moonstage guide`**: the docs and agent skills now ship inside the CLI package, so an agent with only
   `npx moonstage` can read them (also an MCP tool, `moonstage_guide`).
+- **Single-file games.** `moonstage build --single-file` writes one self-contained `.html` (runtime modules
+  and the game's `.msp` inlined; about 200 KB for Moon Hopper) that plays with no server or network, e.g. as
+  an attachment or inside a chat widget. `play()` also accepts `.msp` bytes directly.
 - **MoonBit primer** (`moonstage guide moonbit`): the language subset behaviors need, where every snippet
   compiles, plus a table of the compiler errors newcomers hit.
 - MoonBit compile errors now carry targeted hints (a `self` parameter, a missing slot name, Int/Double

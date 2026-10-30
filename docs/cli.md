@@ -14,6 +14,7 @@
 | `edit [--scene id] (--op '<json>' \| --ops <file\|->) [--dry-run]` | Apply semantic operations to a scene. The whole project is validated first; nothing is written if there are errors. |
 | `mcp` | Serve these operations to agents over the Model Context Protocol (stdio) |
 | `build [--out dist] [--no-bundle]` | Compile MoonBit behaviors, then write a static web bundle |
+| `build --single-file [--out file.html]` | Write one self-contained `.html` that plays with no server or network (project-local plugins only) |
 | `run` | Build and serve on http://localhost:5173 (`--port`) |
 | `run --headless [--ticks 600] [--seed] [--scene] [--input '{"thrust":1}']` | Simulate and report events, logs and a state snapshot |
 | `test [--filter]` | Run `tests/*.test.json` |

@@ -27,7 +27,7 @@ const OPTIONS: Record<string, ParseArgsConfig["options"]> = {
   new: { ...shared, name: { type: "string" }, template: { type: "string" } },
   validate: shared,
   inspect: shared,
-  build: { ...shared, out: { type: "string" }, "no-bundle": { type: "boolean" } },
+  build: { ...shared, out: { type: "string" }, "no-bundle": { type: "boolean" }, "single-file": { type: "boolean" } },
   run: { ...shared, ...sim, headless: { type: "boolean" }, port: { type: "string" } },
   test: { ...shared, filter: { type: "string" }, "no-build": { type: "boolean" } },
   render: { ...shared, ...sim, output: { type: "string", short: "o" } },
@@ -89,7 +89,7 @@ async function dispatch(name: string, values: Record<string, unknown>, dir: stri
     case "inspect":
       return commands.inspect({ dir });
     case "build":
-      return commands.build({ dir, ...(s("out") && { out: s("out") }), bundle: !values["no-bundle"] });
+      return commands.build({ dir, ...(s("out") && { out: s("out") }), bundle: !values["no-bundle"], singleFile: Boolean(values["single-file"]) });
     case "run":
       return commands.runCommand({
         dir,

@@ -45,6 +45,6 @@ Work in small verified steps. Never hand off a project that you have not validat
 8. **Render**: `moonstage render --tick 120 --output frame.svg`. Look at the frame to check layout,
    camera and visibility.
 9. **Iterate** on failures: see [debug-project](../debug-project/SKILL.md). When everything passes,
-   `moonstage run` lets a human play.
+   `moonstage run` lets a human play, and `moonstage build --single-file` produces one `.html` to share.
 
 The reference implementation of all of this is `examples/moon-hopper/`.

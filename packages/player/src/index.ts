@@ -107,20 +107,26 @@ const MIME: Record<string, string> = {
  * Open a project directory/manifest URL, or an .msp package URL. For packages,
  * assets are served from blob: URLs created from the package's contents.
  */
-export async function openSource(src: string | URL, base: string = document.baseURI): Promise<{
+export async function openSource(src: Source, base: string = document.baseURI): Promise<{
   io: ProjectIO;
   urlFor: (path: string) => Promise<string | undefined>;
 }> {
-  const url = new URL(src, base);
-  if (!url.pathname.endsWith(".msp")) {
-    const root = projectUrl(url);
-    return { io: fetchIO(url), urlFor: async (path) => new URL(path, root).href };
+  let bytes: Uint8Array;
+  if (src instanceof Uint8Array || src instanceof ArrayBuffer) {
+    bytes = src instanceof Uint8Array ? src : new Uint8Array(src);
+  } else {
+    const url = new URL(src, base);
+    if (!url.pathname.endsWith(".msp")) {
+      const root = projectUrl(url);
+      return { io: fetchIO(url), urlFor: async (path) => new URL(path, root).href };
+    }
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new PlayerLoadError([diagnostic("MS1003", `${url.href}: HTTP ${response.status}`, { file: url.pathname })]);
+    }
+    bytes = new Uint8Array(await response.arrayBuffer());
   }
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new PlayerLoadError([diagnostic("MS1003", `${url.href}: HTTP ${response.status}`, { file: url.pathname })]);
-  }
-  const io = await mspIO(new Uint8Array(await response.arrayBuffer()));
+  const io = await mspIO(bytes);
   const urls = new Map<string, string>();
   return {
     io,
@@ -151,7 +157,10 @@ function showDiagnostics(host: HTMLElement, diagnostics: Diagnostic[]): void {
   host.replaceChildren(pre);
 }
 
-export async function play(target: string | HTMLElement, src: string | URL, options: PlayOptions = {}): Promise<Player> {
+/** A project directory or moonstage.json URL, an .msp URL, or the bytes of an .msp package. */
+export type Source = string | URL | Uint8Array | ArrayBuffer;
+
+export async function play(target: string | HTMLElement, src: Source, options: PlayOptions = {}): Promise<Player> {
   const host = typeof target === "string" ? document.querySelector<HTMLElement>(target) : target;
   if (host === null) throw new Error(`play(): no element matches ${String(target)}`);
 

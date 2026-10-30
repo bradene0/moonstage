@@ -34,6 +34,7 @@ import {
   validateSceneShape,
   validateSchema,
   type Operation,
+  type ProjectManifest,
   type SceneSource,
   runTest,
   sceneSchema,
@@ -43,6 +44,7 @@ import {
   type TestResult,
 } from "@moonstage/core";
 import { runtimeFiles, serve, writeBundle } from "./bundle.js";
+import { singleFileHtml } from "./single-file.js";
 import { writeZip } from "./zip.js";
 import { buildMoonbitBehaviors, findMoon } from "./moonbit.js";
 import { EXIT, result, type CommandResult } from "./output.js";
@@ -67,7 +69,7 @@ export const COMMANDS: CommandSpec[] = [
   { name: "new", summary: "Create a new project from a template.", usage: "moonstage new <dir> [--name <name>] [--json]" },
   { name: "validate", summary: "Validate project files, references, plugins and tests.", usage: "moonstage validate [dir] [--json]" },
   { name: "inspect", summary: "Summarize scenes, entities, behaviors and plugins.", usage: "moonstage inspect [dir] [--json]" },
-  { name: "build", summary: "Compile MoonBit behaviors and write a static web bundle.", usage: "moonstage build [dir] [--out <dir>] [--no-bundle] [--json]" },
+  { name: "build", summary: "Compile MoonBit behaviors and write a static web bundle.", usage: "moonstage build [dir] [--out <dir|file.html>] [--no-bundle] [--single-file] [--json]" },
   {
     name: "run",
     summary: "Play in the browser (local server) or simulate headlessly.",
@@ -666,10 +668,32 @@ function readOnlyPackage(root: string): CommandResult {
   });
 }
 
-export async function build(opts: { dir?: string; out?: string; bundle?: boolean }): Promise<CommandResult> {
+export async function build(opts: { dir?: string; out?: string; bundle?: boolean; singleFile?: boolean }): Promise<CommandResult> {
   if (opts.dir !== undefined && isPackage(resolve(opts.dir))) return readOnlyPackage(resolve(opts.dir));
   const p = await prepare(opts.dir, true);
   if (p.project === undefined) return failed(p);
+  if (opts.singleFile) {
+    const packaged = Object.entries(p.project.manifest.plugins ?? {}).filter(([, d]) => !d.module.startsWith("./"));
+    if (packaged.length > 0) {
+      return result({
+        diagnostics: [
+          diagnostic("MS9001", `--single-file needs project-local plugins; ${packaged.map(([n]) => n).join(", ")} ${packaged.length === 1 ? "is a package" : "are packages"}`, {
+            hint: "Use the folder bundle (`moonstage build`) for projects with npm plugins.",
+          }),
+        ],
+      });
+    }
+    const { zip, manifest } = await packageProject(p.root, p.project.manifest);
+    const html = await singleFileHtml(manifest.name, manifest.display ?? {}, zip);
+    const output = resolve(p.root, opts.out ?? join("dist", `${manifest.name}.html`));
+    await mkdir(dirname(output), { recursive: true });
+    await writeFile(output, html);
+    return result({
+      diagnostics: p.diagnostics,
+      data: { root: p.root, behaviors: p.behaviors, output, bytes: Buffer.byteLength(html) },
+      lines: [`single-file game -> ${output} (${(Buffer.byteLength(html) / 1024).toFixed(1)} KB); open it in any browser`],
+    });
+  }
   const data: Record<string, unknown> = { root: p.root, behaviors: p.behaviors };
   const lines = p.behaviors.map((b) => `compiled ${b.name} -> ${b.output} (${b.bytes} bytes)`);
   if (opts.bundle !== false) {
@@ -691,7 +715,20 @@ export async function build(opts: { dir?: string; out?: string; bundle?: boolean
 export async function pack(opts: { dir?: string; out?: string }): Promise<CommandResult> {
   const p = await prepare(opts.dir, true);
   if (p.project === undefined) return failed(p);
-  const manifest = structuredClone(p.project.manifest);
+  const { zip, entries, manifest } = await packageProject(p.root, p.project.manifest);
+  const output = resolve(opts.out ?? join(p.root, `${manifest.name}.msp`));
+  await mkdir(dirname(output), { recursive: true });
+  await writeFile(output, zip);
+  return result({
+    diagnostics: p.diagnostics,
+    data: { root: p.root, output, bytes: zip.length, files: entries.map((e) => e.path) },
+    lines: [`packed ${entries.length} files -> ${output} (${(zip.length / 1024).toFixed(1)} KB)`],
+  });
+}
+
+/** Build the .msp bytes for a compiled project (shared by pack and single-file builds). */
+async function packageProject(root: string, source: ProjectManifest) {
+  const manifest = structuredClone(source);
   const entries: { path: string; data: Uint8Array }[] = [];
   const moves = new Map<string, string>();
   for (const [name, decl] of Object.entries(manifest.behaviors ?? {})) {
@@ -704,21 +741,13 @@ export async function pack(opts: { dir?: string; out?: string }): Promise<Comman
   const metadata = { format: MSP_FORMAT, name: manifest.name, createdWith: `moonstage ${CLI_VERSION}` };
   entries.push({ path: "msp.json", data: Buffer.from(`${JSON.stringify(metadata, null, 2)}\n`) });
   entries.push({ path: "moonstage.json", data: Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`) });
-  for (const file of runtimeFiles(p.project.manifest)) {
+  for (const file of runtimeFiles(source)) {
     if (file === "moonstage.json") continue;
-    const path = join(p.root, file);
+    const path = join(root, file);
     if (!existsSync(path)) continue;
     entries.push({ path: moves.get(file) ?? file, data: new Uint8Array(await readFile(path)) });
   }
-  const zip = writeZip(entries);
-  const output = resolve(opts.out ?? join(p.root, `${manifest.name}.msp`));
-  await mkdir(dirname(output), { recursive: true });
-  await writeFile(output, zip);
-  return result({
-    diagnostics: p.diagnostics,
-    data: { root: p.root, output, bytes: zip.length, files: entries.map((e) => e.path) },
-    lines: [`packed ${entries.length} files -> ${output} (${(zip.length / 1024).toFixed(1)} KB)`],
-  });
+  return { zip: writeZip(entries), entries, manifest };
 }
 
 export async function unpack(opts: { file?: string; dir?: string }): Promise<CommandResult> {
