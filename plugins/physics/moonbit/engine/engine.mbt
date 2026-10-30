@@ -151,6 +151,18 @@ let c_jn : Array[Double] = []
 let c_jt : Array[Double] = []
 
 ///|
+/// Stable identity of each contact (pair + point index), for warm starting.
+let c_key : Array[Int64] = []
+
+///|
+/// Impulses from the previous substep, by contact key. Starting the solver from
+/// them (warm starting) is what keeps stacks from slowly creeping apart.
+let warm_n : Map[Int64, Double] = {}
+
+///|
+let warm_t : Map[Int64, Double] = {}
+
+///|
 /// Touching pairs from the last step (a < b), reported to the plugin.
 let t_a : Array[Int] = []
 
@@ -248,6 +260,9 @@ pub fn reset() -> Unit {
   }
   sensor.clear()
   j_motor_on.clear()
+  c_key.clear()
+  warm_n.clear()
+  warm_t.clear()
   gravity[0] = 0.0
   gravity[1] = 980.0
 }
@@ -498,6 +513,7 @@ fn add_contact(
   c_target.push(0.0)
   c_jn.push(0.0)
   c_jt.push(0.0)
+  c_key.push(0L)
 }
 
 ///|
@@ -636,8 +652,10 @@ fn box_box(a : Int, b : Int) -> Bool {
       let sy = if k < 2 { -1.0 } else { 1.0 }
       let x = box_corner_x(owner, sx, sy)
       let y = box_corner_y(owner, sx, sy)
-      if inside_box(other, x, y) > -0.01 {
-        add_contact(a, b, nx, ny, x, y, best)
+      let inside = inside_box(other, x, y)
+      if inside > -0.01 {
+        // Each corner's own penetration, so a slightly tilted box is not pushed as if fully sunk.
+        add_contact(a, b, nx, ny, x, y, clamp(inside, 0.0, best))
         found = found + 1
       }
     }
@@ -690,6 +708,7 @@ fn detect(record : Bool) -> Unit {
   for list in [c_nx, c_ny, c_px, c_py, c_depth, c_kn, c_kt, c_target, c_jn, c_jt] {
     list.clear()
   }
+  c_key.clear()
   if record {
     t_a.clear()
     t_b.clear()
@@ -735,6 +754,9 @@ fn detect(record : Bool) -> Unit {
       }
       let before = c_a.length()
       if collide(a, b) {
+        for k = before; k < c_a.length(); k = k + 1 {
+          c_key[k] = (a.to_int64() * 1048576L + b.to_int64()) * 4L + (k - before).to_int64()
+        }
         if record {
           t_a.push(a)
           t_b.push(b)
@@ -758,6 +780,7 @@ fn pop_contact() -> Unit {
   for list in [c_nx, c_ny, c_px, c_py, c_depth, c_kn, c_kt, c_target, c_jn, c_jt] {
     list.pop() |> ignore
   }
+  c_key.pop() |> ignore
 }
 
 // ---------------------------------------------------------------- solver
@@ -815,8 +838,25 @@ fn prepare_contacts(h : Double) -> Unit {
     }
     // Push penetrating bodies apart (Baumgarte), but never less than the bounce.
     c_target[k] = fmax(bounce, baumgarte / h * fmax(c_depth[k] - slop, 0.0))
-    c_jn[k] = 0.0
-    c_jt[k] = 0.0
+    // Warm start from last substep's impulses for the same contact.
+    let jn = warm_n.get(c_key[k]).unwrap_or(0.0)
+    let jt = warm_t.get(c_key[k]).unwrap_or(0.0)
+    c_jn[k] = jn
+    c_jt[k] = jt
+    let tx = -ny
+    let ty = nx
+    apply_impulse(a, rax, ray, nx * jn + tx * jt, ny * jn + ty * jt, -1.0)
+    apply_impulse(b, rbx, rby, nx * jn + tx * jt, ny * jn + ty * jt, 1.0)
+  }
+}
+
+///|
+fn store_warm_start() -> Unit {
+  warm_n.clear()
+  warm_t.clear()
+  for k = 0; k < c_a.length(); k = k + 1 {
+    warm_n.set(c_key[k], c_jn[k])
+    warm_t.set(c_key[k], c_jt[k])
   }
 }
 
@@ -945,6 +985,7 @@ pub fn step(dt : Double, substeps : Int, iterations : Int) -> Unit {
       solve_joints(h)
       solve_contacts()
     }
+    store_warm_start()
     for i = 0; i < kind.length(); i = i + 1 {
       if kind[i] == 1 || kind[i] == 2 {
         px[i] = px[i] + vx[i] * h

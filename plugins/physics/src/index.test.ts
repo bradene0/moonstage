@@ -87,6 +87,30 @@ describe("@moonstage/physics", () => {
     assert.ok(va > 100 && vb > 100 && va + vb < 300, `momentum shared through the joint (a=${va}, b=${vb})`);
   });
 
+  it("keeps a post-and-plank tower standing with default settings (warm starting)", async () => {
+    const platform: EntitySource = { id: "platform", components: { transform: { position: [600, 420] }, collider: { shape: "box", size: [300, 30] } } };
+    const blocks: EntitySource[] = [];
+    let y = 405;
+    for (let floor = 0; floor < 3; floor++) {
+      for (const x of [560, 640]) {
+        blocks.push({ id: `post-${floor}-${x}`, components: { transform: { position: [x, y - 40] }, physicsBody: {}, collider: { shape: "box", size: [16, 80], friction: 0.6 } } });
+      }
+      blocks.push({ id: `plank-${floor}`, components: { transform: { position: [600, y - 88] }, physicsBody: {}, collider: { shape: "box", size: [120, 16], friction: 0.6 } } });
+      y -= 96;
+    }
+    const project = world([platform, ...blocks]);
+    const rt = await Runtime.create(project);
+    const start = new Map(rt.world.entities.map((e) => [e.id, { ...e.transform }]));
+    for (let i = 0; i < 60 * 60; i++) rt.step();
+    let drift = 0;
+    for (const b of blocks) {
+      const now = rt.world.byStableId(b.id)!.transform;
+      const was = start.get(b.id)!;
+      drift = Math.max(drift, Math.hypot(now.x - was.x, now.y - was.y));
+    }
+    assert.ok(drift < 2, `untouched tower drifted ${drift.toFixed(2)} px in 60 s`);
+  });
+
   it("is deterministic and isolates worlds", async () => {
     const make = () => world([ground, box("c1", 0, 100, 0.3), box("c2", 10, 0, 0.8), box("c3", -15, -100, 1.2)]);
     const [one, two] = await Promise.all([simulate(make(), 180), simulate(make(), 180)]);

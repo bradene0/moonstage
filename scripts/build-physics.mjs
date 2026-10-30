@@ -16,7 +16,6 @@ const plugin = join(repo, "plugins", "physics");
 const moduleDir = join(plugin, "moonbit");
 const dist = join(plugin, "dist", "index.js");
 const wasm = join(moduleDir, "_build", "wasm", "release", "build", "engine", "engine.wasm");
-const PLACEHOLDER = "__MOONSTAGE_PHYSICS_ENGINE__";
 
 function findMoon() {
   if (process.env.MOONSTAGE_MOON) return process.env.MOONSTAGE_MOON;
@@ -26,10 +25,10 @@ function findMoon() {
 }
 
 const source = readFileSync(dist, "utf8");
-if (!source.includes(PLACEHOLDER)) {
-  // tsc did not re-emit (nothing changed) and the engine is already embedded.
-  process.exit(0);
-}
+// The embedded engine sits in one string constant; rebuild and replace it every time, so engine-only
+// changes (which tsc does not see) are never skipped.
+const EMBEDDED = /const ENGINE_WASM = "([^"]*)";/;
+if (!EMBEDDED.test(source)) throw new Error(`${dist} has no ENGINE_WASM constant`);
 const moon = findMoon();
 if (moon) {
   execFileSync(moon, ["build", "--target", "wasm", "--release", "--quiet"], { cwd: moduleDir, stdio: "inherit" });
@@ -37,4 +36,5 @@ if (moon) {
   console.warn("@moonstage/physics: MoonBit (`moon`) not found; the physics engine was not built.");
   process.exit(0);
 }
-writeFileSync(dist, source.replace(PLACEHOLDER, readFileSync(wasm).toString("base64")));
+const embedded = source.replace(EMBEDDED, `const ENGINE_WASM = "${readFileSync(wasm).toString("base64")}";`);
+if (embedded !== source) writeFileSync(dist, embedded);
