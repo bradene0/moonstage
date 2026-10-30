@@ -45,7 +45,7 @@ You need Node.js 22 or newer and the [MoonBit toolchain](https://www.moonbitlang
 Start a project from npm:
 
 ```bash
-npx moonstage new my-game
+npx moonstage new my-game --template platformer   # or shooter, or minimal
 cd my-game
 npx moonstage test      # compile behaviors and run headless tests
 npx moonstage run       # play at http://localhost:5173

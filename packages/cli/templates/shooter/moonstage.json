@@ -1,0 +1,230 @@
+{
+  "format": 1,
+  "name": "__NAME__",
+  "entryScene": "main",
+  "scenes": {
+    "main": "scenes/main.scene.json",
+    "over": "scenes/over.scene.json"
+  },
+  "display": {
+    "width": 480,
+    "height": 640,
+    "background": "#0b1020"
+  },
+  "simulation": {
+    "tickRate": 60,
+    "seed": 1
+  },
+  "physics": {
+    "gravity": [
+      0,
+      0
+    ]
+  },
+  "input": {
+    "axes": {
+      "moveX": {
+        "negative": [
+          "ArrowLeft",
+          "KeyA"
+        ],
+        "positive": [
+          "ArrowRight",
+          "KeyD"
+        ]
+      }
+    },
+    "buttons": {
+      "fire": [
+        "Space",
+        "KeyJ"
+      ]
+    }
+  },
+  "behaviors": {
+    "ship": {
+      "description": "Moves, fires, loses lives on hit, ends the game at zero.",
+      "source": "behaviors/ship",
+      "params": [
+        "speed",
+        "minX",
+        "maxX",
+        "cooldown",
+        "lives"
+      ],
+      "state": [
+        "cool",
+        "lives"
+      ],
+      "inputs": [
+        "moveX",
+        "fire"
+      ],
+      "prefabs": [
+        "bullet"
+      ],
+      "events": [
+        "hit"
+      ],
+      "scenes": [
+        "over"
+      ]
+    },
+    "bullet": {
+      "description": "Flies up; removed off screen.",
+      "source": "behaviors/bullet",
+      "params": [
+        "speed"
+      ]
+    },
+    "enemy": {
+      "description": "Drifts down; destroyed by bullets, hits the ship.",
+      "source": "behaviors/enemy",
+      "params": [
+        "speed",
+        "bottom"
+      ],
+      "refs": [
+        "ship"
+      ],
+      "prefabs": [
+        "bullet"
+      ],
+      "events": [
+        "collision",
+        "destroyed",
+        "hit"
+      ]
+    },
+    "spawner": {
+      "description": "Spawns enemies, faster over time.",
+      "source": "behaviors/spawner",
+      "params": [
+        "interval",
+        "minInterval",
+        "minX",
+        "maxX"
+      ],
+      "state": [
+        "timer"
+      ],
+      "prefabs": [
+        "enemy"
+      ]
+    },
+    "score": {
+      "description": "Counts `destroyed`, keeps a saved best.",
+      "source": "behaviors/score",
+      "state": [
+        "points",
+        "best"
+      ],
+      "saves": [
+        "best"
+      ],
+      "events": [
+        "destroyed"
+      ]
+    },
+    "restart": {
+      "description": "Fire on the game-over screen starts again.",
+      "source": "behaviors/restart",
+      "state": [
+        "wait"
+      ],
+      "inputs": [
+        "fire"
+      ],
+      "scenes": [
+        "main"
+      ]
+    }
+  },
+  "prefabs": {
+    "bullet": {
+      "components": {
+        "shape": {
+          "kind": "rect",
+          "size": [
+            4,
+            14
+          ],
+          "fill": "#fde047",
+          "layer": 3
+        },
+        "physicsBody": {
+          "type": "kinematic"
+        },
+        "collider": {
+          "shape": "box",
+          "size": [
+            4,
+            14
+          ],
+          "sensor": true
+        },
+        "behavior": {
+          "module": "bullet",
+          "params": {
+            "speed": 560
+          }
+        }
+      }
+    },
+    "enemy": {
+      "components": {
+        "shape": {
+          "kind": "polygon",
+          "points": [
+            [
+              0,
+              -14
+            ],
+            [
+              14,
+              0
+            ],
+            [
+              0,
+              14
+            ],
+            [
+              -14,
+              0
+            ]
+          ],
+          "fill": "#f472b6",
+          "stroke": "#fbcfe8",
+          "strokeWidth": 1,
+          "layer": 2
+        },
+        "physicsBody": {
+          "type": "kinematic"
+        },
+        "collider": {
+          "shape": "box",
+          "size": [
+            22,
+            22
+          ],
+          "sensor": true
+        },
+        "behavior": {
+          "module": "enemy",
+          "params": {
+            "speed": 150,
+            "bottom": 700
+          },
+          "refs": {
+            "ship": "ship"
+          }
+        }
+      }
+    }
+  },
+  "plugins": {
+    "@moonstage/physics": {
+      "module": "@moonstage/physics"
+    }
+  }
+}

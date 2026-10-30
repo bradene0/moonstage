@@ -41,9 +41,13 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "moonstage_new_project",
-    description: "Create a new project from the minimal template in an empty directory.",
-    inputSchema: { type: "object", properties: { dir, name: str("Display name.") }, required: ["dir"] },
-    run: (a) => commands.create({ dir: s(a.dir), ...(s(a.name) && { name: s(a.name) }) }),
+    description: "Create a new project in an empty directory from a template: minimal, platformer or shooter.",
+    inputSchema: {
+      type: "object",
+      properties: { dir, name: str("Display name."), template: { enum: ["minimal", "platformer", "shooter"], description: "Starting point (default minimal)." } },
+      required: ["dir"],
+    },
+    run: (a) => commands.create({ dir: s(a.dir), ...(s(a.name) && { name: s(a.name) }), ...(s(a.template) && { template: s(a.template) }) }),
   },
   {
     name: "moonstage_validate",

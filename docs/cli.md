@@ -5,7 +5,7 @@
 | Command | Purpose |
 | --- | --- |
 | `describe` | Versions, commands, components, behavior ABI, plugin capabilities, exit codes and every diagnostic code |
-| `new <dir> [--name]` | Create a project from the `minimal` template |
+| `new <dir> [--template minimal\|platformer\|shooter] [--name]` | Create a project from a template (default `minimal`) |
 | `validate` | Schemas, cross-references, plugins and test files. Missing builds are warnings. |
 | `inspect` | Structured summary of scenes, entities, behaviors (built or not), plugins and tests |
 | `pack [--out file.msp]` | Build, then write an `.msp` package of the project's runtime files |

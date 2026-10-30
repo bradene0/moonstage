@@ -66,7 +66,11 @@ export interface CommandSpec {
 
 export const COMMANDS: CommandSpec[] = [
   { name: "describe", summary: "Print Moonstage capabilities, versions, components and error codes.", usage: "moonstage describe [--json]" },
-  { name: "new", summary: "Create a new project from a template.", usage: "moonstage new <dir> [--name <name>] [--json]" },
+  {
+    name: "new",
+    summary: "Create a new project from a template: minimal (default), platformer or shooter.",
+    usage: "moonstage new <dir> [--template minimal|platformer|shooter] [--name <name>] [--json]",
+  },
   { name: "validate", summary: "Validate project files, references, plugins and tests.", usage: "moonstage validate [dir] [--json]" },
   { name: "inspect", summary: "Summarize scenes, entities, behaviors and plugins.", usage: "moonstage inspect [dir] [--json]" },
   { name: "build", summary: "Compile MoonBit behaviors and write a static web bundle.", usage: "moonstage build [dir] [--out <dir|file.html>] [--no-bundle] [--single-file] [--json]" },
@@ -138,6 +142,7 @@ export function describe(): CommandResult {
     },
     toolchain: { moon: findMoon() ?? null },
     commands: COMMANDS,
+    templates: TEMPLATES,
     components,
     behaviorAbi: {
       version: BEHAVIOR_ABI,
@@ -255,6 +260,13 @@ export async function schemas(opts: { write?: boolean; out?: string }): Promise<
 
 const TEMPLATE_DIR = join(here, "..", "templates");
 
+/** Project templates for `moonstage new --template`. "plugin" is used by `moonstage plugin new`. */
+export const TEMPLATES = {
+  minimal: "One moving square and a MoonBit behavior: the smallest working project.",
+  platformer: "Run, jump and collect coins on physics platforms, with a following camera and a saved best score.",
+  shooter: "Move, fire and destroy falling enemies; lives, game-over scene, restart and a saved best score.",
+} as const;
+
 /** Copy a template into an empty directory, filling in placeholders. */
 async function scaffold(
   template: string,
@@ -307,6 +319,12 @@ async function scaffold(
 
 export async function create(opts: { dir?: string; name?: string; template?: string }): Promise<CommandResult> {
   const template = opts.template ?? "minimal";
+  if (!(template in TEMPLATES)) {
+    return result({
+      exitCode: EXIT.usage,
+      diagnostics: [diagnostic("MS9001", `unknown template "${template}"; templates: ${Object.keys(TEMPLATES).join(", ")}`)],
+    });
+  }
   const made = await scaffold(template, opts.dir, opts.name, "moonstage new <dir>", "game");
   if ("exitCode" in made) return made;
   const { target, name, files } = made;

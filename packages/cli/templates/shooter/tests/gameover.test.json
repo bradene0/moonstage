@@ -1,0 +1,30 @@
+{
+  "format": 1,
+  "name": "enemies that reach the ship cost lives and end the game",
+  "ticks": 600,
+  "setup": [
+    {
+      "operation": "set_property",
+      "target": "spawner",
+      "property": "behavior.params.minX",
+      "value": 240
+    },
+    {
+      "operation": "set_property",
+      "target": "spawner",
+      "property": "behavior.params.maxX",
+      "value": 240
+    }
+  ],
+  "expect": [
+    {
+      "event": "hit",
+      "count": {
+        "equals": 3
+      }
+    },
+    {
+      "scene": "over"
+    }
+  ]
+}

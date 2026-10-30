@@ -8,8 +8,10 @@ description: Create a new Moonstage project and confirm it validates, builds and
 0. `moonstage guide` lists every skill and reference doc bundled with the CLI.
 1. `moonstage describe --json`: confirm the CLI works and check `toolchain.moon`. If it is null, install
    MoonBit (https://www.moonbitlang.com/download) or set `MOONSTAGE_MOON`.
-2. `moonstage new <dir> --name "<Title>" --json`: creates the manifest, a scene, one MoonBit behavior
-   (`mover`), a test and `AGENTS.md`.
+2. `moonstage new <dir> --template <minimal|platformer|shooter> --name "<Title>" --json`. Pick the closest
+   starting point: `platformer` (physics, jumping, coins, camera) and `shooter` (firing, enemies, lives,
+   game over) are complete small games with MoonBit behaviors and tests; `minimal` is one moving square.
+   Starting from a template is much faster than starting blank.
 3. `cd <dir>`
 4. `moonstage validate --json`: expect `ok: true`. Warnings `MS3001` (not built yet) are fine.
 5. `moonstage test --json`: compiles behaviors and runs `tests/*.test.json`. Expect `failed: 0`.

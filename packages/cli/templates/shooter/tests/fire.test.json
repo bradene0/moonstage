@@ -1,0 +1,21 @@
+{
+  "format": 1,
+  "name": "fire spawns bullets with a cooldown",
+  "ticks": 20,
+  "input": [
+    {
+      "tick": 0,
+      "set": {
+        "fire": 1
+      }
+    }
+  ],
+  "expect": [
+    {
+      "prefab": "bullet",
+      "count": {
+        "equals": 2
+      }
+    }
+  ]
+}

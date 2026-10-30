@@ -348,6 +348,25 @@ describe("moonstage CLI", () => {
     assert.equal(cli("validate", join(scratch, "evil.msp"), "--json").json.diagnostics[0].code, "MS1003");
   });
 
+  for (const template of ["platformer", "shooter"]) {
+    it(`creates a ${template} from its template that passes its own tests`, moon, () => {
+      const dir = join(scratch, `tpl-${template}`);
+      assert.equal(cli("new", dir, "--template", template, "--json").code, 0);
+      const t = cli("test", dir, "--json");
+      assert.equal(t.code, 0, t.stdout);
+      assert.ok(t.json.passed >= 3);
+      assert.equal(cli("validate", dir, "--json").json.warnings, 0);
+      const single = cli("build", dir, "--single-file", "--json");
+      assert.equal(single.code, 0, single.stdout);
+    });
+  }
+
+  it("rejects unknown templates", () => {
+    const r = cli("new", join(scratch, "nope"), "--template", "rpg", "--json");
+    assert.equal(r.code, 2);
+    assert.match(r.json.diagnostics[0].message, /minimal, platformer, shooter/);
+  });
+
   it("reports MoonBit compile errors as MS3006 with file locations", moon, () => {
     const dir = join(scratch, "compile-error");
     cli("new", dir);

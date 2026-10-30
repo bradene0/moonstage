@@ -1,0 +1,40 @@
+{
+  "format": 1,
+  "name": "touching a coin collects it and saves the best score",
+  "ticks": 5,
+  "saves": {
+    "best": 0
+  },
+  "setup": [
+    {
+      "operation": "set_property",
+      "target": "coin-1",
+      "property": "transform.position",
+      "value": [
+        120,
+        470
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "event": "collected",
+      "count": {
+        "equals": 1
+      }
+    },
+    {
+      "target": "coin-1",
+      "exists": false
+    },
+    {
+      "target": "score",
+      "property": "state.points",
+      "equals": 1
+    },
+    {
+      "save": "best",
+      "equals": 1
+    }
+  ]
+}

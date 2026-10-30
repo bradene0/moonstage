@@ -18,6 +18,9 @@ versions so you can tell what moved.
   revolute joints, deterministic, about 2 ms per tick for 600 bodies. It ships with the CLI (no install), and
   `pack` / `--single-file` vendor it, along with any other self-contained plugin module, into the game. The
   physics playground uses it.
+- **Game templates.** `moonstage new --template platformer` (physics, running, jumping, coins, camera) and
+  `--template shooter` (firing, enemies, `is_prefab` collisions, lives, game-over scene, restart), each with
+  MoonBit behaviors, tests and a saved best score.
 - **Single-file games.** `moonstage build --single-file` writes one self-contained `.html` (runtime modules
   and the game's `.msp` inlined; about 200 KB for Moon Hopper) that plays with no server or network, e.g. as
   an attachment or inside a chat widget. `play()` also accepts `.msp` bytes directly.

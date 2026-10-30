@@ -13,7 +13,8 @@ Work in small verified steps. Never hand off a project that you have not validat
    `joint` components and the `@moonstage/physics` plugin (`"module": "@moonstage/physics"`, no install
    needed), and drive bodies through state `vx` / `vy` (see `moonstage guide physics`). Anything else (3D, advanced audio)
    needs a plugin: see [author-plugin](../author-plugin/SKILL.md).
-2. **Project**: if none exists, follow [create-project](../create-project/SKILL.md). Then run
+2. **Project**: if none exists, follow [create-project](../create-project/SKILL.md), starting from the
+   closest template (`moonstage new <dir> --template platformer|shooter|minimal`). Then run
    `moonstage inspect --json` to see the current state.
 3. **Design the data first**:
    - Inputs: name them in `moonstage.json` `input.axes` or `input.buttons`.
