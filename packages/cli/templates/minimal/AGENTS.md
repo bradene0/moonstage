@@ -7,7 +7,8 @@ Moonstage projects are plain files. Edit them directly, then verify with the CLI
 - `behaviors/` — a MoonBit module; each behavior is a package compiled to WebAssembly by `moonstage build`.
 - `tests/*.test.json` — headless tests: scripted input, ticks, assertions.
 
-Loop: edit → `moonstage validate --json` → `moonstage test --json` → `moonstage render --tick 120` → `moonstage run`.
+Loop: edit → `moonstage check --json` (validates, compiles, runs tests, simulates and renders the last frame
+to `.moonstage/render/`) → `moonstage run` to play. Use `run --headless` and `render` to dig into one problem.
 
 In MoonBit, refer to params, state, refs, inputs and events by their generated names (`param_speed`,
 `input_move_x`, ...). `moonstage build` writes them to `behaviors/<name>/slots.generated.mbt` from the

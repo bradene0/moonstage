@@ -41,6 +41,10 @@ versions so you can tell what moved.
 - `animation.offset` on sprites: a frame count, or `"auto"` for a stable per-entity offset.
 - `npm run bench` (runtime benchmarks at scale) and gzipped size budgets enforced in CI.
 
+- **`moonstage check`** (and the `moonstage_check` MCP tool): validate, compile, run the tests, simulate
+  the entry scene and render its last frame in one call, with one report. Skills, templates and `new`
+  now point agents at it after every edit.
+
 ### Changed
 
 - **From the first agent eval** (`evals/results/2026-10-30.md`):

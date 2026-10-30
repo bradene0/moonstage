@@ -6,6 +6,7 @@
   `@sdk.is_prefab(other, prefab_bullet)`; `spawner` ramps difficulty; `score` keeps a saved best;
   `restart` returns to `main`.
 
-Loop: edit → `moonstage validate --json` → `moonstage test --json` → `moonstage render --tick 120` → `moonstage run`.
+Loop: edit → `moonstage check --json` (validates, compiles, runs tests, simulates and renders the last frame
+to `.moonstage/render/`) → `moonstage run` to play. Use `run --headless` and `render` to dig into one problem.
 Docs ship with the CLI: `moonstage guide build-game`, `moonstage guide moonbit`, `moonstage guide physics`.
 Share it as one file: `moonstage build --single-file`.

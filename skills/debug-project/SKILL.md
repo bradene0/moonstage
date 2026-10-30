@@ -5,7 +5,8 @@ description: Diagnose and fix a failing Moonstage project using structured diagn
 
 # Debug a project
 
-Always use `--json`, and branch on `code` and the exit code, never on message text.
+Always use `--json`, and branch on `code` and the exit code, never on message text. Start with
+`moonstage check --json`: it runs the steps below in order and reports every diagnostic at once.
 
 1. `moonstage validate --json`, then fix errors in order. `file` + `path` locate the problem, and `hint` gives the fix.
    - `MS1001`/`MS1002`: shape or syntax. Compare with `moonstage schemas`.

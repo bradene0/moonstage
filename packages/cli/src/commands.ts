@@ -82,6 +82,11 @@ export const COMMANDS: CommandSpec[] = [
   },
   { name: "test", summary: "Run tests/*.test.json headlessly.", usage: "moonstage test [dir] [--filter <text>] [--no-build] [--json]" },
   {
+    name: "check",
+    summary: "Validate, build, test, simulate and render the last frame, in one step.",
+    usage: "moonstage check [dir] [--ticks <n>] [--json]",
+  },
+  {
     name: "render",
     summary: "Simulate to a tick and write that frame as SVG.",
     usage: "moonstage render [dir] [--tick <n>] [--scene <id>] [--seed <n>] [--input <json>] [--input-script <json|file>] [--setup <json|file>] [--output <file|->] [--no-build] [--json]",
@@ -379,7 +384,7 @@ export async function create(opts: { dir?: string; name?: string; template?: str
   files.push(...(await writeSlotFiles(target, manifest)));
   files.sort();
   return result({
-    data: { root: target, template, files, next: ["moonstage guide build-game", "moonstage validate", "moonstage test", "moonstage run"] },
+    data: { root: target, template, files, next: ["moonstage guide build-game", "moonstage check", "moonstage run"] },
     lines: [
       `Created ${name} in ${target}`,
       ...files.map((f) => `  ${f}`),
@@ -387,7 +392,7 @@ export async function create(opts: { dir?: string; name?: string; template?: str
       "Next:",
       `  cd ${relative(process.cwd(), target) || "."}`,
       "  moonstage guide build-game   # how to build a game here (MoonBit primer: guide moonbit)",
-      "  moonstage test               # build behaviors and run headless tests",
+      "  moonstage check              # validate, compile, test, simulate and render in one step",
       "  moonstage run                # play in the browser",
     ],
   });
@@ -1031,6 +1036,65 @@ export async function test(opts: { dir?: string; filter?: string; build?: boolea
       results.length === 0 ? "no tests found in tests/*.test.json" : `${passed}/${results.length} passed`,
     ],
   });
+}
+
+// ---------------------------------------------------------------- check
+
+/**
+ * Everything an agent runs after an edit, as one command with one report: validate, compile, run the
+ * tests, simulate the entry scene headlessly (catching traps and runtime diagnostics) and render the
+ * final frame to an SVG file to look at.
+ */
+export async function check(opts: { dir?: string; ticks?: string }): Promise<CommandResult> {
+  const ticks = String(int(opts.ticks, "ticks", 600));
+  const diagnostics: Diagnostic[] = [];
+  const seen = new Set<string>();
+  const add = (list: Diagnostic[]) => {
+    for (const d of list) {
+      const key = [d.code, d.severity, d.file, d.path, d.entity, d.message].join("\u0000");
+      if (!seen.has(key)) diagnostics.push(d), seen.add(key);
+    }
+  };
+  const valid = await validate({ dir: opts.dir });
+  add(valid.diagnostics);
+  const data: Record<string, unknown> = { root: valid.data.root, project: valid.data.project };
+  const lines = valid.lines.slice();
+  const done = () => result({ ok: valid.ok && diagnostics.every((d) => d.severity !== "error") && data.testsFailed === 0, diagnostics, data, lines });
+  if (!valid.ok) return result({ diagnostics, data, lines, ...(valid.exitCode !== EXIT.failure && { exitCode: valid.exitCode }) });
+
+  const tests = await test({ dir: opts.dir });
+  add(tests.diagnostics);
+  if (tests.data.passed === undefined) return result({ diagnostics, data, lines, exitCode: tests.exitCode });
+  const results = (tests.data.results as TestResult[]) ?? [];
+  data.testsPassed = tests.data.passed;
+  data.testsFailed = tests.data.failed;
+  data.failedTests = results.filter((r) => !r.passed).map((r) => ({ name: r.name, file: r.file }));
+  lines.push(results.length === 0 ? "no tests found in tests/*.test.json" : `${tests.data.passed}/${results.length} test(s) passed`);
+  for (const r of results) if (!r.passed) lines.push(`  ✗ ${r.name}${r.file ? `  (${r.file})` : ""}`);
+
+  const run = await runCommand({ dir: opts.dir, headless: true, ticks, build: false });
+  add(run.diagnostics);
+  if (run.data.snapshot === undefined) return done();
+  data.run = {
+    ticks: run.data.ticks,
+    scene: run.data.scene,
+    scenes: run.data.scenes,
+    eventCounts: run.data.eventCounts,
+    soundCounts: run.data.soundCounts,
+    logs: run.data.logs,
+  };
+  const counts = Object.entries(run.data.eventCounts as Record<string, number>).map(([k, v]) => `${k} ${v}`);
+  lines.push(`ran ${run.data.ticks} ticks headlessly, ending in scene "${run.data.scene}"${counts.length ? ` (events: ${counts.join(", ")})` : ""}`);
+
+  const frame = await render({ dir: opts.dir, tick: ticks, build: false });
+  add(frame.diagnostics);
+  if (frame.data.output !== undefined) {
+    data.render = frame.data.output;
+    lines.push(`last frame -> ${frame.data.output}`);
+  }
+  const errors = diagnostics.filter((d) => d.severity === "error").length;
+  lines.push("", errors === 0 && data.testsFailed === 0 ? "✓ check passed" : "✗ check failed");
+  return done();
 }
 
 // ---------------------------------------------------------------- render

@@ -47,7 +47,7 @@ Start a project from npm:
 ```bash
 npx moonstage new my-game --template platformer   # or shooter, or minimal
 cd my-game
-npx moonstage test      # compile behaviors and run headless tests
+npx moonstage check     # validate, compile, test, simulate and render in one step
 npx moonstage run       # play at http://localhost:5173
 ```
 

@@ -92,6 +92,12 @@ export const TOOLS: Tool[] = [
     run: (a) => commands.build({ dir: s(a.dir) }),
   },
   {
+    name: "moonstage_check",
+    description: "Validate, compile, run tests, simulate the entry scene headlessly and render its last frame to SVG: one report after each edit.",
+    inputSchema: { type: "object", properties: { dir, ticks: int("Ticks to simulate (default 600).") }, required: ["dir"] },
+    run: (a) => commands.check({ dir: s(a.dir), ticks: n(a.ticks) }),
+  },
+  {
     name: "moonstage_test",
     description: "Compile behaviors and run tests/*.test.json headlessly.",
     inputSchema: { type: "object", properties: { dir, filter: str("Only tests whose file or name contains this.") }, required: ["dir"] },

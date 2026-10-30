@@ -13,9 +13,9 @@ description: Create a new Moonstage project and confirm it validates, builds and
    game over) are complete small games with MoonBit behaviors and tests; `minimal` is one moving square.
    Starting from a template is much faster than starting blank.
 3. `cd <dir>`
-4. `moonstage validate --json`: expect `ok: true`. Warnings `MS3001` (not built yet) are fine.
-5. `moonstage test --json`: compiles behaviors and runs `tests/*.test.json`. Expect `failed: 0`.
-6. `moonstage render --tick 30`: writes `.moonstage/render/main-30.svg`. Read it to see the scene.
-7. `moonstage run`: serves the game at http://localhost:5173 for a human to play.
+4. `moonstage check --json`: validates, compiles behaviors, runs `tests/*.test.json`, simulates 600 ticks
+   and renders the last frame to `.moonstage/render/`. Expect `ok: true` and `testsFailed: 0`; read the SVG
+   in `render` to see the scene.
+5. `moonstage run`: serves the game at http://localhost:5173 for a human to play.
 
 Next: [build-game](../build-game/SKILL.md). The format reference is `docs/project-format.md`.

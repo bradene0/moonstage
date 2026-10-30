@@ -19,6 +19,7 @@
 | `run` | Build and serve on http://localhost:5173 (`--port`) |
 | `run --headless [--ticks 600] [--seed] [--scene] [--input '{"thrust":1}'] [--input-script <json\|file>] [--setup <json\|file>]` | Simulate and report event counts, scenes, saves, logs and a state snapshot |
 | `test [--filter]` | Run `tests/*.test.json` |
+| `check [--ticks 600]` | Validate, compile, run the tests, simulate the entry scene and render its last frame: one report to read after each edit. Exit code 1 if anything fails. |
 | `render [--tick 0] [--input …] [--input-script …] [--setup …] [--output file.svg \| -]` | Simulate to a tick and write that frame as SVG |
 | `plugin new <dir> [--name]` | Create a plugin package from the template |
 | `plugin check <file-or-dir>` | Run the plugin conformance suite. Exit code 1 if any check fails. |

@@ -69,6 +69,27 @@ describe("moonstage CLI", () => {
     assert.equal(i.json.behaviors.lander.language, "moonbit");
   });
 
+  it("checks a project in one step and reports failing tests", moon, () => {
+    const dir = join(scratch, "checked");
+    cpSync(example, dir, { recursive: true, filter: (src) => !src.includes(".moonstage") && !src.includes("dist") });
+    const good = cli("check", dir, "--ticks", "120", "--json");
+    assert.equal(good.code, 0, good.stdout);
+    assert.equal(good.json.testsPassed, 5);
+    assert.equal(good.json.run.ticks, 120);
+    assert.match(readFileSync(good.json.render, "utf8"), /<svg/);
+
+    const testPath = join(dir, "tests", "gravity.test.json");
+    const broken = JSON.parse(readFileSync(testPath, "utf8"));
+    broken.ticks = 1;
+    broken.expect = [{ target: "lander", property: "transform.position.x", equals: -12345 }];
+    writeFileSync(testPath, JSON.stringify(broken));
+    const bad = cli("check", dir, "--json");
+    assert.equal(bad.code, 1, bad.stdout);
+    assert.equal(bad.json.ok, false);
+    assert.deepEqual(bad.json.failedTests.map((t: { file: string }) => t.file), ["tests/gravity.test.json"]);
+    assert.ok(bad.json.run, "still simulates and renders after a failing test");
+  });
+
   it("reports broken projects with stable codes, locations and exit code 1", () => {
     const dir = join(scratch, "broken");
     cpSync(example, dir, { recursive: true, filter: (src) => !src.includes(".moonstage") && !src.includes("dist") });

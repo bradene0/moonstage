@@ -32,6 +32,7 @@ const OPTIONS: Record<string, ParseArgsConfig["options"]> = {
   build: { ...shared, out: { type: "string" }, "no-bundle": { type: "boolean" }, "single-file": { type: "boolean" } },
   run: { ...shared, ...sim, headless: { type: "boolean" }, port: { type: "string" } },
   test: { ...shared, filter: { type: "string" }, "no-build": { type: "boolean" } },
+  check: { ...shared, ticks: { type: "string" } },
   render: { ...shared, ...sim, output: { type: "string", short: "o" } },
   schemas: { ...shared, write: { type: "boolean" }, out: { type: "string" } },
   plugin: { ...shared, name: { type: "string" } },
@@ -108,6 +109,8 @@ async function dispatch(name: string, values: Record<string, unknown>, dir: stri
       });
     case "test":
       return commands.test({ dir, filter: s("filter"), build });
+    case "check":
+      return commands.check({ dir, ticks: s("ticks") });
     case "render":
       return commands.render({
         dir,

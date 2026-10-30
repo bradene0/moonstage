@@ -37,16 +37,16 @@ Work in small verified steps. Never hand off a project that you have not validat
      with `@sdk.remove`. Check `@sdk.exists(handle)` before using a handle kept in state.
    - Use only `@sdk.random()` for randomness.
    - Reference: `docs/behavior-abi.md` and `examples/moon-hopper/behaviors/`.
-5. **Validate**: run `moonstage fmt` (compact JSON keeps scenes short and diffs small), then
-   `moonstage validate --json`, and fix every error. Each diagnostic has `file`, `path`
-   and `hint`.
-6. **Test**: add `tests/<feature>.test.json` for each mechanic, using scripted `input`, `setup`
-   operations and assertions on `state.*`, `transform.*`, `active`, events and prefab counts. Run `moonstage test --json`.
-7. **Run headless**: `moonstage run --headless --ticks 600 --input '{"thrust":1}' --json`. Check
-   `eventCounts`, `snapshot` and `diagnostics` (any `MS3004` is a trap).
-8. **Render**: `moonstage render --tick 120 --output frame.svg`. Look at the frame to check layout,
-   camera and visibility.
-9. **Iterate** on failures: see [debug-project](../debug-project/SKILL.md). When everything passes,
+5. **Test**: add `tests/<feature>.test.json` for each mechanic, using scripted `input`, `setup`
+   operations and assertions on `state.*`, `transform.*`, `active`, events and prefab counts.
+6. **Check after every edit**: run `moonstage fmt` (compact JSON keeps scenes short and diffs small), then
+   `moonstage check --json`. One call validates, compiles, runs the tests, simulates the entry scene for
+   600 ticks and renders the last frame. Fix every error (each diagnostic has `file`, `path` and `hint`;
+   any `MS3004` is a trap), read `failedTests`, and look at the SVG in `render`.
+7. **Dig into one problem** only when `check` points at it: `moonstage run --headless --input-script
+   tests/x.test.json --setup tests/x.test.json --json` replays a test with the full state snapshot, and
+   `moonstage render --tick 120 --input-script …` shows any moment of it.
+8. **Iterate** on failures: see [debug-project](../debug-project/SKILL.md). When everything passes,
    `moonstage run` lets a human play, and `moonstage build --single-file` produces one `.html` to share.
 
 The reference implementation of all of this is `examples/moon-hopper/`.
