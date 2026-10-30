@@ -16,6 +16,8 @@ export {
   test,
   render,
   schemas,
+  pluginNew,
+  pluginCheck,
   type CommandSpec,
 } from "./commands.js";
 export { EXIT, formatDiagnostic, type CommandResult, type ExitCode } from "./output.js";

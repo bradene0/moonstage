@@ -1,0 +1,20 @@
+{
+  "name": "moonstage-plugin-__SLUG__",
+  "version": "0.0.0",
+  "description": "__NAME__: a Moonstage plugin.",
+  "type": "module",
+  "exports": "./index.js",
+  "files": ["index.js"],
+  "keywords": ["moonstage", "moonstage-plugin"],
+  "scripts": {
+    "test": "node --test",
+    "check": "moonstage plugin check ."
+  },
+  "peerDependencies": {
+    "@moonstage/core": "^__CORE_VERSION__"
+  },
+  "devDependencies": {
+    "@moonstage/core": "^__CORE_VERSION__",
+    "moonstage": "^__CLI_VERSION__"
+  }
+}

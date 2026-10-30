@@ -356,6 +356,7 @@ export class Runtime {
         },
         dt: this.dt,
       },
+      random: () => this.random.next(),
     };
   }
 

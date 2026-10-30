@@ -59,6 +59,8 @@ export interface PluginContext {
   };
   readonly input: { get(name: string): number };
   readonly time: { readonly tick: number; readonly elapsed: number; readonly dt: number };
+  /** API 2: seeded random number in [0, 1), shared with behaviors. Use it instead of Math.random(). */
+  random(): number;
 }
 
 export interface PluginInstance {

@@ -67,6 +67,7 @@ export const DIAGNOSTIC_CODES = {
   MS4003: { title: "Plugin capability not granted", hint: "Declare the capability in the plugin's `capabilities` list." },
   MS4004: { title: "Plugin configuration invalid", hint: "Fix the plugin config or entity extension data to match the plugin's schema." },
   MS4005: { title: "Invalid plugin definition", hint: "A plugin needs name, version, pluginApi, capabilities and create()." },
+  MS4006: { title: "Plugin conformance check failed", hint: "Run `moonstage plugin check <path> --json` for the failing check." },
   MS5001: { title: "Test assertion failed" },
   MS5002: { title: "Invalid test file", hint: "Compare the test against the test schema printed by `moonstage describe --json`." },
   MS5003: { title: "Invalid operation", hint: "Check the operation target and property path." },

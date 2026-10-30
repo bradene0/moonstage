@@ -4,13 +4,14 @@
  * test and to wrap (e.g. by a future MCP server).
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { cp, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { cp, mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   BEHAVIOR_ABI,
   CAPABILITIES,
+  checkPluginConformance,
   DIAGNOSTIC_CODES,
   HOST_FUNCTIONS,
   PLUGIN_API,
@@ -27,6 +28,7 @@ import {
   MoonstageError,
   runTest,
   sceneSchema,
+  type ConformanceFixture,
   type Diagnostic,
   type LoadedProject,
   type TestResult,
@@ -66,6 +68,11 @@ export const COMMANDS: CommandSpec[] = [
     name: "render",
     summary: "Simulate to a tick and write that frame as SVG.",
     usage: "moonstage render [dir] [--tick <n>] [--scene <id>] [--seed <n>] [--output <file|->] [--no-build] [--json]",
+  },
+  {
+    name: "plugin",
+    summary: "Create a plugin package, or check a plugin against the conformance suite.",
+    usage: "moonstage plugin new <dir> [--name <name>] | moonstage plugin check <path> [--json]",
   },
   { name: "schemas", summary: "Print the JSON schemas, or write them to a directory.", usage: "moonstage schemas [--write] [--out <dir>] [--json]" },
 ];
@@ -140,45 +147,61 @@ export async function schemas(opts: { write?: boolean; out?: string }): Promise<
 
 const TEMPLATE_DIR = join(here, "..", "templates");
 
-export async function create(opts: { dir?: string; name?: string; template?: string }): Promise<CommandResult> {
-  if (opts.dir === undefined) {
-    return result({ exitCode: EXIT.usage, diagnostics: [diagnostic("MS9001", "missing <dir>: moonstage new <dir>")] });
+/** Copy a template into an empty directory, filling in placeholders. */
+async function scaffold(
+  template: string,
+  dir: string | undefined,
+  name: string | undefined,
+  usage: string,
+  fallbackSlug: string,
+  extra: Record<string, string> = {},
+): Promise<{ target: string; name: string; files: string[] } | CommandResult> {
+  if (dir === undefined) {
+    return result({ exitCode: EXIT.usage, diagnostics: [diagnostic("MS9001", `missing <dir>: ${usage}`)] });
   }
-  const target = resolve(opts.dir);
+  const target = resolve(dir);
   if (existsSync(target) && (await readdir(target)).length > 0) {
     return result({
       exitCode: EXIT.usage,
       diagnostics: [diagnostic("MS9001", `${target} already exists and is not empty`)],
     });
   }
-  const template = opts.template ?? "minimal";
   const source = join(TEMPLATE_DIR, template);
   if (!existsSync(source)) {
     return result({ exitCode: EXIT.usage, diagnostics: [diagnostic("MS9001", `unknown template "${template}"`)] });
   }
-  const name = opts.name ?? basename(target);
-  const slug = name.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "game";
+  const display = name ?? basename(target);
+  const slug = display.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || fallbackSlug;
+  // Template placeholders: __NAME__ (display name), __SLUG__ (module-safe name), plus `extra`.
+  const replacements: Record<string, string> = { __NAME__: display, __SLUG__: slug, ...extra };
   await cp(source, target, { recursive: true });
   const files: string[] = [];
-  const walk = async (dir: string): Promise<void> => {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const path = join(dir, entry.name);
+  const walk = async (folder: string): Promise<void> => {
+    for (const entry of await readdir(folder, { withFileTypes: true })) {
+      const path = join(folder, entry.name);
       if (entry.isDirectory()) await walk(path);
       else {
-        // Template placeholders: __NAME__ (display name) and __SLUG__ (module-safe name).
-        const text = await readFile(path, "utf8");
-        await writeFile(path, text.replaceAll("__NAME__", name).replaceAll("__SLUG__", slug));
-        files.push(relative(target, path));
+        let text = await readFile(path, "utf8");
+        for (const [key, value] of Object.entries(replacements)) text = text.replaceAll(key, value);
+        await writeFile(path, text);
+        files.push(relative(target, path).split("\\").join("/"));
       }
     }
   };
   await walk(target);
   // npm strips .gitignore from published packages, so templates ship "gitignore".
   if (existsSync(join(target, "gitignore"))) {
-    await cp(join(target, "gitignore"), join(target, ".gitignore"));
-    await (await import("node:fs/promises")).rm(join(target, "gitignore"));
+    await rename(join(target, "gitignore"), join(target, ".gitignore"));
     files.splice(files.indexOf("gitignore"), 1, ".gitignore");
   }
+  return { target, name: display, files };
+}
+
+export async function create(opts: { dir?: string; name?: string; template?: string }): Promise<CommandResult> {
+  const template = opts.template ?? "minimal";
+  const made = await scaffold(template, opts.dir, opts.name, "moonstage new <dir>", "game");
+  if ("exitCode" in made) return made;
+  const { target, name, files } = made;
   const manifest = JSON.parse(await readFile(join(target, "moonstage.json"), "utf8"));
   files.push(...(await writeSlotFiles(target, manifest)));
   files.sort();
@@ -192,6 +215,79 @@ export async function create(opts: { dir?: string; name?: string; template?: str
       `  cd ${relative(process.cwd(), target) || "."}`,
       "  moonstage test      # build behaviors and run headless tests",
       "  moonstage run       # play in the browser",
+    ],
+  });
+}
+
+// ---------------------------------------------------------------- plugin
+
+function packageVersion(specifier: string): string {
+  const dist = dirname(fileURLToPath(import.meta.resolve(specifier)));
+  return (JSON.parse(readFileSync(join(dist, "..", "package.json"), "utf8")) as { version: string }).version;
+}
+
+export async function pluginNew(opts: { dir?: string; name?: string }): Promise<CommandResult> {
+  const made = await scaffold("plugin", opts.dir, opts.name, "moonstage plugin new <dir>", "plugin", {
+    __CORE_VERSION__: packageVersion("@moonstage/core"),
+    __CLI_VERSION__: CLI_VERSION,
+  });
+  if ("exitCode" in made) return made;
+  const { target, name, files } = made;
+  files.sort();
+  return result({
+    data: { root: target, files, next: ["npm install", "moonstage plugin check ."] },
+    lines: [
+      `Created plugin ${name} in ${target}`,
+      ...files.map((f) => `  ${f}`),
+      "",
+      "Next:",
+      `  cd ${relative(process.cwd(), target) || "."}`,
+      "  moonstage plugin check .   # run the conformance suite",
+      "  npm install && npm test    # the same suite through node:test",
+    ],
+  });
+}
+
+/** Resolve a plugin path: a module file, or a package directory (exports, main, index.js). */
+function pluginEntry(path: string): string {
+  const abs = resolve(path);
+  if (!existsSync(abs) || !statSync(abs).isDirectory()) return abs;
+  try {
+    const pkg = JSON.parse(readFileSync(join(abs, "package.json"), "utf8")) as { exports?: unknown; main?: string };
+    const exported = typeof pkg.exports === "string" ? pkg.exports : (pkg.exports as Record<string, unknown> | undefined)?.["."];
+    const entry = typeof exported === "string" ? exported : (exported as { default?: string } | undefined)?.default;
+    return join(abs, entry ?? pkg.main ?? "index.js");
+  } catch {
+    return join(abs, "index.js");
+  }
+}
+
+export async function pluginCheck(opts: { path?: string }): Promise<CommandResult> {
+  if (opts.path === undefined) {
+    return result({ exitCode: EXIT.usage, diagnostics: [diagnostic("MS9001", "missing <path>: moonstage plugin check <path>")] });
+  }
+  const entry = pluginEntry(opts.path);
+  let mod: Record<string, unknown>;
+  try {
+    mod = (await import(pathToFileURL(entry).href)) as Record<string, unknown>;
+  } catch (err) {
+    return result({
+      diagnostics: [diagnostic("MS4001", `could not import ${entry}: ${(err as Error).message}`, { file: entry })],
+      data: { module: entry },
+    });
+  }
+  const plugin = mod.default ?? mod.plugin;
+  const fixture = (mod.conformance ?? {}) as ConformanceFixture;
+  const report = await checkPluginConformance(plugin, fixture);
+  return result({
+    ok: report.passed,
+    diagnostics: report.checks.flatMap((c) => c.diagnostics),
+    data: { module: entry, plugin: report.plugin, passed: report.passed, checks: report.checks },
+    lines: [
+      `${report.plugin} (${relative(process.cwd(), entry) || entry})`,
+      ...report.checks.map((c) => `${c.skipped ? "-" : c.passed ? "✓" : "✗"} ${c.name.padEnd(13)} ${c.description}`),
+      "",
+      report.passed ? "conforms to the Moonstage plugin contract" : "does not conform; see the diagnostics below",
     ],
   });
 }

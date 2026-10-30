@@ -13,6 +13,8 @@
 | `run --headless [--ticks 600] [--seed] [--scene] [--input '{"thrust":1}']` | Simulate and report events, logs and a state snapshot |
 | `test [--filter]` | Run `tests/*.test.json` |
 | `render [--tick 0] [--output file.svg \| -]` | Simulate to a tick and write that frame as SVG |
+| `plugin new <dir> [--name]` | Create a plugin package from the template |
+| `plugin check <file-or-dir>` | Run the plugin conformance suite. Exit code 1 if any check fails. |
 | `schemas [--write] [--out dir]` | Print or write the JSON Schemas |
 
 `run`, `test` and `render` compile MoonBit behaviors first. Pass `--no-build` to skip this.

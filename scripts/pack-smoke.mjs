@@ -41,7 +41,13 @@ try {
   if (!existsSync(join(built.bundle, "index.html")) || !existsSync(join(built.bundle, "runtime", "core", "index.js"))) {
     throw new Error("web bundle is incomplete");
   }
-  console.log(`ok: installed CLI created, tested and built a project (${tested.passed} test passed)`);
+  cli("plugin", "new", "plugin", "--name", "Smoke Plugin");
+  const checked = cli("plugin", "check", "plugin");
+  if (!checked.passed) throw new Error("template plugin failed the conformance suite");
+  // The plugin template's own test imports @moonstage/core; run it against the packed core.
+  run(npm, ["install", "--no-audit", "--no-fund", "--silent", ...tarballs], join(dir, "plugin"));
+  run(npm, ["test", "--silent"], join(dir, "plugin"));
+  console.log(`ok: installed CLI created, tested and built a project (${tested.passed} test passed) and a conforming plugin`);
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }

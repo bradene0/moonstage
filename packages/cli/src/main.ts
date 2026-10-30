@@ -30,6 +30,7 @@ const OPTIONS: Record<string, ParseArgsConfig["options"]> = {
   test: { ...shared, filter: { type: "string" }, "no-build": { type: "boolean" } },
   render: { ...shared, ...sim, output: { type: "string", short: "o" } },
   schemas: { ...shared, write: { type: "boolean" }, out: { type: "string" } },
+  plugin: { ...shared, name: { type: "string" } },
 };
 
 function help(): CommandResult {
@@ -46,7 +47,7 @@ function help(): CommandResult {
   });
 }
 
-async function dispatch(name: string, values: Record<string, unknown>, dir: string | undefined) {
+async function dispatch(name: string, values: Record<string, unknown>, dir: string | undefined, rest: string[]) {
   const s = (k: string) => values[k] as string | undefined;
   const build = !values["no-build"];
   switch (name) {
@@ -77,6 +78,14 @@ async function dispatch(name: string, values: Record<string, unknown>, dir: stri
       return commands.render({ dir, tick: s("tick") ?? s("ticks"), scene: s("scene"), seed: s("seed"), output: s("output"), input: s("input"), build });
     case "schemas":
       return commands.schemas({ write: Boolean(values.write), ...(s("out") && { out: s("out") }) });
+    case "plugin":
+      // `dir` is the subcommand here; the path follows it.
+      if (dir === "new") return commands.pluginNew({ dir: rest[0], ...(s("name") && { name: s("name") }) });
+      if (dir === "check") return commands.pluginCheck({ path: rest[0] });
+      return result({
+        exitCode: EXIT.usage,
+        diagnostics: [diagnostic("MS9001", `unknown plugin subcommand "${dir ?? ""}": use "plugin new" or "plugin check"`)],
+      });
   }
   throw new Error(`unreachable: ${name}`);
 }
@@ -111,7 +120,7 @@ async function main(argv: string[]): Promise<number> {
     return EXIT.ok;
   }
   try {
-    const r = await dispatch(name, parsed.values, parsed.positionals[0]);
+    const r = await dispatch(name, parsed.values, parsed.positionals[0], parsed.positionals.slice(1));
     print(name, r, json);
     // `run` without --headless keeps a server alive; let it hold the process open.
     if ("server" in r && r.server) return -1;

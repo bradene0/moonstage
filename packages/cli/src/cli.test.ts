@@ -156,6 +156,31 @@ describe("moonstage CLI", () => {
     assert.equal(cli("validate", dir, "--json").json.warnings, 0, "built and slots current");
   });
 
+  it("scaffolds a plugin that passes the conformance suite, and flags a broken one", () => {
+    const dir = join(scratch, "plugin");
+    const created = cli("plugin", "new", dir, "--name", "Bobber", "--json");
+    assert.equal(created.code, 0, created.stdout);
+    assert.ok(created.json.files.includes("index.js"));
+    const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+    assert.equal(pkg.name, "moonstage-plugin-bobber");
+    assert.match(pkg.peerDependencies["@moonstage/core"], /^\^\d+\.\d+\.\d+$/);
+
+    const ok = cli("plugin", "check", dir, "--json");
+    assert.equal(ok.code, 0, ok.stdout);
+    assert.equal(ok.json.plugin, "bobber");
+    assert.ok(ok.json.checks.every((c: { passed: boolean }) => c.passed));
+    assert.equal(cli("plugin", "check", join(example, "plugins", "spin.js"), "--json").code, 0);
+
+    // Using a capability without declaring it fails with a stable code.
+    const indexPath = join(dir, "index.js");
+    writeFileSync(indexPath, readFileSync(indexPath, "utf8").replace('capabilities: ["world.read", "world.write"]', 'capabilities: ["world.read"]'));
+    const bad = cli("plugin", "check", dir, "--json");
+    assert.equal(bad.code, 1);
+    assert.equal(bad.json.checks.find((c: { name: string }) => c.name === "capabilities").passed, false);
+    assert.ok(bad.json.diagnostics.some((d: { code: string }) => d.code === "MS4003"));
+    assert.equal(cli("plugin", "frobnicate", "--json").code, 2);
+  });
+
   it("reports MoonBit compile errors as MS3006 with file locations", moon, () => {
     const dir = join(scratch, "compile-error");
     cli("new", dir);

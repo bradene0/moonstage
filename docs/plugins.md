@@ -36,7 +36,8 @@ export default {
 
 In TypeScript, wrap the object in `definePlugin({...})` from `@moonstage/core` to get type checking.
 
-The full working example is `examples/moon-hopper/plugins/spin.js`.
+The full working example is `examples/moon-hopper/plugins/spin.js`. To start a new plugin package, run
+`moonstage plugin new` (see below).
 
 ## Lifecycle
 
@@ -54,7 +55,8 @@ each removed entity, descendants included. Every hook is optional.
 | `events` | `ctx.events.on(name, listener)` (returns an unsubscribe function), `ctx.events.emit(name, value)` |
 | `input.read` | `ctx.input.get(name)` |
 
-`ctx.time` (`tick`, `elapsed`, `dt`) is always available. Calling a method whose capability was not declared
+`ctx.time` (`tick`, `elapsed`, `dt`) and `ctx.random()` (seeded, API 2) are always available. Use
+`ctx.random()` instead of `Math.random()` so runs stay reproducible. Calling a method whose capability was not declared
 throws `MS4003`.
 
 ## Using a plugin in a project
@@ -83,7 +85,28 @@ the plugin's `name`. When the project loads, core validates `config` against `co
 - Renderers implement `Renderer` (`render(frame: RenderFrame)`) and are passed to
   `play(target, src, { renderer })`.
 
-## Not yet implemented
+## Creating and checking a plugin
 
-`moonstage plugin new` (scaffolding) and an automated conformance suite are planned. Until then, copy
-`spin.js` and test the plugin with a project test, as in `examples/moon-hopper/tests`.
+```bash
+moonstage plugin new moonstage-plugin-bobber --name bobber
+cd moonstage-plugin-bobber
+moonstage plugin check .        # conformance suite; add --json for structured results
+npm install && npm test         # the same suite through node:test
+```
+
+The template is a small working plugin: a package with `index.js`, a conformance test, a README and an
+`AGENTS.md`. Its module exports the plugin as default and a `conformance` fixture holding sample config and
+extension data.
+
+`moonstage plugin check <file-or-package-dir>` runs these checks:
+
+| Check | Passes when |
+| --- | --- |
+| `definition` | Metadata, plugin API level and capabilities are valid. |
+| `schemas` | `configSchema` and `extensionSchema` accept the fixture's sample data. |
+| `capabilities` | The plugin uses only the capabilities it declared. |
+| `lifecycle` | create, start, update, stop and dispose run without errors, including while an entity carrying the plugin's extension is spawned and then removed. |
+| `reload` | Loading the scene a second time works and produces identical state. A failure usually means module-level state or `Math.random()`. |
+
+Failures are diagnostics with stable codes (`MS4006`, or the underlying code such as `MS4003`), and the
+exit code is 1. From JavaScript, call `checkPluginConformance(plugin, fixture)` from `@moonstage/core`.

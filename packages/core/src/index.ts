@@ -96,3 +96,9 @@ export {
   type LoadResult,
 } from "./loader.js";
 export { runTest, checkAssertion, type TestResult } from "./testing.js";
+export {
+  checkPluginConformance,
+  type ConformanceFixture,
+  type ConformanceCheck,
+  type ConformanceReport,
+} from "./conformance.js";

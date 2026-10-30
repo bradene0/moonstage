@@ -80,7 +80,9 @@ The rest of the scene keeps running.
 A plugin is a plain object with metadata, a declared plugin API level, declared capabilities and a
 `create(context, config)` function. The context exposes only the declared capabilities. Calling anything
 else throws `MS4003`. Plugins can validate their own config and their entity extension data with JSON
-Schemas that core checks before the plugin is created. See [docs/plugins.md](docs/plugins.md).
+Schemas that core checks before the plugin is created. `checkPluginConformance` in core (exposed as
+`moonstage plugin check`) runs a plugin through a synthetic project to verify the contract. See
+[docs/plugins.md](docs/plugins.md).
 
 Renderers follow the same separation. Core produces a `RenderFrame` in which every item already has a resolved
 screen-space matrix. A renderer never reads the world. The Canvas 2D renderer (player) and the SVG
