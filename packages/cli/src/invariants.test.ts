@@ -43,7 +43,7 @@ describe("repository invariants", () => {
   });
 
   it("first-party plugins use only the public core API", () => {
-    for (const file of sources("plugins/rive/src")) {
+    for (const file of [...sources("plugins/rive/src"), ...sources("plugins/physics/src")]) {
       assert.doesNotMatch(read(file), /from "@moonstage\/core\/|from "\.\.\/\.\.\/packages/, file);
     }
     assert.deepEqual(json("plugins/rive/package.json").peerDependencies, { "@moonstage/core": json("plugins/rive/package.json").peerDependencies["@moonstage/core"] });
@@ -55,7 +55,7 @@ describe("repository invariants", () => {
   });
 
   it("every package ships the root license", () => {
-    for (const pkg of ["packages/core", "packages/player", "packages/cli", "plugins/rive"]) {
+    for (const pkg of ["packages/core", "packages/player", "packages/cli", "plugins/rive", "plugins/physics"]) {
       assert.equal(read(`${pkg}/LICENSE`), read("LICENSE"), pkg);
     }
   });
@@ -81,6 +81,7 @@ describe("repository invariants", () => {
     check(SCHEMAS.scene, "examples/physics-playground/scenes/main.scene.json");
     for (const t of readdirSync(join(repo, "examples/physics-playground/tests"))) check(SCHEMAS.test, `examples/physics-playground/tests/${t}`);
     check(SCHEMAS.project, "packages/cli/templates/minimal/moonstage.json");
+    assert.doesNotMatch(read("plugins/physics/dist/index.js"), /^\s*(import\s|export\s[^;]*\sfrom\s)/m, "@moonstage/physics stays one self-contained module");
     check(SCHEMAS.scene, "packages/cli/templates/minimal/scenes/main.scene.json");
   });
 });

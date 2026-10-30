@@ -50,14 +50,13 @@ pub fn ms_event(entity : Int32, event : Int32, source : Int32, value : Double) -
 
 ## Providers
 
-- **`arcade-physics`** (`examples/physics-playground/plugins/arcade-physics.js`) is the reference provider.
-  It has no dependencies and is about 350 lines. It supports circles and axis-aligned boxes (polygons
-  collide as their bounding box), restitution, friction, sensors, collision events, distance joints, and
-  pin-style revolute and weld joints. It applies no torque from collisions, and broad-phase is O(n²).
-  Copy it into a project for arcade games.
-- A provider built on a full engine (for example Rapier) can implement the same contract for rotating
-  polygons, real joints and large scenes. It would use `load()` (plugin API 3) to initialize the engine's
-  WebAssembly. Moonstage does not ship one; see `docs/decisions.md`.
+- **`@moonstage/physics`** (`plugins/physics`) is the default provider and ships with the CLI. Its engine is
+  written in MoonBit and compiled to WebAssembly. It has rotating circles and boxes, contacts with torque
+  (boxes tumble, circles roll), friction, restitution, sensors, distance joints, and revolute joints with
+  motors. Polygons collide as their bounding box. 600 rotating bodies take about 2 ms per tick.
+- **`arcade-physics`** (`examples/physics-playground/plugins/arcade-physics.js`) is a small, dependency-free
+  JavaScript provider (axis-aligned boxes, no rotation). Keep it as a readable example of the contract when
+  writing your own provider.
 
 Check any provider with `moonstage plugin check`. Test physics behavior with project tests, as
 `examples/physics-playground/tests/` does.

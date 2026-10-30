@@ -8,13 +8,14 @@
     "packages/core",
     "packages/player",
     "packages/cli",
-    "plugins/rive"
+    "plugins/rive",
+    "plugins/physics"
   ],
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsc -b",
+    "build": "tsc -b && node scripts/build-physics.mjs",
     "clean": "tsc -b --clean",
     "typecheck": "tsc -b",
     "test": "npm run build && node --test \"packages/*/dist/**/*.test.js\" \"plugins/*/dist/**/*.test.js\"",

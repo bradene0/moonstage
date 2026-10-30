@@ -110,7 +110,13 @@ describe("moonstage CLI", () => {
     const physics = join(repo, "examples", "physics-playground");
     const t = cli("test", physics, "--json");
     assert.equal(t.code, 0, t.stdout);
-    assert.equal(t.json.passed, 4);
+    assert.equal(t.json.passed, 5);
+    // @moonstage/physics resolves from the CLI and travels inside packages and single files.
+    const single = cli("build", physics, "--single-file", "--out", join(scratch, "physics.html"), "--json");
+    assert.equal(single.code, 0, single.stdout);
+    const packed = cli("pack", physics, "--out", join(scratch, "physics.msp"), "--json");
+    assert.ok(packed.json.files.includes("plugins/moonstage-physics.js"));
+    assert.equal(cli("run", join(scratch, "physics.msp"), "--headless", "--ticks", "30", "--json").code, 0);
     assert.equal(cli("plugin", "check", join(physics, "plugins", "arcade-physics.js"), "--json").code, 0);
   });
 

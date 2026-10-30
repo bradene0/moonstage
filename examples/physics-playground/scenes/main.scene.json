@@ -5,79 +5,287 @@
     {
       "id": "ground",
       "components": {
-        "transform": { "position": [400, 580] },
-        "shape": { "kind": "rect", "size": [800, 40], "fill": "#334155" },
-        "collider": { "shape": "box", "size": [800, 40], "friction": 0.6 }
+        "transform": {
+          "position": [
+            400,
+            580
+          ]
+        },
+        "shape": {
+          "kind": "rect",
+          "size": [
+            800,
+            40
+          ],
+          "fill": "#334155"
+        },
+        "collider": {
+          "shape": "box",
+          "size": [
+            800,
+            40
+          ],
+          "friction": 0.6
+        }
       }
     },
     {
       "id": "left-wall",
       "components": {
-        "transform": { "position": [-10, 300] },
-        "collider": { "shape": "box", "size": [20, 600] }
+        "transform": {
+          "position": [
+            -10,
+            300
+          ]
+        },
+        "collider": {
+          "shape": "box",
+          "size": [
+            20,
+            600
+          ]
+        }
       }
     },
     {
       "id": "right-wall",
       "components": {
-        "transform": { "position": [810, 300] },
-        "collider": { "shape": "box", "size": [20, 600] }
+        "transform": {
+          "position": [
+            810,
+            300
+          ]
+        },
+        "collider": {
+          "shape": "box",
+          "size": [
+            20,
+            600
+          ]
+        }
       }
     },
     {
       "id": "ledge-left",
       "components": {
-        "transform": { "position": [220, 360] },
-        "shape": { "kind": "rect", "size": [240, 14], "fill": "#475569" },
-        "collider": { "shape": "box", "size": [240, 14], "restitution": 0.2 }
+        "transform": {
+          "position": [
+            220,
+            360
+          ],
+          "rotation": 0.14
+        },
+        "shape": {
+          "kind": "rect",
+          "size": [
+            240,
+            14
+          ],
+          "fill": "#475569"
+        },
+        "collider": {
+          "shape": "box",
+          "size": [
+            240,
+            14
+          ],
+          "restitution": 0.2
+        }
       }
     },
     {
       "id": "ledge-right",
       "components": {
-        "transform": { "position": [540, 250] },
-        "shape": { "kind": "rect", "size": [240, 14], "fill": "#475569" },
-        "collider": { "shape": "box", "size": [240, 14], "restitution": 0.2 }
+        "transform": {
+          "position": [
+            540,
+            250
+          ],
+          "rotation": -0.14
+        },
+        "shape": {
+          "kind": "rect",
+          "size": [
+            240,
+            14
+          ],
+          "fill": "#475569"
+        },
+        "collider": {
+          "shape": "box",
+          "size": [
+            240,
+            14
+          ],
+          "restitution": 0.2
+        }
+      }
+    },
+    {
+      "id": "crate",
+      "components": {
+        "transform": {
+          "position": [
+            120,
+            520
+          ]
+        },
+        "shape": {
+          "kind": "rect",
+          "size": [
+            44,
+            44
+          ],
+          "fill": "#a16207",
+          "stroke": "#fde68a",
+          "strokeWidth": 1
+        },
+        "physicsBody": {
+          "type": "dynamic"
+        },
+        "collider": {
+          "shape": "box",
+          "size": [
+            44,
+            44
+          ],
+          "friction": 0.6
+        }
       }
     },
     {
       "id": "bucket",
       "components": {
-        "transform": { "position": [730, 525] },
-        "shape": { "kind": "rect", "size": [100, 70], "fill": "#0f766e", "stroke": "#5eead4", "strokeWidth": 2, "opacity": 0.6 },
-        "collider": { "shape": "box", "size": [100, 70], "sensor": true },
-        "behavior": { "module": "bucket", "state": { "count": 0 } }
+        "transform": {
+          "position": [
+            730,
+            525
+          ]
+        },
+        "shape": {
+          "kind": "rect",
+          "size": [
+            100,
+            70
+          ],
+          "fill": "#0f766e",
+          "stroke": "#5eead4",
+          "strokeWidth": 2,
+          "opacity": 0.6
+        },
+        "collider": {
+          "shape": "box",
+          "size": [
+            100,
+            70
+          ],
+          "sensor": true
+        },
+        "behavior": {
+          "module": "bucket",
+          "state": {
+            "count": 0
+          }
+        }
       }
     },
     {
       "id": "cart",
       "components": {
-        "transform": { "position": [300, 545] },
-        "shape": { "kind": "rect", "size": [64, 24], "fill": "#38bdf8", "stroke": "#e0f2fe", "strokeWidth": 1.5, "layer": 2 },
-        "physicsBody": { "type": "dynamic", "mass": 40, "fixedRotation": true },
-        "collider": { "shape": "box", "size": [64, 24], "friction": 0.4 },
-        "behavior": { "module": "cart", "params": { "speed": 260, "jump": 420 } }
+        "transform": {
+          "position": [
+            300,
+            545
+          ]
+        },
+        "shape": {
+          "kind": "rect",
+          "size": [
+            64,
+            24
+          ],
+          "fill": "#38bdf8",
+          "stroke": "#e0f2fe",
+          "strokeWidth": 1.5,
+          "layer": 2
+        },
+        "physicsBody": {
+          "type": "dynamic",
+          "mass": 40,
+          "fixedRotation": true
+        },
+        "collider": {
+          "shape": "box",
+          "size": [
+            64,
+            24
+          ],
+          "friction": 0.4
+        },
+        "behavior": {
+          "module": "cart",
+          "params": {
+            "speed": 260,
+            "jump": 420
+          }
+        }
       }
     },
     {
       "id": "dropper",
       "components": {
-        "transform": { "position": [400, 20] },
-        "behavior": { "module": "dropper", "params": { "interval": 0.7, "maxBalls": 40, "minX": 120, "maxX": 660 } }
+        "transform": {
+          "position": [
+            400,
+            20
+          ]
+        },
+        "behavior": {
+          "module": "dropper",
+          "params": {
+            "interval": 0.7,
+            "maxBalls": 40,
+            "minX": 120,
+            "maxX": 660
+          }
+        }
       }
     },
     {
       "id": "hud",
       "components": {
-        "transform": { "position": [20, 34] },
-        "text": { "value": "Caught: {bucket.count}", "size": 22, "fill": "#ffffff", "space": "screen", "layer": 100 }
+        "transform": {
+          "position": [
+            20,
+            34
+          ]
+        },
+        "text": {
+          "value": "Caught: {bucket.count}",
+          "size": 22,
+          "fill": "#ffffff",
+          "space": "screen",
+          "layer": 100
+        }
       }
     },
     {
       "id": "help",
       "components": {
-        "transform": { "position": [400, 592] },
-        "text": { "value": "← → drive   ↑ / Space jump   push balls into the bucket", "size": 13, "fill": "#94a3b8", "align": "center", "space": "screen", "layer": 100 }
+        "transform": {
+          "position": [
+            400,
+            592
+          ]
+        },
+        "text": {
+          "value": "← → drive   ↑ / Space jump   push balls into the bucket",
+          "size": 13,
+          "fill": "#94a3b8",
+          "align": "center",
+          "space": "screen",
+          "layer": 100
+        }
       }
     }
   ]

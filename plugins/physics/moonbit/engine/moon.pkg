@@ -1,0 +1,15 @@
+import {
+  "moonbitlang/core/math",
+}
+
+options(
+  link: {
+    "wasm": {
+      "exports": [
+        "reset", "set_gravity", "add_body", "remove_body", "set_mass", "set_material", "set_motion",
+        "set_offset", "set_pose", "set_velocity", "body_x", "body_y", "body_angle", "body_vx", "body_vy",
+        "body_av", "add_joint", "set_motor", "remove_joint", "step", "contact_count", "contact_a", "contact_b",
+      ],
+    },
+  },
+)

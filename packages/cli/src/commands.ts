@@ -48,7 +48,7 @@ import { singleFileHtml } from "./single-file.js";
 import { writeZip } from "./zip.js";
 import { buildMoonbitBehaviors, findMoon } from "./moonbit.js";
 import { EXIT, result, type CommandResult } from "./output.js";
-import { ioFor, isPackage, load, loadTests, projectRoot } from "./project-io.js";
+import { ioFor, isPackage, load, loadTests, projectRoot, resolvePlugin } from "./project-io.js";
 import { slotCollisions, staleSlotFiles, writeSlotFiles } from "./slots.js";
 import { renderSvg, svgImage, type SvgImage } from "./svg.js";
 
@@ -673,17 +673,17 @@ export async function build(opts: { dir?: string; out?: string; bundle?: boolean
   const p = await prepare(opts.dir, true);
   if (p.project === undefined) return failed(p);
   if (opts.singleFile) {
-    const packaged = Object.entries(p.project.manifest.plugins ?? {}).filter(([, d]) => !d.module.startsWith("./"));
+    const { zip, manifest } = await packageProject(p.root, p.project.manifest);
+    const packaged = Object.entries(manifest.plugins ?? {}).filter(([, d]) => !d.module.startsWith("./"));
     if (packaged.length > 0) {
       return result({
         diagnostics: [
-          diagnostic("MS9001", `--single-file needs project-local plugins; ${packaged.map(([n]) => n).join(", ")} ${packaged.length === 1 ? "is a package" : "are packages"}`, {
-            hint: "Use the folder bundle (`moonstage build`) for projects with npm plugins.",
+          diagnostic("MS9001", `--single-file needs self-contained plugins; ${packaged.map(([n]) => n).join(", ")} ${packaged.length === 1 ? "imports" : "import"} other modules`, {
+            hint: "Use the folder bundle (`moonstage build`) for projects with such npm plugins (e.g. @moonstage/rive).",
           }),
         ],
       });
     }
-    const { zip, manifest } = await packageProject(p.root, p.project.manifest);
     const html = await singleFileHtml(manifest.name, manifest.display ?? {}, zip);
     const output = resolve(p.root, opts.out ?? join("dist", `${manifest.name}.html`));
     await mkdir(dirname(output), { recursive: true });
@@ -738,6 +738,19 @@ async function packageProject(root: string, source: ProjectManifest) {
     decl.language = "wasm";
     decl.wasm = packaged;
   }
+  // Package plugins that are a single self-contained module (no imports) travel inside the package,
+  // so .msp files and single-file games need no npm install or import map.
+  const vendored: { path: string; data: Uint8Array }[] = [];
+  for (const [name, decl] of Object.entries(manifest.plugins ?? {})) {
+    if (decl.module.startsWith(".") || decl.module.startsWith("/")) continue;
+    const entry = resolvePlugin(root, decl.module);
+    if (entry === undefined) continue;
+    const code = await readFile(entry, "utf8");
+    if (/^\s*(import\s|export\s[^;]*\sfrom\s)/m.test(code)) continue;
+    const path = `plugins/${name.replace(/^@/, "").replace(/[^A-Za-z0-9_.-]+/g, "-")}.js`;
+    vendored.push({ path, data: Buffer.from(code) });
+    decl.module = `./${path}`;
+  }
   const metadata = { format: MSP_FORMAT, name: manifest.name, createdWith: `moonstage ${CLI_VERSION}` };
   entries.push({ path: "msp.json", data: Buffer.from(`${JSON.stringify(metadata, null, 2)}\n`) });
   entries.push({ path: "moonstage.json", data: Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`) });
@@ -747,6 +760,7 @@ async function packageProject(root: string, source: ProjectManifest) {
     if (!existsSync(path)) continue;
     entries.push({ path: moves.get(file) ?? file, data: new Uint8Array(await readFile(path)) });
   }
+  entries.push(...vendored);
   return { zip: writeZip(entries), entries, manifest };
 }
 

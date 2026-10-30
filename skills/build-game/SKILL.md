@@ -10,8 +10,8 @@ Work in small verified steps. Never hand off a project that you have not validat
 1. **Capabilities**: `moonstage describe --json`. Note `components`, `behaviorAbi.imports` and
    `plugin.capabilities`. Built-in rendering covers `shape` (rect/circle/polygon), `text` and `sprite`
    (images and sprite sheets declared under `assets`). For physics, add `physicsBody` / `collider` /
-   `joint` components and a provider plugin (copy `examples/physics-playground/plugins/arcade-physics.js`),
-   and drive bodies through state `vx` / `vy` (see `docs/physics.md`). Anything else (3D, advanced audio)
+   `joint` components and the `@moonstage/physics` plugin (`"module": "@moonstage/physics"`, no install
+   needed), and drive bodies through state `vx` / `vy` (see `moonstage guide physics`). Anything else (3D, advanced audio)
    needs a plugin: see [author-plugin](../author-plugin/SKILL.md).
 2. **Project**: if none exists, follow [create-project](../create-project/SKILL.md). Then run
    `moonstage inspect --json` to see the current state.

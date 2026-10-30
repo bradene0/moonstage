@@ -1,0 +1,57 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonstage/physics/engine"
+
+// Values
+pub fn add_body(Int32, Int32, Double, Double) -> Int32
+
+pub fn add_joint(Int32, Int32, Int32, Double, Double, Double, Double, Double) -> Int32
+
+pub fn body_angle(Int32) -> Double
+
+pub fn body_av(Int32) -> Double
+
+pub fn body_vx(Int32) -> Double
+
+pub fn body_vy(Int32) -> Double
+
+pub fn body_x(Int32) -> Double
+
+pub fn body_y(Int32) -> Double
+
+pub fn contact_a(Int32) -> Int32
+
+pub fn contact_b(Int32) -> Int32
+
+pub fn contact_count() -> Int32
+
+pub fn remove_body(Int32) -> Unit
+
+pub fn remove_joint(Int32) -> Unit
+
+pub fn reset() -> Unit
+
+pub fn set_gravity(Double, Double) -> Unit
+
+pub fn set_mass(Int32, Double, Double, Int32) -> Unit
+
+pub fn set_material(Int32, Double, Double, Int32) -> Unit
+
+pub fn set_motion(Int32, Double, Double, Double) -> Unit
+
+pub fn set_motor(Int32, Double, Double) -> Unit
+
+pub fn set_offset(Int32, Double, Double) -> Unit
+
+pub fn set_pose(Int32, Double, Double, Double) -> Unit
+
+pub fn set_velocity(Int32, Double, Double, Double) -> Unit
+
+pub fn step(Double, Int32, Int32) -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

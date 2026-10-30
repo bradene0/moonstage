@@ -15,6 +15,8 @@ const BUDGETS = {
   "@moonstage/player": 8,
   "moonstage (cli)": 32,
   "@moonstage/rive": 4,
+  // Includes the MoonBit engine's WebAssembly, embedded as base64.
+  "@moonstage/physics": 36,
 };
 
 const files = (dir, keep) =>
@@ -30,6 +32,7 @@ const groups = {
   "@moonstage/player": files("packages/player/dist", runtimeJs),
   "moonstage (cli)": files("packages/cli/dist", runtimeJs),
   "@moonstage/rive": files("plugins/rive/dist", runtimeJs),
+  "@moonstage/physics": files("plugins/physics/dist", runtimeJs),
   "moon-hopper behaviors (wasm)": files("examples/moon-hopper/.moonstage/behaviors", (f) => f.endsWith(".wasm")),
 };
 

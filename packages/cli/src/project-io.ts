@@ -4,7 +4,7 @@ import { existsSync, statSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { isAbsolute, join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   diagnostic,
   loadProject,
@@ -18,6 +18,23 @@ import {
   type ProjectIO,
   type TestSource,
 } from "@moonstage/core";
+
+/**
+ * File path of a package plugin's entry module. Resolves from the project
+ * directory first (like Node), then from the CLI itself, so first-party
+ * plugins the CLI ships with (e.g. @moonstage/physics) work without a local
+ * install. Returns undefined when neither can resolve it.
+ */
+export function resolvePlugin(root: string, specifier: string): string | undefined {
+  for (const from of [join(root, "package.json"), fileURLToPath(import.meta.url)]) {
+    try {
+      return createRequire(from).resolve(specifier);
+    } catch {
+      // try the next location
+    }
+  }
+  return undefined;
+}
 
 export function fileIO(root: string): ProjectIO {
   const abs = (path: string) => (isAbsolute(path) ? path : join(root, path));
@@ -39,11 +56,8 @@ export function fileIO(root: string): ProjectIO {
     async importModule(specifier) {
       // Relative specifiers are project files; packages resolve from the project directory, like Node would.
       if (specifier.startsWith(".") || specifier.startsWith("/")) return import(pathToFileURL(abs(specifier)).href);
-      try {
-        return await import(pathToFileURL(createRequire(join(root, "package.json")).resolve(specifier)).href);
-      } catch {
-        return import(specifier);
-      }
+      const resolved = resolvePlugin(root, specifier);
+      return import(resolved !== undefined ? pathToFileURL(resolved).href : specifier);
     },
   };
 }

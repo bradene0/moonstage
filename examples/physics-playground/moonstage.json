@@ -2,7 +2,7 @@
   "$schema": "../../schemas/project.schema.json",
   "format": 1,
   "name": "physics-playground",
-  "description": "Balls tumble down ramps; drive the cart to knock them into the bucket. Exercises the physics provider contract.",
+  "description": "Balls roll down tilted ledges; drive the cart to push them into the bucket. Uses @moonstage/physics (a MoonBit engine).",
   "entryScene": "main",
   "scenes": {
     "main": "scenes/main.scene.json"
@@ -134,10 +134,11 @@
     }
   },
   "plugins": {
-    "arcade-physics": {
-      "module": "./plugins/arcade-physics.js",
+    "@moonstage/physics": {
+      "module": "@moonstage/physics",
       "config": {
-        "substeps": 4
+        "substeps": 4,
+        "iterations": 8
       }
     }
   }

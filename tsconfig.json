@@ -12,6 +12,9 @@
     },
     {
       "path": "plugins/rive"
+    },
+    {
+      "path": "plugins/physics"
     }
   ]
 }

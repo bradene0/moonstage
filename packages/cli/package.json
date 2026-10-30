@@ -44,7 +44,8 @@
   },
   "dependencies": {
     "@moonstage/core": "^0.3.0",
-    "@moonstage/player": "^0.3.0"
+    "@moonstage/player": "^0.3.0",
+    "@moonstage/physics": "0.0.0"
   },
   "scripts": {
     "prepack": "node ../../scripts/bundle-moonbit-sdk.mjs",

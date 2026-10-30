@@ -162,6 +162,35 @@ const results = [];
   );
 }
 
+// 7. The same 600 bodies with the MoonBit engine (@moonstage/physics), which also simulates rotation.
+{
+  const engine = join(repo, "plugins/physics/dist/index.js");
+  if (existsSync(engine) && !readFileSync(engine, "utf8").includes("__MOONSTAGE_PHYSICS_ENGINE__")) {
+    const plugin = (await import("../plugins/physics/dist/index.js")).default;
+    const walls = [
+      { id: "floor", components: { transform: { position: [400, 610] }, collider: { shape: "box", size: [820, 20] } } },
+      { id: "left", components: { transform: { position: [-10, 300] }, collider: { shape: "box", size: [20, 640] } } },
+      { id: "right", components: { transform: { position: [810, 300] }, collider: { shape: "box", size: [20, 640] } } },
+    ];
+    const bodies = Array.from({ length: 600 }, (_, i) => ({
+      id: `body${i}`,
+      components: {
+        transform: { position: [20 + (i % 40) * 19, 20 + Math.floor(i / 40) * 19], rotation: (i % 7) * 0.3 },
+        physicsBody: {},
+        collider: i % 2 ? { shape: "circle", radius: 8 } : { shape: "box", size: [15, 15] },
+      },
+    }));
+    results.push(
+      await measure("600 rotating bodies (@moonstage/physics, MoonBit)", {
+        manifest: manifest({ plugins: { "@moonstage/physics": { module: "x" } } }),
+        scenes: { main: { format: 1, entities: [...walls, ...bodies] } },
+        behaviors: {},
+        plugins: { "@moonstage/physics": plugin },
+      }, { ticks: quick ? 30 : 120 }),
+    );
+  }
+}
+
 const ms = (n) => (Number.isNaN(n) ? "–" : n.toFixed(2));
 console.log(`| scenario | entities | ms/tick | ms/frame build |`);
 console.log(`| --- | ---: | ---: | ---: |`);

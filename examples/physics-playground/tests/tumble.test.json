@@ -1,0 +1,48 @@
+{
+  "$schema": "../../../schemas/test.schema.json",
+  "format": 1,
+  "name": "a box pushed off the ledge tumbles, because bodies rotate",
+  "ticks": 120,
+  "setup": [
+    {
+      "operation": "remove_entity",
+      "target": "dropper"
+    },
+    {
+      "operation": "add_entity",
+      "entity": {
+        "id": "probe",
+        "components": {
+          "transform": {
+            "position": [
+              352,
+              340
+            ]
+          },
+          "physicsBody": {
+            "type": "dynamic"
+          },
+          "collider": {
+            "shape": "box",
+            "size": [
+              40,
+              40
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "expect": [
+    {
+      "target": "probe",
+      "property": "transform.rotation",
+      "gt": 0.5
+    },
+    {
+      "target": "probe",
+      "property": "transform.position.y",
+      "gt": 480
+    }
+  ]
+}

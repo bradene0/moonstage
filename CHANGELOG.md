@@ -13,6 +13,11 @@ versions so you can tell what moved.
   `@sdk.store_save`) keep numbers across sessions (localStorage in the browser, in memory headless, seedable
   and assertable in tests), and `is_prefab` tells a behavior what kind of entity it collided with. Plugins
   get `ctx.saves`. Moon Hopper keeps a best score.
+- **`@moonstage/physics`**, the default physics provider, with its engine written in MoonBit and compiled to
+  WebAssembly: rotating circles and boxes, torque, friction, restitution, sensors, distance joints and motorized
+  revolute joints, deterministic, about 2 ms per tick for 600 bodies. It ships with the CLI (no install), and
+  `pack` / `--single-file` vendor it, along with any other self-contained plugin module, into the game. The
+  physics playground uses it.
 - **Single-file games.** `moonstage build --single-file` writes one self-contained `.html` (runtime modules
   and the game's `.msp` inlined; about 200 KB for Moon Hopper) that plays with no server or network, e.g. as
   an attachment or inside a chat widget. `play()` also accepts `.msp` bytes directly.

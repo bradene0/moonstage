@@ -1,0 +1,33 @@
+{
+  "name": "@moonstage/physics",
+  "version": "0.0.0",
+  "description": "Rigid-body physics for Moonstage: rotating circles and boxes, friction, restitution, sensors and joints. Engine written in MoonBit, compiled to WebAssembly, embedded in one module.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bradene0/moonstage.git",
+    "directory": "plugins/physics"
+  },
+  "homepage": "https://github.com/bradene0/moonstage/tree/main/plugins/physics#readme",
+  "bugs": {
+    "url": "https://github.com/bradene0/moonstage/issues"
+  },
+  "keywords": ["moonstage", "moonstage-plugin", "physics", "moonbit", "webassembly"],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "!dist/**/*.test.*", "moonbit/moon.mod", "moonbit/engine/*.mbt", "moonbit/engine/moon.pkg"],
+  "peerDependencies": {
+    "@moonstage/core": ">=0.3.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -17,6 +17,7 @@ import { createServer, type Server } from "node:http";
 import { dirname, extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { behaviorWasmPath, type ProjectManifest } from "@moonstage/core";
+import { resolvePlugin } from "./project-io.js";
 
 function packageDist(specifier: string): string {
   return dirname(fileURLToPath(import.meta.resolve(specifier)));
@@ -125,7 +126,10 @@ async function copyPluginPackages(
     try {
       dir = packageRoot(createRequire(from).resolve(`${name}/package.json`));
     } catch {
-      dir = packageRoot(createRequire(from).resolve(name));
+      // Plugins the CLI ships with resolve from the CLI when the project has no copy.
+      const entry = from === join(root, "package.json") ? resolvePlugin(root, name) : undefined;
+      if (entry === undefined) dir = packageRoot(createRequire(from).resolve(name));
+      else dir = packageRoot(entry);
     }
     const target = join(outDir, name);
     await cp(dir, target, { recursive: true, filter: (src) => !/[\\/]node_modules([\\/]|$)/.test(src.slice(dir.length)) && runtimeFilter(src) });

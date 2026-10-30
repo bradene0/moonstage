@@ -131,8 +131,8 @@ WebAssembly) and frame building each take about 0.4–1 ms per tick on a laptop.
 - Built-in renderables are shapes, text and image sprites (with sprite sheets). There is no tinting,
   nine-slice or texture atlas packing yet.
 - Audio is fire-and-forget sound effects; there is no music streaming, mixing or spatial audio yet.
-- Physics is a provider plugin boundary ([docs/physics.md](docs/physics.md)). The only provider shipped is a
-  small reference one in `examples/physics-playground`.
+- Physics is a provider plugin boundary ([docs/physics.md](docs/physics.md)). The default provider,
+  `@moonstage/physics`, approximates polygons by their bounding box and has no continuous collision detection.
 - Plugins in the browser bundle must be project-local files. Bare package specifiers need an import map.
 - `.msp` packages are plain ZIP archives without signing or streaming. Plugins inside a package must be
   single-file ES modules, because they are imported from data: URLs.
