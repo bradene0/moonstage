@@ -50,6 +50,9 @@ slot 1, and `collected` is event slot 0. MoonBit behaviors never write these num
 
 ## Imports (namespace `moonstage`)
 
+MoonBit behaviors call these through `@sdk` functions with friendlier names (for example `entity_set_active`
+is `@sdk.set_active(entity, Bool)`); see the SDK table in `moonstage guide moonbit`.
+
 | Import | Signature | Meaning |
 | --- | --- | --- |
 | `transform_get` | `(entity: i32, field: i32) -> f64` | Fields: 0 x, 1 y, 2 rotation, 3 scaleX, 4 scaleY. All relative to the parent. |

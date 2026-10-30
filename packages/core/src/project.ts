@@ -354,6 +354,7 @@ export function validateProjectSemantics(
     // Prefab refs resolve against whichever scene spawns them, so only names are checked here.
     out.push(...checkBehaviors(prefab, manifest, `prefabs.${name}.components.behavior`, where, undefined));
     out.push(...checkSprite(prefab, manifest, `prefabs.${name}.components.sprite`, where));
+    out.push(...checkPhysicsState(prefab, manifest, `prefabs.${name}.components.behavior`, where));
     for (const namespace of Object.keys(prefab.extensions ?? {})) {
       if (!(namespace in plugins)) {
         out.push(
@@ -413,6 +414,7 @@ export function validateProjectSemantics(
       }
 
       out.push(...checkSprite(entity, manifest, at(".components.sprite"), where));
+      out.push(...checkPhysicsState(entity, manifest, at(".components.behavior"), where));
       const joint = entity.components?.joint;
       if (joint !== undefined && (!byId.has(joint.target) || joint.target === entity.id)) {
         out.push(
@@ -567,6 +569,38 @@ function checkSprite(
         }),
       );
     }
+  }
+  return out;
+}
+
+/** State names physics providers own (docs/physics.md). */
+export const PHYSICS_STATE = ["vx", "vy", "av"] as const;
+
+/**
+ * On kinematic bodies the physics provider writes vx/vy/av from the body's
+ * motion every tick, so a behavior that keeps its own data under those names
+ * (e.g. a falling speed in `vy`) gets overwritten and stalls.
+ */
+function checkPhysicsState(
+  entity: PrefabSource,
+  manifest: ProjectManifest,
+  path: string,
+  where: { file: string | undefined; entity: string },
+): Diagnostic[] {
+  if (entity.components?.physicsBody?.type !== "kinematic") return [];
+  const out: Diagnostic[] = [];
+  for (const b of behaviorsOf(entity.components)) {
+    const clash = (manifest.behaviors?.[b.module]?.state ?? []).filter((s) => (PHYSICS_STATE as readonly string[]).includes(s));
+    if (clash.length === 0) continue;
+    out.push(
+      diagnostic("MS2018", `behavior "${b.module}" on a kinematic body declares state ${clash.join(", ")}, which the physics provider overwrites with the body's actual motion every tick`, {
+        ...where,
+        severity: "warning",
+        component: "behavior",
+        path,
+        hint: "Kinematic bodies follow their transform: move them with @sdk.set_position, and keep your own speed in a differently named state such as `speed`.",
+      }),
+    );
   }
   return out;
 }

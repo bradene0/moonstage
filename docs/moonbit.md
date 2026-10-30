@@ -119,7 +119,35 @@ An unknown name is error 4021 — add it to `moonstage.json` and rebuild.
 - Randomness only from `@sdk.random()` / `@sdk.random_range(lo, hi)`, so runs are reproducible.
 - Coordinates are pixels with y down; rotation is radians, clockwise.
 
-The full SDK is `packages/moonbit-sdk/sdk.mbt` (or run `moonstage guide behavior-abi`).
+## The SDK at a glance
+
+Every function is `@sdk.<name>`. Entities are `Int32` handles; slots are generated constants.
+
+| Function | Does |
+| --- | --- |
+| `x(e)`, `y(e)`, `rotation(e)`, `scale_x(e)`, `scale_y(e)` | Read the transform (relative to the parent) |
+| `set_x(e, v)`, `set_y(e, v)`, `set_position(e, x, y)`, `set_rotation(e, r)`, `set_scale(e, sx, sy)` | Write it |
+| `state(e, state_x)`, `set_state(e, state_x, v)` | Per-entity numbers, on any entity |
+| `param(param_x)` | This entity's parameter |
+| `ref_entity(ref_x)` | Handle of a referenced entity, or `no_entity` (-1) |
+| `input(input_x)` | Axis -1..1 or button 0/1 |
+| `emit(event_x, value)` | Send an event; this entity is the source |
+| `random()`, `random_range(lo, hi)` | Seeded randomness |
+| `time()` | Simulation seconds since the scene started |
+| `is_active(e)`, `set_active(e, Bool)` | Hide/show (and pause) an entity and its children |
+| `spawn(prefab_x)`, `spawn_at(prefab_x, x, y)` | New entity from a prefab; returns its handle |
+| `remove(e)`, `exists(e)` | Remove at end of tick; check a handle is still live |
+| `is_prefab(e, prefab_x)` | Was `e` spawned from that prefab (e.g. what did I collide with?) |
+| `load_scene(scene_x)` | Switch scenes at the end of the tick |
+| `play_sound(sound_x, volume)` | Play an audio asset |
+| `load_save(save_x)`, `store_save(save_x, v)` | Numbers that survive reloads (and scene switches) |
+| `distance(a, b)`, `clamp(v, lo, hi)`, `log(v)` | Helpers |
+| `abi_version`, `no_entity` | Constants |
+
+Scene switches rebuild every entity, so carry values such as a final score to the next scene with
+`store_save` / `load_save`.
+
+The full SDK is `packages/moonbit-sdk/sdk.mbt`; the raw WebAssembly imports are in `moonstage guide behavior-abi`.
 
 ## Compiler errors you will see
 

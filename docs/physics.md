@@ -32,6 +32,18 @@ A provider is a plugin with `provides: ["physics"]` and plugin API 3. Every tick
    entity's handle. Sensors report events but get no physical response.
 5. **Track spawned and removed entities** (`entityAdded` / `entityRemoved`).
 
+### Solver settings
+
+`@moonstage/physics` takes `config.substeps` (default 4) and `config.iterations` (default 8). The defaults
+keep stacks of dozens of blocks still for minutes (the solver warm-starts); raise them only for very tall
+stacks or very fast objects.
+
+### State names
+
+`vx`, `vy` and `av` belong to the provider. On **dynamic** bodies, writing them sets the velocity. On
+**kinematic** bodies the provider writes them from the body's motion every tick, so do not keep your own data
+under those names there (validation warns with `MS2018`); move kinematic bodies with `@sdk.set_position`.
+
 Behaviors therefore control bodies through state they already understand:
 
 ```moonbit

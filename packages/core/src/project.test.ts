@@ -131,6 +131,22 @@ describe("project validation", () => {
     assert.ok(found.every((msg) => !msg.includes("bike.score")));
   });
 
+  it("warns when a kinematic body's behavior keeps its own data in physics state", () => {
+    const m = manifest({
+      behaviors: { faller: { source: "f", state: ["vy", "spin"] }, driver: { source: "d", state: ["vx"] } },
+      prefabs: { rock: { components: { physicsBody: { type: "kinematic" }, behavior: { module: "faller" } } } },
+    });
+    const scene: SceneSource = {
+      format: 1,
+      entities: [
+        { id: "cart", components: { physicsBody: { type: "dynamic" }, behavior: { module: "driver" } } },
+        { id: "lift", components: { physicsBody: { type: "kinematic" }, behavior: { module: "driver" } } },
+      ],
+    };
+    const found = validateProjectSemantics(m, { main: scene }).filter((d) => d.code === "MS2018").map((d) => d.entity);
+    assert.deepEqual(found.sort(), ["lift", "rock"], "dynamic bodies use vx/vy on purpose; kinematic ones do not");
+  });
+
   it("checks joint targets", () => {
     const scene: SceneSource = {
       format: 1,

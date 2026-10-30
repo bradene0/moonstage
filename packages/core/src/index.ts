@@ -23,6 +23,7 @@ export {
   validateProjectSemantics,
   inputNames,
   behaviorsOf,
+  PHYSICS_STATE,
   isImageAsset,
   isAudioAsset,
   TEXT_BINDING,
