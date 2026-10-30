@@ -22,7 +22,8 @@ Work in small verified steps. Never hand off a project that you have not validat
      (for example a flame attached to a ship) and the scene `camera` for scrolling.
    - Behaviors: declare each module in `moonstage.json` `behaviors` with ordered `params`, `state`,
      `refs`, `inputs` and `events`.
-4. **Write behaviors** in `behaviors/<name>/<name>.mbt`. Copy `moon.pkg` from an existing behavior.
+4. **Write behaviors** in `behaviors/<name>/<name>.mbt`. Copy `moon.pkg` from an existing behavior. New to
+   MoonBit? Read `moonstage guide moonbit` first: it is short, and every snippet compiles.
    - Refer to slots by their generated names (`param_speed`, `state_vx`, `ref_target`, `input_jump`,
      `event_hit`). The build writes them to `slots.generated.mbt` from the manifest. Never hard-code slot numbers.
    - Export `ms_abi_version`, `ms_start`, `ms_update` and `ms_event`. Name the first parameter `entity`

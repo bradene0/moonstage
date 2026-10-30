@@ -80,6 +80,11 @@ export const COMMANDS: CommandSpec[] = [
     usage: "moonstage render [dir] [--tick <n>] [--scene <id>] [--seed <n>] [--output <file|->] [--no-build] [--json]",
   },
   {
+    name: "guide",
+    summary: "Read the bundled skills and docs (start with `moonstage guide build-game`).",
+    usage: "moonstage guide [topic] [--json]",
+  },
+  {
     name: "pack",
     summary: "Build and write an .msp package (ZIP) of the project's runtime files.",
     usage: "moonstage pack [dir] [--out <file.msp>] [--json]",
@@ -163,6 +168,72 @@ export function describe(): CommandResult {
   });
 }
 
+// ---------------------------------------------------------------- guide
+
+/** Docs and skills: copied into the published package (guide/), or read from the monorepo. */
+function guideDirs(): { docs: string; skills: string } | undefined {
+  for (const root of [join(here, "..", "guide"), join(here, "..", "..", "..")]) {
+    if (existsSync(join(root, "docs")) && existsSync(join(root, "skills"))) return { docs: join(root, "docs"), skills: join(root, "skills") };
+  }
+  return undefined;
+}
+
+interface GuideTopic {
+  name: string;
+  kind: "skill" | "doc";
+  description: string;
+  path: string;
+}
+
+async function guideTopics(): Promise<GuideTopic[]> {
+  const dirs = guideDirs();
+  if (dirs === undefined) return [];
+  const topics: GuideTopic[] = [];
+  for (const entry of await readdir(dirs.skills, { withFileTypes: true })) {
+    const path = join(dirs.skills, entry.name, "SKILL.md");
+    if (!entry.isDirectory() || !existsSync(path)) continue;
+    const text = await readFile(path, "utf8");
+    topics.push({ name: entry.name, kind: "skill", description: /^description:\s*(.+)$/m.exec(text)?.[1] ?? "", path });
+  }
+  for (const name of (await readdir(dirs.docs)).filter((n) => n.endsWith(".md")).sort()) {
+    const path = join(dirs.docs, name);
+    const lines = (await readFile(path, "utf8")).split("\n").map((l) => l.trim());
+    const first = lines.find((l) => l !== "" && !l.startsWith("#") && !l.startsWith(">")) ?? "";
+    topics.push({ name: name.replace(/\.md$/, ""), kind: "doc", description: first, path });
+  }
+  return topics;
+}
+
+/** List the guide's topics, or print one: task skills and reference docs, bundled with the CLI. */
+export async function guide(opts: { topic?: string }): Promise<CommandResult> {
+  const topics = await guideTopics();
+  if (opts.topic === undefined) {
+    return result({
+      data: { topics: topics.map(({ path: _path, ...t }) => t) },
+      lines: [
+        "Moonstage guide. Start with `moonstage guide build-game`.",
+        "",
+        "Skills (step-by-step procedures):",
+        ...topics.filter((t) => t.kind === "skill").map((t) => `  ${t.name.padEnd(16)} ${t.description}`),
+        "",
+        "Reference:",
+        ...topics.filter((t) => t.kind === "doc").map((t) => `  ${t.name.padEnd(16)} ${t.description.slice(0, 90)}`),
+        "",
+        "Read one with `moonstage guide <topic>`.",
+      ],
+    });
+  }
+  const topic = topics.find((t) => t.name === opts.topic);
+  if (topic === undefined) {
+    return result({
+      exitCode: EXIT.usage,
+      diagnostics: [diagnostic("MS9001", `unknown guide topic "${opts.topic}"; topics: ${topics.map((t) => t.name).join(", ")}`)],
+    });
+  }
+  const content = await readFile(topic.path, "utf8");
+  return result({ data: { topic: topic.name, kind: topic.kind, content }, lines: [content] });
+}
+
 // ---------------------------------------------------------------- schemas
 
 export async function schemas(opts: { write?: boolean; out?: string }): Promise<CommandResult> {
@@ -241,15 +312,16 @@ export async function create(opts: { dir?: string; name?: string; template?: str
   files.push(...(await writeSlotFiles(target, manifest)));
   files.sort();
   return result({
-    data: { root: target, template, files, next: ["moonstage validate", "moonstage test", "moonstage run"] },
+    data: { root: target, template, files, next: ["moonstage guide build-game", "moonstage validate", "moonstage test", "moonstage run"] },
     lines: [
       `Created ${name} in ${target}`,
       ...files.map((f) => `  ${f}`),
       "",
       "Next:",
       `  cd ${relative(process.cwd(), target) || "."}`,
-      "  moonstage test      # build behaviors and run headless tests",
-      "  moonstage run       # play in the browser",
+      "  moonstage guide build-game   # how to build a game here (MoonBit primer: guide moonbit)",
+      "  moonstage test               # build behaviors and run headless tests",
+      "  moonstage run                # play in the browser",
     ],
   });
 }

@@ -52,6 +52,32 @@ async function moduleName(dir: string): Promise<string | undefined> {
   return /^\s*name\s*=\s*"([^"]+)"/m.exec(text)?.[1];
 }
 
+const SLOT_PREFIX = /\b(param|state|ref|input|event|prefab|scene|sound)_[a-z0-9_]+\b/;
+
+/** Advice for the MoonBit mistakes agents and newcomers make most (see docs/moonbit.md). */
+export function compilerHint(code: number, message: string): string | undefined {
+  switch (code) {
+    case 4059:
+      return "A parameter named `self` declares a method. Name the first parameter `entity`.";
+    case 4021: {
+      const slot = SLOT_PREFIX.exec(message)?.[0];
+      if (slot !== undefined) {
+        return `\`${slot}\` is not a generated slot. Declare the name in this behavior's lists in moonstage.json (e.g. "params": [...]); \`moonstage build\` regenerates slots.generated.mbt.`;
+      }
+      if (/\bMath\b/.test(message)) return "Use `@math.sin` etc., and import \"moonbitlang/core/math\" in moon.pkg.";
+      return "Unknown name. Check spelling, the package's imports in moon.pkg, and `moonstage guide moonbit`.";
+    }
+    case 4014:
+      if (/wanted\s*:\s*Unit/.test(message)) return "The result of a call is unused: append `|> ignore`.";
+      if (/Int/.test(message) && /Double/.test(message)) return "MoonBit never converts numbers implicitly: use `.to_double()` or `.to_int()`.";
+      return "Type mismatch. See `moonstage guide moonbit`.";
+    case 4087:
+      return "Assigning to an immutable variable: declare it with `let mut`.";
+    default:
+      return undefined;
+  }
+}
+
 function realpathOr(path: string): string {
   try {
     return realpathSync(path);
@@ -160,11 +186,13 @@ export async function buildMoonbitBehaviors(root: string, manifest: ProjectManif
       artifacts.set(msg.package, msg.path);
     } else if (msg.$message_type === "diagnostic" && msg.level === "error") {
       const file = typeof msg.path === "string" ? relative(realRoot, realpathOr(msg.path)).split(sep).join("/") : undefined;
+      const advice = compilerHint(Number(msg.error_code), String(msg.message));
+      const context = typeof msg.context === "string" ? msg.context.trimEnd() : undefined;
       out.diagnostics.push(
-        diagnostic("MS3006", String(msg.message), {
+        diagnostic("MS3006", `MoonBit error ${String(msg.error_code ?? "")}: ${String(msg.message)}`, {
           ...(file !== undefined && { file }),
           ...(typeof msg.loc === "string" && { path: msg.loc }),
-          hint: typeof msg.context === "string" ? msg.context.trimEnd() : undefined,
+          hint: [advice, context].filter(Boolean).join("\n") || undefined,
         }),
       );
     }

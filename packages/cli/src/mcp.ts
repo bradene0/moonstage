@@ -34,6 +34,12 @@ export const TOOLS: Tool[] = [
     run: () => commands.describe(),
   },
   {
+    name: "moonstage_guide",
+    description: "List the bundled skills and docs, or read one (e.g. build-game, moonbit, behavior-abi, plugins, physics).",
+    inputSchema: { type: "object", properties: { topic: str("Topic name; omit to list topics.") } },
+    run: (a) => commands.guide({ ...(s(a.topic) && { topic: s(a.topic) }) }),
+  },
+  {
     name: "moonstage_new_project",
     description: "Create a new project from the minimal template in an empty directory.",
     inputSchema: { type: "object", properties: { dir, name: str("Display name.") }, required: ["dir"] },
@@ -168,7 +174,7 @@ export async function handleMessage(message: Request): Promise<object | undefine
         capabilities: { tools: {} },
         serverInfo: { name: "moonstage", version: commands.CLI_VERSION },
         instructions:
-          "Moonstage projects are folders of JSON plus MoonBit behaviors. Start with moonstage_describe, then " +
+          "Moonstage projects are folders of JSON plus MoonBit behaviors. Read moonstage_guide (topic build-game), then moonstage_describe and " +
           "moonstage_inspect. Prefer moonstage_edit_scene over rewriting scene files. Verify with moonstage_validate, moonstage_test and moonstage_render.",
       });
     }

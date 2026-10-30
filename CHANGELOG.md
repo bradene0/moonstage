@@ -7,6 +7,13 @@ versions so you can tell what moved.
 
 ### Added
 
+- **`moonstage guide`**: the docs and agent skills now ship inside the CLI package, so an agent with only
+  `npx moonstage` can read them (also an MCP tool, `moonstage_guide`).
+- **MoonBit primer** (`moonstage guide moonbit`): the language subset behaviors need, where every snippet
+  compiles, plus a table of the compiler errors newcomers hit.
+- MoonBit compile errors now carry targeted hints (a `self` parameter, a missing slot name, Int/Double
+  mismatches, unused results, assigning to an immutable variable).
+
 - **Plugin drawing (plugin API 4).** Plugins with `draws: true` render the entities that carry their
   extension, through `drawCanvas2d` (browser) and `drawSvg` (headless) hooks; core places the items. The
   conformance suite exercises the hooks. Moon Hopper adds a `radar` drawing plugin.

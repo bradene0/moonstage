@@ -39,6 +39,16 @@ describe("moonstage CLI", () => {
     assert.ok(r.json.behaviorAbi.imports.includes("transform_get"));
   });
 
+  it("serves the bundled docs and skills through guide", () => {
+    const list = cli("guide", "--json");
+    assert.equal(list.code, 0);
+    const names = list.json.topics.map((t: { name: string }) => t.name);
+    for (const topic of ["build-game", "moonbit", "behavior-abi", "plugins", "physics"]) assert.ok(names.includes(topic), topic);
+    const primer = cli("guide", "moonbit", "--json");
+    assert.match(primer.json.content, /Never name a parameter `self`/);
+    assert.equal(cli("guide", "nope", "--json").code, 2);
+  });
+
   it("uses meaningful exit codes for usage errors and missing projects", () => {
     assert.equal(cli("frobnicate", "--json").code, 2);
     assert.equal(cli("validate", "--bogus-flag", "--json").code, 2);
@@ -326,5 +336,7 @@ describe("moonstage CLI", () => {
     const d = r.json.diagnostics.find((x: { code: string }) => x.code === "MS3006");
     assert.ok(d, r.stdout);
     assert.equal(d.file, "behaviors/mover/broken.mbt");
+    assert.match(d.message, /MoonBit error 4014/);
+    assert.match(d.hint, /\|> ignore|to_double|Type mismatch/);
   });
 });

@@ -70,3 +70,5 @@ packages/cli/moonbit-sdk/
 .release/
 # Packages from `moonstage pack`.
 *.msp
+# Docs and skills copied into the CLI package only while packing.
+packages/cli/guide/

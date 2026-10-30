@@ -17,6 +17,7 @@ export {
   render,
   schemas,
   pluginNew,
+  guide,
   pack,
   unpack,
   getScene,

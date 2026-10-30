@@ -13,4 +13,6 @@ In MoonBit, refer to params, state, refs, inputs and events by their generated n
 `input_move_x`, ...). `moonstage build` writes them to `behaviors/<name>/slots.generated.mbt` from the
 lists in `moonstage.json`. Do not edit that file.
 
+Docs ship with the CLI: `moonstage guide` lists them, `moonstage guide build-game` is the procedure,
+`moonstage guide moonbit` is a primer for writing behaviors (read it before your first `.mbt` edit).
 `moonstage describe --json` lists components, host functions, error codes and exit codes.

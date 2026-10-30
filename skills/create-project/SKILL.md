@@ -5,6 +5,7 @@ description: Create a new Moonstage project and confirm it validates, builds and
 
 # Create a Moonstage project
 
+0. `moonstage guide` lists every skill and reference doc bundled with the CLI.
 1. `moonstage describe --json`: confirm the CLI works and check `toolchain.moon`. If it is null, install
    MoonBit (https://www.moonbitlang.com/download) or set `MOONSTAGE_MOON`.
 2. `moonstage new <dir> --name "<Title>" --json`: creates the manifest, a scene, one MoonBit behavior

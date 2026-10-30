@@ -32,6 +32,8 @@ try {
   };
 
   const described = cli("describe");
+  const guideTopics = cli("guide").topics.map((t) => t.name);
+  if (!guideTopics.includes("build-game") || !guideTopics.includes("moonbit")) throw new Error("guide topics missing from the package");
   if (!described.toolchain.moon) throw new Error("MoonBit toolchain not found");
   cli("new", "game", "--name", "Packed Game");
   cli("validate", "game");

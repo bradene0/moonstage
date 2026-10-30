@@ -36,7 +36,8 @@
     "dist",
     "!dist/**/*.test.*",
     "templates",
-    "moonbit-sdk"
+    "moonbit-sdk",
+    "guide"
   ],
   "engines": {
     "node": ">=22"

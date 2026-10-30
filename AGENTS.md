@@ -68,6 +68,8 @@ those tests are skipped. CI sets `MOONSTAGE_REQUIRE_MOON=1`, which turns a missi
 
 ## Skills
 
+Also available from the CLI anywhere, with no repository checkout: `moonstage guide [topic]`.
+
 - `skills/create-project/`
 - `skills/build-game/`
 - `skills/author-plugin/`

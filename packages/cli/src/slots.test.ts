@@ -32,3 +32,16 @@ describe("generated slots", () => {
     assert.equal(found[0]?.code, "MS2013");
   });
 });
+
+describe("MoonBit compiler hints", async () => {
+  const { compilerHint } = await import("./moonbit.js");
+  it("explains the mistakes newcomers make", () => {
+    assert.match(compilerHint(4059, "Cannot define method foo for foreign type Int")!, /`entity`/);
+    assert.match(compilerHint(4021, "The value identifier param_spede is unbound.")!, /param_spede.*moonstage\.json/);
+    assert.match(compilerHint(4021, "The value identifier Math is unbound.")!, /@math/);
+    assert.match(compilerHint(4014, "Expr Type Mismatch\n has type : Int\n wanted : Double")!, /to_double/);
+    assert.match(compilerHint(4014, "Expr Type Mismatch\n has type : Int\n wanted : Unit")!, /ignore/);
+    assert.match(compilerHint(4087, "The variable x is not mutable.")!, /let mut/);
+    assert.equal(compilerHint(1, "anything"), undefined);
+  });
+});

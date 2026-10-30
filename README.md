@@ -70,7 +70,8 @@ node packages/cli/dist/main.js render examples/moon-hopper --tick 120  # write a
 node packages/cli/dist/main.js run examples/moon-hopper --headless --ticks 600 --json
 ```
 
-Every command accepts `--json`, and the exit codes are meaningful (see `moonstage describe`).
+Every command accepts `--json`, and the exit codes are meaningful (see `moonstage describe`). The docs and
+agent skills ship with the CLI: `moonstage guide`.
 
 ## Playing a project in a page
 
@@ -103,6 +104,7 @@ dependency.
 - [AGENTS.md](AGENTS.md): repository map and rules, for coding agents and contributors.
 - [ARCHITECTURE.md](ARCHITECTURE.md): how the runtime is put together and why.
 - [docs/project-format.md](docs/project-format.md): `moonstage.json`, scenes, components and tests.
+- [docs/moonbit.md](docs/moonbit.md): MoonBit for behaviors, a short primer.
 - [docs/behavior-abi.md](docs/behavior-abi.md): the WebAssembly behavior contract.
 - [docs/plugins.md](docs/plugins.md): writing plugins.
 - [docs/physics.md](docs/physics.md): physics components and the provider contract.
