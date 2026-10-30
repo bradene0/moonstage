@@ -16,8 +16,9 @@
 | `mcp` | Serve these operations to agents over the Model Context Protocol (stdio) |
 | `build [--out dist] [--no-bundle]` | Compile MoonBit behaviors, then write a static web bundle |
 | `build --single-file [--out file.html]` | Write one self-contained `.html` that plays with no server or network (project-local plugins only) |
-| `run` | Build and serve on http://localhost:5173 (`--port`) |
-| `run --headless [--ticks 600] [--seed] [--scene] [--input '{"thrust":1}'] [--input-script <json\|file>] [--setup <json\|file>]` | Simulate and report event counts, scenes, saves, logs and a state snapshot |
+| `run [--port 5173] [--replay <test file>]` | Build and serve on http://localhost:5173 with live reload (edits rebuild and reload the page). F8 in the page downloads the session as a test; `--replay` plays a test back |
+| `record [--ticks 300] [--fps 20] [--test file] [--input-script …] [--output file.svg]` | Simulate a session and write it as an animated SVG that loops in a browser |
+| `run --headless [--test file] [--ticks 600] [--seed] [--scene] [--input '{"thrust":1}'] [--input-script <json\|file>] [--setup <json\|file>]` | Simulate and report event counts, scenes, saves, logs and a state snapshot |
 | `test [--filter]` | Run `tests/*.test.json` |
 | `check [--ticks 600]` | Validate, compile, run the tests, simulate the entry scene and render its last frame: one report to read after each edit. Exit code 1 if anything fails. |
 | `render [--tick 0] [--input …] [--input-script …] [--setup …] [--output file.svg \| -]` | Simulate to a tick and write that frame as SVG |

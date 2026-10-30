@@ -1017,21 +1017,39 @@ export async function runCommand(opts: {
     if (!built.ok) return built;
     const root = built.data.root as string;
     let builtAt = Date.now();
-    // Rebuild on page load when any project file changed, so a reload shows the latest edit.
-    const rebuild = async () => {
-      if ((await newestChange(root)) <= builtAt) return;
+    let building: Promise<boolean> | undefined;
+    // Rebuild when any project file changed. Returns true when a new build was written.
+    const rebuild = async (): Promise<boolean> => {
+      if (building !== undefined) return building;
+      if ((await newestChange(root)) <= builtAt) return false;
       builtAt = Date.now();
-      const again = await build({ dir: opts.dir });
-      for (const d of again.diagnostics) process.stderr.write(`${formatDiagnostic(d)}\n`);
-      process.stderr.write(again.ok ? "rebuilt after a change\n" : "rebuild failed; serving the previous build\n");
+      building = build({ dir: opts.dir }).then((again) => {
+        for (const d of again.diagnostics) process.stderr.write(`${formatDiagnostic(d)}\n`);
+        process.stderr.write(again.ok ? "rebuilt after a change\n" : "rebuild failed; serving the previous build\n");
+        return again.ok;
+      });
+      try {
+        return await building;
+      } finally {
+        building = undefined;
+      }
     };
-    const extra = opts.replay ? { "/replay.test.json": resolve(opts.replay) } : undefined;
-    const served = await serve(built.data.bundle as string, int(opts.port, "port", 5173), isPackage(root) ? undefined : rebuild, extra);
+    const editable = !isPackage(root);
+    const served = await serve(built.data.bundle as string, int(opts.port, "port", 5173), {
+      ...(editable && { beforePage: async () => void (await rebuild()), live: true }),
+      ...(opts.replay && { extra: { "/replay.test.json": resolve(opts.replay) } }),
+    });
+    if (editable) {
+      // Live reload: watch the project and reload open pages after each successful rebuild.
+      const timer = setInterval(() => void rebuild().then((ok) => ok && served.reload()), 500);
+      timer.unref();
+      served.server.on("close", () => clearInterval(timer));
+    }
     const url = opts.replay ? `${served.url}?replay=replay.test.json` : served.url;
     return {
       ...result({
         data: { ...built.data, url },
-        lines: [...built.lines, "", `${opts.replay ? "Replaying" : "Playing"} at ${url}  (reload to pick up edits; F8 saves a recording; Ctrl+C to stop)`],
+        lines: [...built.lines, "", `${opts.replay ? "Replaying" : "Playing"} at ${url}  (live reload on; F8 saves a recording; Ctrl+C to stop)`],
       }),
       server: served.server,
     };

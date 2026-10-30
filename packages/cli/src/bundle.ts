@@ -12,7 +12,7 @@
 
 import { createReadStream, existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { cp, mkdir, rm, stat, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import { dirname, extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -162,20 +162,39 @@ const TYPES: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
 };
 
+export interface ServeOptions {
+  /** Runs before each page load (a request for an HTML file), e.g. to rebuild a changed project. */
+  beforePage?: () => Promise<void>;
+  /** Extra routes that serve single files from outside the bundle (e.g. a test file to replay). */
+  extra?: Record<string, string>;
+  /** Live reload: pages get a script that reloads them when `reload()` is called. */
+  live?: boolean;
+}
+
+const LIVE_PATH = "/__moonstage/live";
+const LIVE_SCRIPT = `<script>new EventSource("${LIVE_PATH}").addEventListener("reload", () => location.reload());</script>`;
+
 /** Minimal static file server for local play. Binds to localhost only. */
-/**
- * Serve a bundle. `beforePage` runs before each page load (a request for an HTML file), so the dev server
- * can rebuild when the project changed and a browser reload shows the new version.
- */
 export function serve(
   dir: string,
   port: number,
-  beforePage?: () => Promise<void>,
-  extra: Record<string, string> = {},
-): Promise<{ server: Server; url: string }> {
+  options: ServeOptions = {},
+): Promise<{ server: Server; url: string; reload: () => void }> {
   const base = resolve(dir);
+  const { beforePage, extra = {}, live = false } = options;
+  const clients = new Set<import("node:http").ServerResponse>();
+  const reload = () => {
+    for (const client of clients) client.write("event: reload\ndata: {}\n\n");
+  };
   const server = createServer(async (req, res) => {
     const path = decodeURIComponent(new URL(req.url ?? "/", "http://localhost").pathname);
+    if (live && path === LIVE_PATH) {
+      res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store", connection: "keep-alive" });
+      res.write(": connected\n\n");
+      clients.add(res);
+      req.on("close", () => clients.delete(res));
+      return;
+    }
     // Extra routes serve single files from outside the bundle (e.g. a test file to replay).
     let file = extra[path] ?? normalize(join(base, path));
     if (extra[path] === undefined && file !== base && !file.startsWith(base + sep)) {
@@ -191,14 +210,22 @@ export function serve(
       return;
     }
     res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", "cache-control": "no-store" });
+    if (live && extname(file) === ".html") {
+      res.end((await readFile(file, "utf8")).replace("</body>", `${LIVE_SCRIPT}\n</body>`));
+      return;
+    }
     createReadStream(file).pipe(res);
+  });
+  // Open event streams would keep close() waiting forever.
+  server.on("close", () => {
+    for (const client of clients) client.end();
   });
   return new Promise((done, fail) => {
     server.once("error", fail);
     server.listen(port, "127.0.0.1", () => {
       const address = server.address();
       const actual = typeof address === "object" && address ? address.port : port;
-      done({ server, url: `http://localhost:${actual}/` });
+      done({ server, url: `http://localhost:${actual}/`, reload });
     });
   });
 }
