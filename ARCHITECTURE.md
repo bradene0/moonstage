@@ -119,4 +119,5 @@ too.
 - Physics is a provider plugin boundary ([docs/physics.md](docs/physics.md)). The only provider shipped is a
   small reference one in `examples/physics-playground`.
 - Plugins in the browser bundle must be project-local files. Bare package specifiers need an import map.
-- `.msp` packages (`moonstage pack`) are not implemented. `dist/` is a plain static folder.
+- `.msp` packages are plain ZIP archives without signing or streaming. Plugins inside a package must be
+  single-file ES modules, because they are imported from data: URLs.

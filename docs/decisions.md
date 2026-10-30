@@ -10,8 +10,8 @@ silently by implementation work.
   the `moonstage` npm organization. Release cadence and automation are still open.
 - **Release and versioning policy.** When packages are published, what compatibility promises are
   made, and how `projectFormat`, `pluginApi` and `behaviorAbi` evolve. Today none of these is stable.
-- **`.msp` package details.** ZIP-compatible is the current direction. The manifest layout, signing
-  and streaming are open.
+- **`.msp` package details.** Format 1 is a ZIP of runtime files plus `msp.json` (docs/project-format.md).
+  Signing, streaming, asset compression choices and a stable layout promise are open.
 - **Telemetry.** There is none, and none should be added without an explicit decision.
 - **Accounts and cloud services.** There are none, and nothing should require them.
 - **Licensing beyond the current MIT license**, including any commercial arrangements.

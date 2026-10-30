@@ -80,7 +80,8 @@ Every command accepts `--json`, and the exit codes are meaningful (see `moonstag
 <moonstage-player src="./game/"></moonstage-player>
 ```
 
-`moonstage build` writes exactly this kind of static bundle to `dist/`. You can also play from code:
+`moonstage build` writes exactly this kind of static bundle to `dist/`. To ship a game as one file, run
+`moonstage pack` and point the player at it: `<moonstage-player src="./game.msp">`. You can also play from code:
 `import { play } from "@moonstage/player"; play("#game", "./game/")`. The player has no framework
 dependency.
 

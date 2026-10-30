@@ -41,6 +41,9 @@ try {
   if (!existsSync(join(built.bundle, "index.html")) || !existsSync(join(built.bundle, "runtime", "core", "index.js"))) {
     throw new Error("web bundle is incomplete");
   }
+  const packed = cli("pack", "game");
+  const simulated = cli("run", packed.output, "--headless", "--ticks", "60");
+  if (simulated.ticks !== 60) throw new Error("packed game did not simulate");
   cli("plugin", "new", "plugin", "--name", "Smoke Plugin");
   const checked = cli("plugin", "check", "plugin");
   if (!checked.passed) throw new Error("template plugin failed the conformance suite");

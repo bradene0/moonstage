@@ -42,6 +42,17 @@ const html = (title: string, width: number, height: number) => `<!doctype html>
 </html>
 `;
 
+/** Project-relative files a project needs at runtime (no sources, no tests). */
+export function runtimeFiles(manifest: ProjectManifest): string[] {
+  const files = ["moonstage.json", ...Object.values(manifest.scenes)];
+  for (const [name, decl] of Object.entries(manifest.behaviors ?? {})) files.push(behaviorWasmPath(name, decl));
+  for (const { module } of Object.values(manifest.plugins ?? {})) {
+    if (module.startsWith("./")) files.push(module.slice(2));
+  }
+  for (const { path } of Object.values(manifest.assets ?? {})) files.push(path);
+  return [...new Set(files)];
+}
+
 /** Copy compiled JS only (no tests, maps or declarations). */
 const runtimeFilter = (src: string) => !/\.test\.js$|\.map$|\.d\.ts$/.test(src);
 
@@ -51,12 +62,7 @@ export async function writeBundle(root: string, manifest: ProjectManifest, outDi
   await cp(packageDist("@moonstage/core"), join(outDir, "runtime", "core"), { recursive: true, filter: runtimeFilter });
   await cp(packageDist("@moonstage/player"), join(outDir, "runtime", "player"), { recursive: true, filter: runtimeFilter });
 
-  const files = ["moonstage.json", ...Object.values(manifest.scenes)];
-  for (const [name, decl] of Object.entries(manifest.behaviors ?? {})) files.push(behaviorWasmPath(name, decl));
-  for (const { module } of Object.values(manifest.plugins ?? {})) {
-    if (module.startsWith("./")) files.push(module.slice(2));
-  }
-  for (const { path } of Object.values(manifest.assets ?? {})) files.push(path);
+  const files = runtimeFiles(manifest);
   for (const file of files) {
     const from = join(root, file);
     if (!existsSync(from)) continue;

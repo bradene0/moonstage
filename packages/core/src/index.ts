@@ -101,6 +101,7 @@ export {
   type LoadResult,
 } from "./loader.js";
 export { runTest, checkAssertion, type TestResult } from "./testing.js";
+export { readZip, mspIO, MSP_FORMAT, type MspMetadata } from "./msp.js";
 export {
   checkPluginConformance,
   type ConformanceFixture,

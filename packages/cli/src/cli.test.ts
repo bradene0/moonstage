@@ -256,6 +256,40 @@ describe("moonstage CLI", () => {
     assert.equal(replies[6].error.code, -32601);
   });
 
+  it("packs a project into an .msp that runs, validates and unpacks like the source", moon, () => {
+    const output = join(scratch, "pack", "hopper.msp");
+    const packed = cli("pack", example, "--out", output, "--json");
+    assert.equal(packed.code, 0, packed.stdout);
+    assert.ok(packed.json.files.includes("msp.json"));
+    assert.ok(packed.json.files.includes("behaviors/lander.wasm"));
+    assert.ok(!packed.json.files.some((f: string) => f.endsWith(".mbt") || f.startsWith("tests/")));
+
+    assert.equal(cli("validate", output, "--json").code, 0);
+    const run = (target: string) =>
+      cli("run", target, "--headless", "--scene", "main", "--ticks", "90", "--input", '{"thrust":1}', "--json", "--no-build").json.snapshot;
+    assert.deepEqual(run(output), run(example), "a package simulates exactly like its source project");
+    assert.equal(cli("edit", output, "--op", "{}", "--json").code, 2, "packages are read-only");
+
+    const dir = join(scratch, "pack", "unpacked");
+    const unpacked = cli("unpack", output, dir, "--json");
+    assert.equal(unpacked.code, 0, unpacked.stdout);
+    const manifest = JSON.parse(readFileSync(join(dir, "moonstage.json"), "utf8"));
+    assert.deepEqual(manifest.behaviors.lander.wasm, "behaviors/lander.wasm");
+    assert.equal(manifest.behaviors.lander.source, undefined);
+    assert.equal(cli("validate", dir, "--json").code, 0);
+    assert.equal(cli("unpack", output, dir, "--json").code, 2, "refuses a non-empty directory");
+  });
+
+  it("rejects packages with entries outside the package", async () => {
+    const { writeZip } = await import("./zip.js");
+    const evil = join(scratch, "evil.msp");
+    writeFileSync(evil, writeZip([{ path: "msp.json", data: Buffer.from('{"format":1,"name":"x"}') }, { path: "../escape.txt", data: Buffer.from("x") }]));
+    const r = cli("unpack", evil, join(scratch, "evil-out"), "--json");
+    assert.equal(r.code, 1);
+    assert.equal(r.json.diagnostics[0].code, "MS1005");
+    assert.equal(cli("validate", join(scratch, "evil.msp"), "--json").json.diagnostics[0].code, "MS1003");
+  });
+
   it("reports MoonBit compile errors as MS3006 with file locations", moon, () => {
     const dir = join(scratch, "compile-error");
     cli("new", dir);

@@ -11,6 +11,7 @@
 import {
   diagnostic,
   isImageAsset,
+  mspIO,
   KeyBindings,
   loadProject,
   MoonstageError,
@@ -68,7 +69,10 @@ export function fetchIO(src: string | URL, base: string = document.baseURI): Pro
 }
 
 /** Load every image asset the built-in renderer can draw. Missing images become MS1003 diagnostics. */
-export async function loadImages(manifest: ProjectManifest, root: URL): Promise<{ images: ImageMap; diagnostics: Diagnostic[] }> {
+export async function loadImages(
+  manifest: ProjectManifest,
+  urlFor: (path: string) => Promise<string | undefined>,
+): Promise<{ images: ImageMap; diagnostics: Diagnostic[] }> {
   const images = new Map<string, HTMLImageElement>();
   const diagnostics: Diagnostic[] = [];
   await Promise.all(
@@ -76,8 +80,10 @@ export async function loadImages(manifest: ProjectManifest, root: URL): Promise<
       .filter(([, asset]) => isImageAsset(asset))
       .map(async ([id, asset]) => {
         const image = new Image();
-        image.src = new URL(asset.path, root).href;
         try {
+          const url = await urlFor(asset.path);
+          if (url === undefined) throw new Error("not found");
+          image.src = url;
           await image.decode();
           images.set(id, image);
         } catch {
@@ -86,6 +92,49 @@ export async function loadImages(manifest: ProjectManifest, root: URL): Promise<
       }),
   );
   return { images, diagnostics };
+}
+
+const MIME: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  svg: "image/svg+xml",
+};
+
+/**
+ * Open a project directory/manifest URL, or an .msp package URL. For packages,
+ * assets are served from blob: URLs created from the package's contents.
+ */
+export async function openSource(src: string | URL, base: string = document.baseURI): Promise<{
+  io: ProjectIO;
+  urlFor: (path: string) => Promise<string | undefined>;
+}> {
+  const url = new URL(src, base);
+  if (!url.pathname.endsWith(".msp")) {
+    const root = projectUrl(url);
+    return { io: fetchIO(url), urlFor: async (path) => new URL(path, root).href };
+  }
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new PlayerLoadError([diagnostic("MS1003", `${url.href}: HTTP ${response.status}`, { file: url.pathname })]);
+  }
+  const io = await mspIO(new Uint8Array(await response.arrayBuffer()));
+  const urls = new Map<string, string>();
+  return {
+    io,
+    urlFor: async (path) => {
+      const cached = urls.get(path);
+      if (cached !== undefined) return cached;
+      const bytes = await io.readBytes(path);
+      if (bytes === undefined) return undefined;
+      const type = MIME[path.split(".").pop()?.toLowerCase() ?? ""] ?? "application/octet-stream";
+      const blobUrl = URL.createObjectURL(new Blob([bytes as BlobPart], { type }));
+      urls.set(path, blobUrl);
+      return blobUrl;
+    },
+  };
 }
 
 export class PlayerLoadError extends MoonstageError {
@@ -106,14 +155,15 @@ export async function play(target: string | HTMLElement, src: string | URL, opti
   const host = typeof target === "string" ? document.querySelector<HTMLElement>(target) : target;
   if (host === null) throw new Error(`play(): no element matches ${String(target)}`);
 
-  const loaded = await loadProject(fetchIO(src));
+  const source = await openSource(src);
+  const loaded = await loadProject(source.io);
   if (loaded.project === undefined) {
     showDiagnostics(host, loaded.diagnostics);
     throw new PlayerLoadError(loaded.diagnostics);
   }
   const [{ images, diagnostics: imageProblems }, sounds] = await Promise.all([
-    loadImages(loaded.project.manifest, projectUrl(src)),
-    SoundPlayer.load(loaded.project.manifest, projectUrl(src)),
+    loadImages(loaded.project.manifest, source.urlFor),
+    SoundPlayer.load(loaded.project.manifest, (path) => source.io.readBytes(path) as Promise<ArrayBuffer | Uint8Array | undefined>),
   ]);
   if (imageProblems.length > 0) {
     showDiagnostics(host, imageProblems);

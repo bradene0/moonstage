@@ -3,6 +3,37 @@
 Moonstage is in early development. Contracts may change between releases; each entry lists the contract
 versions so you can tell what moved.
 
+## Unreleased
+
+Contract versions: project format 1, behavior ABI 3 (accepts 1-3), plugin API 3 (accepts 1-3), package format 1.
+
+Existing projects, compiled behaviors and plugins keep working unchanged.
+
+### Added
+
+- **Semantic editing and MCP.** `moonstage edit` applies operations to a scene and validates the whole project
+  before writing (`--dry-run` to check only). New operations: `unset_property`, `attach_behavior`,
+  `detach_behavior`. `moonstage scene` prints a scene. `moonstage mcp` serves twelve tools over the Model
+  Context Protocol (stdio) as a thin layer over the CLI functions.
+- **Physics contract.** `physicsBody`, `collider` and `joint` components and `physics.gravity`, simulated by a
+  provider plugin (`provides: ["physics"]`). Behaviors drive bodies through state `vx` / `vy` / `av`, and
+  providers emit `collision` / `collisionEnd`. See `docs/physics.md`. `examples/physics-playground` ships a
+  dependency-free reference provider.
+- **Plugin API 3.** Async `load()`, `provides`, `world.component` / `handle` / `parent`, `ctx.project`,
+  `ctx.scene`, `world.loadScene`, an `audio` capability and events with a source entity.
+- **Scenes and sound (behavior ABI 3).** `load_scene` and `play_sound`, declared through module `scenes` and
+  `sounds` lists. Core records sound requests; the browser player plays them with Web Audio. Tests can assert
+  `{ "scene": … }` and `{ "sound": …, "count": … }`.
+- **Packages.** `moonstage pack` / `unpack` and `.msp` support in the player and in `validate`, `inspect`,
+  `scene`, `run --headless` and `render`.
+- New diagnostics: `MS1005` (invalid package), `MS2016` (invalid physics setup), `MS2017` (invalid sound).
+
+### Changed
+
+- Button presses latch until the end of the next tick, so taps shorter than a tick are no longer lost.
+- Schema errors in operations now point at the matching operation type.
+- Moon Hopper has a title scene and a pickup sound.
+
 ## 0.2.0
 
 Contract versions: project format 1, behavior ABI 2 (accepts 1), plugin API 2 (accepts 1).

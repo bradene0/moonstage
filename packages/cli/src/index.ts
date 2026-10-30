@@ -17,6 +17,10 @@ export {
   render,
   schemas,
   pluginNew,
+  pack,
+  unpack,
+  getScene,
+  editScene,
   pluginCheck,
   type CommandSpec,
 } from "./commands.js";

@@ -36,6 +36,8 @@ const OPTIONS: Record<string, ParseArgsConfig["options"]> = {
   scene: { ...shared, scene: { type: "string" } },
   edit: { ...shared, scene: { type: "string" }, op: { type: "string" }, ops: { type: "string" }, "dry-run": { type: "boolean" } },
   mcp: shared,
+  pack: { ...shared, out: { type: "string" } },
+  unpack: shared,
 };
 
 /** Operations from --op (inline JSON) or --ops (file path, or "-" for stdin). */
@@ -113,6 +115,10 @@ async function dispatch(name: string, values: Record<string, unknown>, dir: stri
         operations: await readOperations(values),
         dryRun: Boolean(values["dry-run"]),
       });
+    case "pack":
+      return commands.pack({ dir, ...(s("out") && { out: s("out") }) });
+    case "unpack":
+      return commands.unpack({ file: dir, ...(rest[0] !== undefined && { dir: rest[0] }) });
     case "mcp":
       await serveMcp();
       return result({});

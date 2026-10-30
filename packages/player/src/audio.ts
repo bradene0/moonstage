@@ -12,7 +12,7 @@ export class SoundPlayer {
   ) {}
 
   /** Decode every audio asset. Sounds that fail to load are skipped with a warning; they are not fatal. */
-  static async load(manifest: ProjectManifest, root: URL): Promise<SoundPlayer> {
+  static async load(manifest: ProjectManifest, read: (path: string) => Promise<ArrayBuffer | Uint8Array | undefined>): Promise<SoundPlayer> {
     const assets = Object.entries(manifest.assets ?? {}).filter(([, a]) => isAudioAsset(a));
     const AudioContextClass = globalThis.AudioContext as typeof AudioContext | undefined;
     if (assets.length === 0 || AudioContextClass === undefined) return new SoundPlayer(undefined, new Map());
@@ -21,9 +21,11 @@ export class SoundPlayer {
     await Promise.all(
       assets.map(async ([id, asset]) => {
         try {
-          const response = await fetch(new URL(asset.path, root));
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          buffers.set(id, await context.decodeAudioData(await response.arrayBuffer()));
+          const bytes = await read(asset.path);
+          if (bytes === undefined) throw new Error("not found");
+          // decodeAudioData detaches its input, so give it a copy.
+          const copy = bytes instanceof Uint8Array ? bytes.slice().buffer : bytes.slice(0);
+          buffers.set(id, await context.decodeAudioData(copy));
         } catch (err) {
           console.warn(`moonstage: sound "${id}" (${asset.path}) could not be loaded: ${String(err)}`);
         }

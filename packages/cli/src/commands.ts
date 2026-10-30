@@ -6,7 +6,7 @@
 
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { cp, mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   BEHAVIOR_ABI,
@@ -27,6 +27,8 @@ import {
   hasErrors,
   MoonstageError,
   applyOperations,
+  MSP_FORMAT,
+  readZip,
   operationSchema,
   validateProjectSemantics,
   validateSceneShape,
@@ -40,10 +42,11 @@ import {
   type LoadedProject,
   type TestResult,
 } from "@moonstage/core";
-import { serve, writeBundle } from "./bundle.js";
+import { runtimeFiles, serve, writeBundle } from "./bundle.js";
+import { writeZip } from "./zip.js";
 import { buildMoonbitBehaviors, findMoon } from "./moonbit.js";
 import { EXIT, result, type CommandResult } from "./output.js";
-import { load, loadTests, projectRoot } from "./project-io.js";
+import { ioFor, isPackage, load, loadTests, projectRoot } from "./project-io.js";
 import { slotCollisions, staleSlotFiles, writeSlotFiles } from "./slots.js";
 import { renderSvg, svgImage, type SvgImage } from "./svg.js";
 
@@ -75,6 +78,16 @@ export const COMMANDS: CommandSpec[] = [
     name: "render",
     summary: "Simulate to a tick and write that frame as SVG.",
     usage: "moonstage render [dir] [--tick <n>] [--scene <id>] [--seed <n>] [--output <file|->] [--no-build] [--json]",
+  },
+  {
+    name: "pack",
+    summary: "Build and write an .msp package (ZIP) of the project's runtime files.",
+    usage: "moonstage pack [dir] [--out <file.msp>] [--json]",
+  },
+  {
+    name: "unpack",
+    summary: "Extract an .msp package into a runnable project directory.",
+    usage: "moonstage unpack <file.msp> [dir] [--json]",
   },
   {
     name: "scene",
@@ -321,9 +334,15 @@ export async function validate(opts: { dir?: string }): Promise<CommandResult> {
   if (rootIssues.length > 0) return result({ diagnostics: rootIssues, exitCode: EXIT.usage });
   const loaded = await load(root, { behaviors: "optional" });
   const tests = await loadTests(root);
-  const slots = loaded.manifest ? [...slotCollisions(loaded.manifest), ...(await staleSlotFiles(root, loaded.manifest))] : [];
-  const assets = Object.entries(loaded.manifest?.assets ?? {})
-    .filter(([, asset]) => !existsSync(join(root, asset.path)))
+  // A package holds runtime files only, so source-level checks apply to directories.
+  const source = !isPackage(root);
+  const slots = loaded.manifest && source ? [...slotCollisions(loaded.manifest), ...(await staleSlotFiles(root, loaded.manifest))] : [];
+  const io = await ioFor(root);
+  const missing = await Promise.all(
+    Object.entries(loaded.manifest?.assets ?? {}).map(async ([id, asset]) => ((await io.readBytes(asset.path)) === undefined ? [[id, asset] as const] : [])),
+  );
+  const assets = missing
+    .flat()
     .map(([id, asset]) =>
       diagnostic("MS1003", `asset "${id}": ${asset.path} not found`, { file: "moonstage.json", path: `assets.${id}.path` }),
     );
@@ -377,11 +396,15 @@ export async function inspect(opts: { dir?: string }): Promise<CommandResult> {
       },
     ]),
   );
+  const io = await ioFor(root);
   const behaviors = Object.fromEntries(
-    Object.entries(manifest.behaviors ?? {}).map(([name, decl]) => {
-      const wasm = behaviorWasmPath(name, decl);
-      return [name, { ...decl, language: decl.language ?? (decl.source ? "moonbit" : "wasm"), wasm, built: existsSync(join(root, wasm)) }];
-    }),
+    await Promise.all(
+      Object.entries(manifest.behaviors ?? {}).map(async ([name, decl]) => {
+        const wasm = behaviorWasmPath(name, decl);
+        const built = (await io.readBytes(wasm)) !== undefined;
+        return [name, { ...decl, language: decl.language ?? (decl.source ? "moonbit" : "wasm"), wasm, built }] as const;
+      }),
+    ),
   );
   const tests = (await loadTests(root)).map((t) => ({ file: t.file, name: t.test?.name ?? null, valid: t.diagnostics.length === 0 }));
   const data = {
@@ -462,6 +485,7 @@ export async function editScene(opts: {
 }): Promise<CommandResult> {
   const { root, diagnostics: rootIssues } = projectRoot(opts.dir);
   if (rootIssues.length > 0) return result({ diagnostics: rootIssues, exitCode: EXIT.usage });
+  if (isPackage(root)) return readOnlyPackage(root);
   const ops = Array.isArray(opts.operations) ? opts.operations : opts.operations === undefined ? [] : [opts.operations];
   if (ops.length === 0) {
     return result({ exitCode: EXIT.usage, diagnostics: [diagnostic("MS9001", "no operations: pass --op '<json>' or --ops <file|->")] });
@@ -538,7 +562,7 @@ async function prepare(dir: string | undefined, compile: boolean): Promise<Prepa
     return { root, diagnostics: first.diagnostics, behaviors: [] };
   }
   let behaviors: Prepared["behaviors"] = [];
-  if (compile) {
+  if (compile && !isPackage(root)) {
     const collisions = slotCollisions(first.manifest);
     if (collisions.length > 0) return { root, diagnostics: [...first.diagnostics, ...collisions], behaviors };
     await writeSlotFiles(root, first.manifest);
@@ -563,7 +587,15 @@ function failed(p: Prepared): CommandResult {
   return result({ diagnostics: p.diagnostics, ...(p.exitCode !== undefined && { exitCode: p.exitCode }), data: { root: p.root } });
 }
 
+function readOnlyPackage(root: string): CommandResult {
+  return result({
+    exitCode: EXIT.usage,
+    diagnostics: [diagnostic("MS9001", `${root} is a package; run \`moonstage unpack\` to get an editable project`)],
+  });
+}
+
 export async function build(opts: { dir?: string; out?: string; bundle?: boolean }): Promise<CommandResult> {
+  if (opts.dir !== undefined && isPackage(resolve(opts.dir))) return readOnlyPackage(resolve(opts.dir));
   const p = await prepare(opts.dir, true);
   if (p.project === undefined) return failed(p);
   const data: Record<string, unknown> = { root: p.root, behaviors: p.behaviors };
@@ -575,6 +607,79 @@ export async function build(opts: { dir?: string; out?: string; bundle?: boolean
     lines.push(`web bundle -> ${out}`);
   }
   return result({ data, diagnostics: p.diagnostics, lines });
+}
+
+// ---------------------------------------------------------------- pack / unpack
+
+/**
+ * Write an .msp package: the project's runtime files plus msp.json. Behaviors
+ * are stored as plain WebAssembly (behaviors/<name>.wasm) and the packaged
+ * manifest points at them, so a package needs no MoonBit sources or toolchain.
+ */
+export async function pack(opts: { dir?: string; out?: string }): Promise<CommandResult> {
+  const p = await prepare(opts.dir, true);
+  if (p.project === undefined) return failed(p);
+  const manifest = structuredClone(p.project.manifest);
+  const entries: { path: string; data: Uint8Array }[] = [];
+  const moves = new Map<string, string>();
+  for (const [name, decl] of Object.entries(manifest.behaviors ?? {})) {
+    const packaged = `behaviors/${name}.wasm`;
+    moves.set(behaviorWasmPath(name, decl), packaged);
+    delete decl.source;
+    decl.language = "wasm";
+    decl.wasm = packaged;
+  }
+  const metadata = { format: MSP_FORMAT, name: manifest.name, createdWith: `moonstage ${CLI_VERSION}` };
+  entries.push({ path: "msp.json", data: Buffer.from(`${JSON.stringify(metadata, null, 2)}\n`) });
+  entries.push({ path: "moonstage.json", data: Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`) });
+  for (const file of runtimeFiles(p.project.manifest)) {
+    if (file === "moonstage.json") continue;
+    const path = join(p.root, file);
+    if (!existsSync(path)) continue;
+    entries.push({ path: moves.get(file) ?? file, data: new Uint8Array(await readFile(path)) });
+  }
+  const zip = writeZip(entries);
+  const output = resolve(opts.out ?? join(p.root, `${manifest.name}.msp`));
+  await mkdir(dirname(output), { recursive: true });
+  await writeFile(output, zip);
+  return result({
+    diagnostics: p.diagnostics,
+    data: { root: p.root, output, bytes: zip.length, files: entries.map((e) => e.path) },
+    lines: [`packed ${entries.length} files -> ${output} (${(zip.length / 1024).toFixed(1)} KB)`],
+  });
+}
+
+export async function unpack(opts: { file?: string; dir?: string }): Promise<CommandResult> {
+  if (opts.file === undefined || !isPackage(resolve(opts.file))) {
+    return result({ exitCode: EXIT.usage, diagnostics: [diagnostic("MS9001", "usage: moonstage unpack <file.msp> [dir]")] });
+  }
+  const file = resolve(opts.file);
+  const target = resolve(opts.dir ?? basename(file, ".msp"));
+  if (existsSync(target) && (await readdir(target)).length > 0) {
+    return result({ exitCode: EXIT.usage, diagnostics: [diagnostic("MS9001", `${target} already exists and is not empty`)] });
+  }
+  let entries: Map<string, Uint8Array>;
+  try {
+    entries = await readZip(new Uint8Array(await readFile(file)));
+  } catch (err) {
+    if (err instanceof MoonstageError) return result({ diagnostics: err.diagnostics });
+    throw err;
+  }
+  const written: string[] = [];
+  for (const [path, data] of entries) {
+    if (path === "msp.json") continue;
+    const to = resolve(target, path);
+    if (!to.startsWith(target + sep)) {
+      return result({ diagnostics: [diagnostic("MS1005", `invalid .msp package: entry "${path}" points outside the package`)] });
+    }
+    await mkdir(dirname(to), { recursive: true });
+    await writeFile(to, data);
+    written.push(path);
+  }
+  return result({
+    data: { root: target, files: written.sort() },
+    lines: [`unpacked ${written.length} files into ${target}`],
+  });
 }
 
 // ---------------------------------------------------------------- run
@@ -710,7 +815,8 @@ export async function render(opts: {
   for (const [id, asset] of Object.entries(p.project.manifest.assets ?? {})) {
     if (!isImageAsset(asset)) continue;
     try {
-      images.set(id, svgImage(new Uint8Array(await readFile(join(p.root, asset.path))), asset.path, asset.pixelated));
+      const bytes = await (await ioFor(p.root)).readBytes(asset.path);
+      if (bytes !== undefined) images.set(id, svgImage(new Uint8Array(bytes), asset.path, asset.pixelated));
     } catch {
       // Drawn as a magenta placeholder; `moonstage validate` reports the missing file.
     }

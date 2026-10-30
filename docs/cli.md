@@ -8,6 +8,8 @@
 | `new <dir> [--name]` | Create a project from the `minimal` template |
 | `validate` | Schemas, cross-references, plugins and test files. Missing builds are warnings. |
 | `inspect` | Structured summary of scenes, entities, behaviors (built or not), plugins and tests |
+| `pack [--out file.msp]` | Build, then write an `.msp` package of the project's runtime files |
+| `unpack <file.msp> [dir]` | Extract a package into a runnable (WebAssembly-only) project |
 | `scene [--scene id]` | Print a scene's source JSON |
 | `edit [--scene id] (--op '<json>' \| --ops <file\|->) [--dry-run]` | Apply semantic operations to a scene. The whole project is validated first; nothing is written if there are errors. |
 | `mcp` | Serve these operations to agents over the Model Context Protocol (stdio) |
@@ -21,6 +23,9 @@
 | `schemas [--write] [--out dir]` | Print or write the JSON Schemas |
 
 `run`, `test` and `render` compile MoonBit behaviors first. Pass `--no-build` to skip this.
+
+`validate`, `inspect`, `scene`, `run --headless` and `render` also accept an `.msp` file instead of a
+directory. Packages are read-only: `edit` and `build` refuse them.
 
 ## JSON output
 

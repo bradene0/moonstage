@@ -39,6 +39,7 @@ export const DIAGNOSTIC_CODES = {
   MS1002: { title: "Invalid JSON", hint: "Fix the JSON syntax error at the reported location." },
   MS1003: { title: "File not found", hint: "Create the file or fix the path that references it." },
   MS1004: { title: "Unsupported format version", hint: "Set `format` to a version this Moonstage understands (see `moonstage describe`)." },
+  MS1005: { title: "Invalid package", hint: "Rebuild the .msp with `moonstage pack`." },
   MS2001: { title: "Duplicate entity id", hint: "Entity ids must be unique within a scene." },
   MS2002: { title: "Unknown parent entity", hint: "Set `parent` to the id of an entity in the same scene, or remove it." },
   MS2003: { title: "Parent cycle", hint: "An entity cannot be its own ancestor." },

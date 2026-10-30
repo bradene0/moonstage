@@ -68,3 +68,5 @@ dist/
 packages/cli/moonbit-sdk/
 # Tarballs from `npm run pack`.
 .release/
+# Packages from `moonstage pack`.
+*.msp

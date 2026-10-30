@@ -1,12 +1,14 @@
 /** Filesystem-backed project access for the CLI. */
 
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
   diagnostic,
   loadProject,
+  MoonstageError,
+  mspIO,
   readJson,
   validateTestShape,
   type Diagnostic,
@@ -42,8 +44,19 @@ export function fileIO(root: string): ProjectIO {
 }
 
 /** Resolve the project root argument; error diagnostics when it is not a project. */
+/** True for a path to an .msp package file (as opposed to a project directory). */
+export function isPackage(path: string): boolean {
+  return path.endsWith(".msp") && existsSync(path) && statSync(path).isFile();
+}
+
+/** ProjectIO for a project directory or an .msp package. */
+export async function ioFor(root: string): Promise<ProjectIO> {
+  return isPackage(root) ? mspIO(new Uint8Array(await readFile(root))) : fileIO(root);
+}
+
 export function projectRoot(dir: string | undefined): { root: string; diagnostics: Diagnostic[] } {
   const root = resolve(dir ?? ".");
+  if (isPackage(root)) return { root, diagnostics: [] };
   if (!existsSync(join(root, "moonstage.json"))) {
     return {
       root,
@@ -54,7 +67,12 @@ export function projectRoot(dir: string | undefined): { root: string; diagnostic
 }
 
 export async function load(root: string, options?: LoadOptions): Promise<LoadResult> {
-  return loadProject(fileIO(root), options);
+  try {
+    return await loadProject(await ioFor(root), options);
+  } catch (err) {
+    if (err instanceof MoonstageError) return { scenes: {}, diagnostics: err.diagnostics };
+    throw err;
+  }
 }
 
 export interface LoadedTest {
@@ -65,6 +83,7 @@ export interface LoadedTest {
 
 /** Read and validate every tests/*.test.json file. */
 export async function loadTests(root: string): Promise<LoadedTest[]> {
+  if (isPackage(root)) return []; // packages carry runtime files only
   let names: string[];
   try {
     names = (await readdir(join(root, "tests"))).filter((n) => n.endsWith(".test.json")).sort();

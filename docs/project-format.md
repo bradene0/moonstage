@@ -143,3 +143,22 @@ entity-level fields `parent`, `active` and `name` are addressed directly.
 
 All of these are build artifacts, so do not commit them. The exception is
 `behaviors/<name>/slots.generated.mbt`, which is generated but committed (see `docs/behavior-abi.md`).
+
+## Packages (.msp)
+
+`moonstage pack` writes `<name>.msp`, the distributable form of a project: a standard ZIP archive that any
+ZIP tool can open.
+
+```text
+game.msp
+├── msp.json                  { "format": 1, "name": "...", "createdWith": "moonstage 0.x" }
+├── moonstage.json            behaviors rewritten to { "language": "wasm", "wasm": "behaviors/<name>.wasm" }
+├── scenes/*.scene.json
+├── behaviors/*.wasm
+├── assets/...
+└── plugins/*.js              project-local plugins (single-file ES modules)
+```
+
+A package contains no MoonBit sources or tests. Play one with `<moonstage-player src="game.msp">`, check it
+with `moonstage validate game.msp`, and turn it back into a project with `moonstage unpack`. The package
+format version (`msp.json` `format`) is independent of the project format.
